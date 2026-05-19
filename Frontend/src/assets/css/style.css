@@ -1,0 +1,283 @@
+/* =============================================
+   COMMON CSS FOR ALL AUTH PAGES
+   ============================================= */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  color: #1e2937;
+}
+
+/* ====================== LEFT SIDE ====================== */
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+}
+
+.left-side {
+  display: none;
+  width: 50%;
+  background: linear-gradient(135deg, #4f46e5, #3b82f6, #1e40af);
+  color: white;
+  padding: 60px 50px;
+  position: relative;
+  overflow: hidden;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.left-side::before {
+  content: '';
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  top: -100px;
+  right: -80px;
+  z-index: 1;
+}
+
+.left-side::after {
+  content: '';
+  position: absolute;
+  width: 380px;
+  height: 380px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 50%;
+  bottom: -60px;
+  left: -50px;
+  z-index: 1;
+}
+
+.left-content {
+  position: relative;
+  z-index: 2;
+  max-width: 420px;
+}
+
+.left-side h1 {
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 16px;
+}
+
+.left-side p {
+  font-size: 18px;
+  opacity: 0.9;
+  margin-bottom: 40px;
+  line-height: 1.4;
+}
+
+/* Compact Status Box */
+.status-card {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 14px 18px;
+  width: fit-content;
+  max-width: 280px;
+}
+
+.status-content {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.status-dot {
+  width: 22px;
+  height: 22px;
+  background: #22c55e;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;
+  color: #22c55e;
+  font-weight: bold;
+}
+
+/* ====================== RIGHT SIDE (Compact) ====================== */
+.right-side {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px;
+  background: #ffffff;
+}
+
+.form-container {
+  width: 100%;
+  max-width: 400px;
+}
+
+.form-container h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.form-container p {
+  color: #64748b;
+  font-size: 15px;
+  margin-bottom: 24px;
+}
+
+/* Google Button */
+.google-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 13px 0;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  background: white;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.google-btn:hover {
+  background: #f8fafc;
+}
+
+/* Divider */
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 24px 0;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.divider-text {
+  padding: 0 16px;
+  color: #64748b;
+  font-size: 13.5px;
+}
+
+/* Inputs */
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.input-field {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  font-size: 15px;
+  transition: all 0.3s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Role Buttons */
+.role-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.role-btn {
+  flex: 1;
+  padding: 12px 0;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  background: white;
+  font-size: 14.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.role-btn.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1e40af;
+}
+
+/* Main Button */
+.main-btn {
+  width: 100%;
+  padding: 14px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.main-btn:hover {
+  background: #1d4ed8;
+}
+
+/* Switch Text */
+.switch-text {
+  text-align: center;
+  margin-top: 28px;
+  color: #64748b;
+  font-size: 14.5px;
+}
+
+.switch-link {
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.switch-link:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (min-width: 1024px) {
+  .left-side {
+    display: flex;
+  }
+}
+
+@media (max-width: 640px) {
+  .right-side {
+    padding: 20px 16px;
+  }
+  .left-side {
+    padding: 40px 24px;
+  }
+  .left-side h1 {
+    font-size: 40px;
+  }
+}
