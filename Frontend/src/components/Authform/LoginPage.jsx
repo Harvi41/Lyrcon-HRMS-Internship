@@ -18,7 +18,7 @@ const PayrollIcon = () => (
   </svg>
 );
 
-export default function LoginPage() {
+export default function LoginPage({ onLoginSuccess }) {
   const [email, setEmail] = useState("prince@company.com");
   const [password, setPassword] = useState("••••••••••••••");
   const [loading, setLoading] = useState(false);
@@ -26,14 +26,21 @@ export default function LoginPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => setLoading(false), 2000);
+    
+    // Smooth transition simulation for dashboard login success pipeline
+    setTimeout(() => {
+      setLoading(false);
+      if (onLoginSuccess) {
+        onLoginSuccess(); // Routes the component layout swap inside App.jsx
+      }
+    }, 600);
   };
 
   return (
     <div className={styles.wrapper}>
       {/* ── Left Branding Panel ── */}
       <aside className={styles.brandPanel}>
-        {/* Background decorative circles */}
+        {/* Background decorative elements */}
         <div className={styles.circle1} />
         <div className={styles.circle2} />
         <div className={styles.circle3} />
@@ -53,7 +60,14 @@ export default function LoginPage() {
             Sign in to manage payroll, benefits,<br />and global team performance.
           </p>
 
-         
+          {/* Payroll Processed Indicator Widget */}
+          <div className={styles.payrollWidget}>
+            <PayrollIcon />
+            <div className={styles.widgetText}>
+              <span className={styles.widgetTitle}>Payroll Processed</span>
+              <span className={styles.widgetSub}>All employee deposits completed.</span>
+            </div>
+          </div>
         </div>
       </aside>
 
@@ -65,20 +79,20 @@ export default function LoginPage() {
             <p className={styles.welcomeSub}>Enter your details to access your dashboard.</p>
           </div>
 
-          {/* Google SSO */}
+          {/* Google SSO Button */}
           <button className={styles.googleBtn} type="button">
             <GoogleIcon />
             <span>Sign in with Google</span>
           </button>
 
-          {/* Divider */}
+          {/* Divider Splitter */}
           <div className={styles.divider}>
             <span className={styles.dividerLine} />
             <span className={styles.dividerText}>OR EMAIL</span>
             <span className={styles.dividerLine} />
           </div>
 
-          {/* Email / Password form */}
+          {/* Credentials Entry Form */}
           <form className={styles.form} onSubmit={handleSubmit}>
             <div className={styles.fieldGroup}>
               <label className={styles.label} htmlFor="email">Work Email</label>
@@ -90,6 +104,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
                 autoComplete="email"
+                required
               />
             </div>
 
@@ -106,9 +121,11 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
                 autoComplete="current-password"
+                required
               />
             </div>
 
+            {/* Loading / Action Processing Button State */}
             <button
               type="submit"
               className={`${styles.submitBtn} ${loading ? styles.submitBtnLoading : ""}`}
@@ -121,8 +138,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          
         </div>
       </main>
     </div>
