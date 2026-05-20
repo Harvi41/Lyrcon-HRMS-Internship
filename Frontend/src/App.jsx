@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import Login from './Pages/Login';
-import Signup from './Pages/Signup';
 import Dashboard from './Pages/Dashboard';
 
 function App() {
@@ -38,9 +37,7 @@ function App() {
     enterDashboard(session?.user || null, session?.token);
   };
 
-  const handleSignup = (session) => {
-    enterDashboard(session?.user || null, session?.token);
-  };
+  // Signup flow removed — users should be created via admin/seeders
 
   const handleLogout = () => {
     window.localStorage.removeItem('corehr_token');
@@ -53,14 +50,7 @@ function App() {
     <>
       {view === 'login' && (
         <Login
-          onSwitch={() => setView('signup')}
           onLogin={handleLogin}
-        />
-      )}
-      {view === 'signup' && (
-        <Signup
-          onSwitch={() => setView('login')}
-          onSignup={handleSignup}
         />
       )}
       {view === 'dashboard' && (
