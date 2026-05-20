@@ -1,11 +1,49 @@
-//Creating the user model for the database using mongoose
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const userSchema = new mongoose.Schema({
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    role: { type: String, enum: ['admin', 'employee', 'hr'], required: true },
-    name: { type: String, required: true }
-}, { timestamps: true });
+const userSchema = new mongoose.Schema(
+  {
+    employeeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Employee",
+    },
 
-module.exports = mongoose.models.User || mongoose.model('User', userSchema);
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+
+    password: {
+      type: String,
+      required: true,
+    },
+
+    role: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Role",
+      required: true,
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
+    lastLogin: {
+      type: Date,
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
+
+module.exports = mongoose.model("User", userSchema);
