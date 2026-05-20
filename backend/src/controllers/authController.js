@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Role = require('../models/Role'); 
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key';
 
@@ -8,12 +9,14 @@ const authController = {
     // 1. SIGNUP LOGIC
     signup: async (req, res) => {
         try {
-            const { name, email, password, role } = req.body;
+            const { name, email, password, roleName } = req.body;
 
-            if (!['admin', 'employee', 'hr'].includes(role)) {
-                return res.status(400).json({ message: 'Invalid role. Must be admin, employee, or hr.' });
+            const targetRole = await Role.findOne({ name: roleName, isActive: true });
+            if (!targetRole) {
+                return res.status(400).json({ message: `Role '${roleName}' does not exist or is inactive.` });
             }
 
+            // Check if user already exists
             const existingUser = await User.findOne({ email });
             if (existingUser) {
                 return res.status(400).json({ message: 'User already exists' });
@@ -25,14 +28,20 @@ const authController = {
                 name,
                 email,
                 password: hashedPassword,
-                role
+                role: targetRole._id,
+                isActive: true
             });
 
             await newUser.save();
 
             res.status(201).json({
                 message: 'User registered successfully',
-                user: { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role }
+                user: { 
+                    id: newUser._id, 
+                    name: newUser.name, 
+                    email: newUser.email, 
+                    role: targetRole.name 
+                }
             });
         } catch (error) {
             console.error('Signup error:', error);
@@ -45,8 +54,8 @@ const authController = {
         try {
             const { email, password } = req.body;
 
-            const user = await User.findOne({ email });
-            if (!user) {
+            const user = await User.findOne({ email }).populate('role');
+            if (!user || !user.isActive) {
                 return res.status(400).json({ message: 'Invalid email or password' });
             }
 
@@ -55,9 +64,16 @@ const authController = {
                 return res.status(400).json({ message: 'Invalid email or password' });
             }
 
-            // Packed name here so your dashboard can say "Hi <name>" easily
+            user.lastLogin = new Date();
+            await user.save();
+
             const token = jwt.sign(
-                { userId: user._id, role: user.role, name: user.name },
+                { 
+                    userId: user._id, 
+                    name: user.name,
+                    roleName: user.role.name,
+                    permissions: user.role.permissions
+                },
                 JWT_SECRET,
                 { expiresIn: '1d' }
             );
@@ -69,7 +85,8 @@ const authController = {
                     id: user._id,
                     name: user.name,
                     email: user.email,
-                    role: user.role
+                    role: user.role.name,
+                    permissions: user.role.permissions
                 }
             });
         } catch (error) {
