@@ -1,15 +1,60 @@
 import { useState } from 'react';
 import '../assets/css/style.css';
 
-export default function Signup({ onSwitch }) {
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+
+export default function Signup({ onSwitch, onSignup }) {
   const [fullName, setFullName] = useState("Prince Ghevariya");
   const [email, setEmail] = useState("prince@company.com");
-  const [employeeId, setEmployeeId] = useState("PRINCE001");
+  const [role, setRole] = useState('hr');
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setError('');
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: fullName,
+          email,
+          password,
+          role,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Unable to create the account right now.');
+      }
+
+      if (typeof onSignup === 'function') {
+        onSignup(data);
+      }
+    } catch (signupError) {
+      setError(signupError.message || 'Unable to create the account right now.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="auth-container">
+    <div className="auth-container auth-page">
       {/* Left Side */}
       <div className="left-side">
         <div className="left-content">
@@ -20,11 +65,13 @@ export default function Signup({ onSwitch }) {
 
       {/* Right Side */}
       <div className="right-side">
-        <div className="form-container">
+        <form className="form-container" onSubmit={handleSubmit}>
           <h2>Set up workspace</h2>
           <p>Start managing your team in minutes.</p>
 
-          <button className="google-btn" style={{ marginBottom: '24px' }}>
+          {error ? <div className="auth-error">{error}</div> : null}
+
+          <button className="google-btn" style={{ marginBottom: '24px' }} type="button">
             <img src="https://www.google.com/favicon.ico" alt="Google" width="20" height="20" />
             Sign up with Google
           </button>
@@ -56,14 +103,12 @@ export default function Signup({ onSwitch }) {
           </div>
 
           <div className="input-group">
-            <label className="input-label">Employee ID</label>
-            <input
-              type="text"
-              value={employeeId}
-              onChange={(e) => setEmployeeId(e.target.value)}
-              className="input-field"
-              placeholder="Enter your Employee ID"
-            />
+            <label className="input-label">Role</label>
+            <select value={role} onChange={(e) => setRole(e.target.value)} className="input-field">
+              <option value="hr">HR</option>
+              <option value="employee">Employee</option>
+              <option value="admin">Admin</option>
+            </select>
           </div>
 
           <div className="input-group">
@@ -88,13 +133,15 @@ export default function Signup({ onSwitch }) {
             />
           </div>
 
-          <button className="main-btn">Create Account</button>
+          <button className="main-btn" type="submit" disabled={loading}>
+            {loading ? 'Creating Account...' : 'Create Account'}
+          </button>
 
           <p style={{ textAlign: 'center', marginTop: '32px', color: '#64748b' }}>
             Already have an account?{' '}
             <span className="switch-link" onClick={onSwitch}>Sign in</span>
           </p>
-        </div>
+        </form>
       </div>
     </div>
   );
