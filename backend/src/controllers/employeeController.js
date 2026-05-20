@@ -1,5 +1,8 @@
 const Employee = require('../models/Employee');
 const User = require('../models/User');
+const Role = require('../models/Role');
+const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 
 exports.createEmployee = async (req, res) => {
     try {
@@ -18,10 +21,10 @@ exports.createEmployee = async (req, res) => {
             workLocation, 
             emergencyContact, 
             address,
-            userId 
+            roleName
         } = req.body;
         
-        // Check if an employee with the same email or code already exists
+        // 1. Check if an employee with the same email or code already exists
         const existingEmail = await Employee.findOne({ email });
         if (existingEmail) {
             return res.status(400).json({ message: 'Employee with this email already exists' });
@@ -32,8 +35,27 @@ exports.createEmployee = async (req, res) => {
             return res.status(400).json({ message: 'Employee with this employee code already exists' });
         }
 
-        // Create the profile
+        // 2. Resolve the role from the database
+        const selectedRole = roleName || 'Employee'; 
+        const targetRole = await Role.findOne({ name: selectedRole, isActive: true });
+        if (!targetRole) {
+            return res.status(404).json({ message: `Role '${selectedRole}' not found or is currently inactive.` });
+        }
+
+        // 3. Generate a secure temporary password for the new hire
+        const temporaryPassword = `Lyrcon2026!${crypto.randomBytes(8).toString('hex')}`;
+        const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+
+        // 4. STEP 1: Create the Auth Account inside the User collection
+        const newUser = await User.create({
+            name: `${firstName} ${lastName}`.trim(),
+            email: email.toLowerCase(),
+            password: hashedPassword,
+            role: targetRole._id
+        });
+
         const newEmployee = new Employee({
+            userId: newUser._id, 
             employeeCode,
             firstName,
             lastName,
@@ -52,13 +74,21 @@ exports.createEmployee = async (req, res) => {
 
         const savedEmployee = await newEmployee.save();
 
-        if (userId) {
-            await User.findByIdAndUpdate(userId, {
-                $set: { employeeId: savedEmployee._id }
-            });
-        }
+        // 6. STEP 2: Complete the bridge link by referencing employeeId back on the User document
+        await User.findByIdAndUpdate(newUser._id, {
+            $set: { employeeId: savedEmployee._id }
+        });
 
-        res.status(201).json(savedEmployee);
+        // 7. Send confirmation back to HR along with the temporary credentials
+        res.status(201).json({
+            message: 'Employee onboarded successfully!',
+            employee: savedEmployee,
+            credentials: {
+                email: newUser.email,
+                temporaryPassword: temporaryPassword 
+            }
+        });
+
     } catch (error) {
         console.error('Create Employee Error:', error);
         res.status(500).json({ message: 'Server Error', error: error.message });

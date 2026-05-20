@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create a reusable Axios instance targeting your backend port
 const API = axios.create({
-    baseURL: proccess.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
+    baseURL: process.env.VITE_API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -23,7 +23,7 @@ API.interceptors.request.use((config) => {
 // 🔐 AUTHENTICATION ENDPOINTS 
 // ==========================================
 export const loginUser = (credentials) => API.post('/auth/login', credentials);
-export const signupUser = (userData) => API.post('/auth/signup', userData);
+// export const signupUser = (userData) => API.post('/auth/signup', userData);
 
 // ==========================================
 // 👥 EMPLOYEE ENDPOINTS
