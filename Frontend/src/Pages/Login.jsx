@@ -12,18 +12,6 @@ export default function Login({ onSwitch }) {
         <div className="left-content">
           <h1>Empower your<br />workforce.</h1>
           <p>Sign in to manage payroll, benefits,<br />and global team performance.</p>
-
-          <div className="status-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ width: '40px', height: '40px', background: '#4ade80', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                ✓
-              </div>
-              <div>
-                <p style={{ fontWeight: '600' }}>Payroll Processed</p>
-                <p style={{ fontSize: '14px', opacity: '0.8' }}>All employee deposits completed.</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
