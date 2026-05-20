@@ -1,8 +1,8 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 
 // Create a reusable Axios instance targeting your backend port
 const API = axios.create({
-    baseURL: process.env.VITE_API_BASE_URL,
+    baseURL: process.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -10,7 +10,7 @@ const API = axios.create({
 
 // Interceptor: Automatically injects the JWT token from localStorage before any request flies out
 API.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token'); 
+    const token = localStorage.getItem('corehr_token'); 
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -23,7 +23,6 @@ API.interceptors.request.use((config) => {
 // 🔐 AUTHENTICATION ENDPOINTS 
 // ==========================================
 export const loginUser = (credentials) => API.post('/auth/login', credentials);
-// export const signupUser = (userData) => API.post('/auth/signup', userData);
 
 // ==========================================
 // 👥 EMPLOYEE ENDPOINTS

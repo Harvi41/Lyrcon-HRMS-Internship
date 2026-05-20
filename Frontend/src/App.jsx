@@ -21,3 +21,4 @@ export default function App() {
   // 2. Otherwise fall back to the unauthenticated operational secure sign-in panel
   return <LoginPage onLoginSuccess={handleLoginSuccess} />;
 }
+
