@@ -1,0 +1,388 @@
+/* ─────────────────────────────────────────
+   LoginPage.module.css — CoreHR Login
+───────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=DM+Sans:wght@400;500&display=swap');
+
+/* ── CSS Variables ── */
+:root {
+  --brand-deep:   #1e1b6e;
+  --brand-mid:    #3730a3;
+  --brand-light:  #4f46e5;
+  --brand-accent: #6366f1;
+  --brand-vivid:  #818cf8;
+
+  --white:        #ffffff;
+  --gray-50:      #f9fafb;
+  --gray-100:     #f3f4f6;
+  --gray-200:     #e5e7eb;
+  --gray-400:     #9ca3af;
+  --gray-500:     #6b7280;
+  --gray-700:     #374151;
+  --gray-900:     #111827;
+
+  --radius-md:    10px;
+  --radius-lg:    16px;
+
+  --shadow-input: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-btn:   0 4px 14px rgba(79, 70, 229, 0.45);
+
+  --transition:   0.2s ease;
+}
+
+/* ── Reset ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Outer wrapper ── */
+.wrapper {
+  display: flex;
+  min-height: 100vh;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--white);
+}
+
+/* ═══════════════════════════════
+   LEFT PANEL — Brand
+═══════════════════════════════ */
+.brandPanel {
+  position: relative;
+  flex: 0 0 48%;
+  background: linear-gradient(
+    135deg,
+    var(--brand-deep)  0%,
+    var(--brand-mid)  55%,
+    var(--brand-light) 100%
+  );
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 56px 52px;
+}
+
+/* Decorative circles */
+.circle1,
+.circle2,
+.circle3 {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.circle1 {
+  width: 460px;
+  height: 460px;
+  background: var(--brand-vivid);
+  opacity: 0.18;
+  top: -100px;
+  right: -120px;
+}
+
+.circle2 {
+  width: 320px;
+  height: 320px;
+  background: var(--brand-accent);
+  opacity: 0.18;
+  bottom: -80px;
+  left: -80px;
+}
+
+.circle3 {
+  width: 200px;
+  height: 200px;
+  background: var(--white);
+  opacity: 0.06;
+  top: 40%;
+  left: 38%;
+}
+
+/* Brand content */
+.brandContent {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 400px;
+}
+
+/* Logo */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logoDot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--brand-vivid);
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.35);
+}
+
+.logoText {
+  font-family: 'Sora', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Headline */
+.headline {
+  font-family: 'Sora', sans-serif;
+  font-size: clamp(2rem, 3.2vw, 2.75rem);
+  font-weight: 800;
+  color: var(--white);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.subheadline {
+  font-size: 0.975rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.65;
+}
+
+/* ═══════════════════════════════
+   RIGHT PANEL — Auth Form
+═══════════════════════════════ */
+.authPanel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--white);
+  padding: 48px 32px;
+}
+
+.authCard {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Header */
+.authHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.welcomeTitle {
+  font-family: 'Sora', sans-serif;
+  font-size: clamp(1.6rem, 2.5vw, 2rem);
+  font-weight: 700;
+  color: var(--gray-900);
+  letter-spacing: -0.025em;
+}
+
+.welcomeSub {
+  font-size: 0.9rem;
+  color: var(--gray-500);
+  line-height: 1.5;
+}
+
+/* Google button */
+.googleBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 13px 20px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.925rem;
+  font-weight: 500;
+  color: var(--gray-700);
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+  box-shadow: var(--shadow-input);
+}
+
+.googleBtn:hover {
+  border-color: var(--brand-accent);
+  background: var(--gray-50);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.12);
+}
+
+/* Divider */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dividerLine {
+  flex: 1;
+  height: 1px;
+  background: var(--gray-200);
+}
+
+.dividerText {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--gray-400);
+  white-space: nowrap;
+}
+
+/* Form */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--gray-700);
+}
+
+.passwordLabelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.forgotLink {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--brand-light);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.forgotLink:hover {
+  color: var(--brand-deep);
+  text-decoration: underline;
+}
+
+.input {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.925rem;
+  color: var(--gray-900);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  box-shadow: var(--shadow-input);
+}
+
+.input::placeholder {
+  color: var(--gray-400);
+}
+
+.input:focus {
+  border-color: var(--brand-light);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+/* Submit button */
+.submitBtn {
+  width: 100%;
+  padding: 15px 20px;
+  background: var(--brand-light);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: 'Sora', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--white);
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: background var(--transition), box-shadow var(--transition), transform var(--transition);
+  box-shadow: var(--shadow-btn);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: var(--brand-mid);
+  box-shadow: 0 6px 20px rgba(55, 48, 163, 0.5);
+  transform: translateY(-1px);
+}
+
+.submitBtn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-btn);
+}
+
+.submitBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+.submitBtnLoading {
+  background: var(--brand-mid);
+}
+
+/* Spinner */
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid rgba(255, 255, 255, 0.35);
+  border-top-color: var(--white);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ═══════════════════════════════
+   RESPONSIVE
+═══════════════════════════════ */
+@media (max-width: 900px) {
+  .wrapper {
+    flex-direction: column;
+  }
+
+  .brandPanel {
+    flex: none;
+    min-height: 260px;
+    padding: 40px 32px;
+  }
+
+  .authPanel {
+    padding: 40px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .authCard {
+    gap: 18px;
+  }
+
+  .welcomeTitle {
+    font-size: 1.5rem;
+  }
+}
