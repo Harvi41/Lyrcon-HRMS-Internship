@@ -20,6 +20,12 @@ API.interceptors.request.use((config) => {
 });
 
 // ==========================================
+// 🔐 AUTHENTICATION ENDPOINTS 
+// ==========================================
+export const loginUser = (credentials) => API.post('/auth/login', credentials);
+export const signupUser = (userData) => API.post('/auth/signup', userData);
+
+// ==========================================
 // 👥 EMPLOYEE ENDPOINTS
 // ==========================================
 export const getAllEmployees = () => API.get('/employees');
