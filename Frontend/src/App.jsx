@@ -7,28 +7,39 @@ function App() {
   const [view, setView] = useState('login');
   const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    const storedUser = window.localStorage.getItem('corehr_user');
-    const storedToken = window.localStorage.getItem('corehr_token');
+  const enterDashboard = (sessionUser, token) => {
+    if (token) {
+      window.localStorage.setItem('corehr_token', token);
+    }
 
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
+    if (sessionUser) {
+      window.localStorage.setItem('corehr_user', JSON.stringify(sessionUser));
+      setUser(sessionUser);
+    }
+
+    setView('dashboard');
+  };
+
+  useEffect(() => {
+    const storedToken = window.localStorage.getItem('corehr_token');
+    const storedUser = window.localStorage.getItem('corehr_user');
+
+    if (storedToken) {
+      try {
+        setUser(storedUser ? JSON.parse(storedUser) : null);
+      } catch {
+        setUser(null);
+      }
       setView('dashboard');
     }
   }, []);
 
-  const handleLogin = ({ user: loggedInUser, token }) => {
-    window.localStorage.setItem('corehr_token', token);
-    window.localStorage.setItem('corehr_user', JSON.stringify(loggedInUser));
-    setUser(loggedInUser);
-    setView('dashboard');
+  const handleLogin = (session) => {
+    enterDashboard(session?.user || null, session?.token);
   };
 
-  const handleSignup = ({ user: createdUser, token }) => {
-    window.localStorage.setItem('corehr_token', token || '');
-    window.localStorage.setItem('corehr_user', JSON.stringify(createdUser));
-    setUser(createdUser);
-    setView('dashboard');
+  const handleSignup = (session) => {
+    enterDashboard(session?.user || null, session?.token);
   };
 
   const handleLogout = () => {
