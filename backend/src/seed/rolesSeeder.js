@@ -23,6 +23,10 @@ const seedRoles = async () => {
           "employee.create",
           "employee.edit",
           "employee.delete",
+          "asset.view",
+          "asset.create",
+          "asset.edit",
+          "asset.delete",
         ],
 
         isDefault: true,
