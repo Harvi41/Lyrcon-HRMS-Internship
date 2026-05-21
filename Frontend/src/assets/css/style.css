@@ -338,9 +338,17 @@ body {
   top: 16px;
   height: calc(100vh - 32px);
   overflow: auto;
+  /* Hide scrollbar but keep scrolling functionality */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
   border-radius: 18px;
   box-shadow: 0 18px 42px rgba(30, 41, 59, 0.18);
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Hide WebKit scrollbars (Chrome, Safari, Edge) for the dashboard sidebar */
+.dashboard-sidebar::-webkit-scrollbar {
+  display: none;
 }
 
 .brand-row {
