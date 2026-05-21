@@ -15,10 +15,13 @@ const authController = {
             }
 
             const roleName = String(user.role?.name || '').toLowerCase();
-            const allowedRoles = new Set(['hr', 'super admin']);
+            const allowedRoles = new Set(['hr', 'admin', 'employee', 'super admin']);
 
-            if (!allowedRoles.has(roleName)) {
-                return res.status(403).json({ message: 'Only the HR and admin accounts can access this dashboard.' });
+            // allow legacy 'super admin' as admin
+            const normalized = roleName === 'super admin' ? 'admin' : roleName;
+
+            if (!allowedRoles.has(roleName) && normalized !== 'admin') {
+                return res.status(403).json({ message: 'Only the HR, admin, and employee accounts can access this dashboard.' });
             }
 
             const isMatch = await bcrypt.compare(password, user.password);

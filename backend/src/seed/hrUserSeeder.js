@@ -15,7 +15,7 @@ const DEFAULT_USERS = [
     name: 'System Admin',
     email: 'admin@lyrcon.com',
     password: 'Admin@12345',
-    roleName: 'Super Admin',
+    roleName: 'Admin',
   },
 ];
 

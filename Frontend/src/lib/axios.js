@@ -72,4 +72,15 @@ export const createAsset = (assetData) => API.post('/assets', assetData);
 export const addAssetComment = (id, commentText) => API.post(`/assets/${id}/comment`, { comment: commentText });
 export const markAssetDamaged = (id, userId) => API.put(`/assets/${id}/damage`, { damagedBy: userId });
 
+// ==========================================
+// 🔐 ROLE MANAGEMENT ENDPOINTS
+// ==========================================
+export const getRoles = () => API.get('/roles');
+export const updateRolePermissions = (payload) => API.post('/roles/update', payload);
+
+// ==========================================
+// 👤 USER PROVISIONING ENDPOINTS
+// ==========================================
+export const createDashboardUser = (payload) => API.post('/users', payload);
+
 export default API;

@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import LoginPage from "./components/Authform/LoginPage"; 
 import HRDashboardLayout from "./components/HRDashboardLayout/HRDashboardLayout";
-import Dashboard from "./Pages/Dashboard";
+import AdminDashboardLayout from "./Pages/Admin/AdminDashboardLayout";
+import EmployeeDashboardLayout from "./Pages/Employee/EmployeeDashboardLayout";
 
-const allowedRoles = new Set(['hr', 'super admin']);
+const allowedRoles = new Set(['hr', 'admin', 'employee']);
 
 function readStoredSession() {
   const token = window.localStorage.getItem('corehr_token');
@@ -16,7 +17,11 @@ function readStoredSession() {
 
   try {
     const user = JSON.parse(rawUser);
-    const role = String(user?.role || storedRole || '').toLowerCase();
+    let role = String(user?.role || storedRole || '').toLowerCase();
+
+    if (role === 'super admin' || role === 'superadmin' || role === 'super-admin') {
+      role = 'admin';
+    }
 
     if (!allowedRoles.has(role)) {
       return null;
@@ -32,11 +37,16 @@ export default function App() {
   const [session, setSession] = useState(() => readStoredSession());
 
   const handleLoginSuccess = (authData) => {
-    const role = String(authData?.user?.role || '').toLowerCase();
+    let role = String(authData?.user?.role || '').toLowerCase();
+    if (role === 'super admin' || role === 'superadmin' || role === 'super-admin') {
+      role = 'admin';
+    }
 
     if (!allowedRoles.has(role)) {
       return;
     }
+
+    window.localStorage.setItem('corehr_role', role);
 
     setSession({
       token: authData.token,
@@ -57,7 +67,11 @@ export default function App() {
       return <HRDashboardLayout user={session.user} onLogout={handleLogout} />;
     }
 
-    return <Dashboard user={session.user} onLogout={handleLogout} />;
+    if (session.role === 'employee') {
+      return <EmployeeDashboardLayout user={session.user} onLogout={handleLogout} />;
+    }
+
+    return <AdminDashboardLayout user={session.user} onLogout={handleLogout} />;
   }
 
   return <LoginPage onLoginSuccess={handleLoginSuccess} />;
