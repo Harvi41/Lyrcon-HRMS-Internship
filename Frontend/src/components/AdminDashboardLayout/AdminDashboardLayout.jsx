@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Sidebar from './Common/Sidebar';
 import Header from './Common/Header';
-import HRDashboardHome from './MainContent/HRDashboardHome';
+import AdminDashboardHome from './MainContent/AdminDashboardHome';
 import EmployeesView from './MainContent/EmployeesView';
 import AttendanceView from './MainContent/AttendanceView';
 import LeaveView from './MainContent/LeaveView';
@@ -9,18 +9,19 @@ import PayrollView from './MainContent/PayrollView';
 import RecruitmentView from './MainContent/RecruitmentView';
 import TeamMonitoringView from './MainContent/TeamMonitoringView';
 import AnnouncementsView from './MainContent/AnnouncementsView';
-import RolesPermissionsView from './MainContent/RolesPermissionsView'; 
+import RolesPermissionsView from './MainContent/RolesPermissionsView'; // FIX 1: Uncommented this import
 import AssetsPanel from './MainContent/AssetsPanel';
-import styles from './HRDashboardLayout.module.css';
+import styles from './AdminDashboardLayout.module.css';
 
-const HRDashboardLayout = ({ user, onLogout }) => {
+const AdminDashboardLayout = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const userName = user?.name || 'HR User';
-  const avatarLetter = (userName.trim()[0] || 'H').toUpperCase();
+  const userName = user?.name || 'Admin User';
+  const avatarLetter = (userName.trim()[0] || 'A').toUpperCase();
 
   // Unified layout router dictionary
   const pageMeta = {
-    dashboard: { title: "Task & Team Monitoring", component: <HRDashboardHome /> },
+    // FIX 2: Changed <HRDashboardHome /> to <AdminDashboardHome /> to match your import statement above
+    dashboard: { title: "Task & Team Monitoring", component: <AdminDashboardHome /> },
     employees: { title: "Employee Overview", component: <EmployeesView /> },
     attendance: { title: "Attendance Analytics Hub", component: <AttendanceView /> },
     leave: { title: "Leave Management", component: <LeaveView /> },
@@ -28,7 +29,7 @@ const HRDashboardLayout = ({ user, onLogout }) => {
     recruitment: { title: "Recruitment", component: <RecruitmentView /> },
     'team-monitoring': { title: "Team Monitoring", component: <TeamMonitoringView /> },
     announcements: { title: "Announcements", component: <AnnouncementsView /> },
-    'roles-permissions': { title: "RBAC Access Control Engine", component: <RolesPermissionsView /> }, // FIXED: Added missing trailing comma here
+    'roles-permissions': { title: "RBAC Access Control Engine", component: <RolesPermissionsView /> }, 
     assets: { title: "Asset Management", component: <AssetsPanel /> }
   };
   
@@ -60,4 +61,4 @@ const HRDashboardLayout = ({ user, onLogout }) => {
   );
 };
 
-export default HRDashboardLayout;
+export default AdminDashboardLayout;
