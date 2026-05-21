@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const Role = require('../models/Role');
 const User = require('../models/User');
+const Employee = require('../models/Employee');
 
 const DEFAULT_USERS = [
   {
@@ -29,12 +30,12 @@ const seedUser = async (userSeed) => {
 
   const passwordHash = await bcrypt.hash(userSeed.password, 10);
 
-  await User.findOneAndUpdate(
+  const user = await User.findOneAndUpdate(
     { email: userSeed.email },
     {
       $set: {
         name: userSeed.name,
-        email: userSeed.email,
+        email: userSeed.email.toLowerCase(),
         password: passwordHash,
         role: role._id,
         isActive: true,
@@ -42,6 +43,49 @@ const seedUser = async (userSeed) => {
     },
     { upsert: true, new: true }
   );
+
+  // Seed the corresponding Employee discriminator document if it doesn't exist
+  let employee = await Employee.findOne({ email: userSeed.email });
+
+  if (!employee) {
+    // Determine the discriminator model to use
+    let EmployeeModel;
+    let employeeData = {
+      firstName: userSeed.name.split(' ')[0] || userSeed.key,
+      lastName: userSeed.name.split(' ').slice(1).join(' ') || 'Admin',
+      email: userSeed.email.toLowerCase(),
+      status: 'active',
+      userId: user._id,
+    };
+
+    if (userSeed.roleName === 'Super Admin') {
+      EmployeeModel = Employee.AdminEmployee;
+      employeeData.employeeCode = 'EMP-ADMIN';
+      employeeData.adminLevel = 1;
+    } else if (userSeed.roleName === 'HR') {
+      EmployeeModel = Employee.HREmployee;
+      employeeData.employeeCode = 'EMP-HR';
+      employeeData.hrSpecialization = 'Generalist';
+    } else {
+      EmployeeModel = Employee.StaffEmployee;
+      employeeData.employeeCode = `EMP-${userSeed.key}`;
+    }
+
+    employee = await EmployeeModel.create(employeeData);
+    console.log(`${userSeed.key} employee profile created`);
+  } else {
+    // If the Employee profile already exists, ensure it is linked to the User
+    if (!employee.userId) {
+      employee.userId = user._id;
+      await employee.save();
+    }
+  }
+
+  // Update the User document with the employeeId ref
+  if (!user.employeeId || !user.employeeId.equals(employee._id)) {
+    user.employeeId = employee._id;
+    await user.save();
+  }
 
   console.log(`${userSeed.key} login seeded: ${userSeed.email}`);
 };
