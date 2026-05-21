@@ -57,7 +57,6 @@ export default function AssetsPanel() {
   useEffect(() => {
     // Intentionally wrap in setTimeout or ignore to avoid strict lint rule if it's overzealous
     fetchAssets();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleInputChange = (e) => {
