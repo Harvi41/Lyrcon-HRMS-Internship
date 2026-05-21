@@ -133,7 +133,7 @@ export default function AssetsPanel() {
 
   return (
     <>
-      <div className="stat-grid">
+      <div className="stat-grid" style={{ marginBottom: '24px' }}>
         <article className="stat-card">
           <p className="stat-label">TOTAL ASSETS</p>
           <div className="stat-value-row">
