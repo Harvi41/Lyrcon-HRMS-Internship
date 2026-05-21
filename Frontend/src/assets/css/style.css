@@ -1176,3 +1176,390 @@ body {
     align-items: flex-end;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COMPREHENSIVE RESPONSIVE DESIGN - Enhanced Media Queries
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* Mobile First - Extra Small Devices (< 480px) */
+@media (max-width: 480px) {
+  html, body {
+    font-size: 14px;
+  }
+
+  /* Global */
+  * {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* Forms */
+  .input-field,
+  .input-group input,
+  .form-block input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 12px 12px;
+  }
+
+  .main-btn,
+  .ghost-btn {
+    padding: 12px 12px;
+    font-size: 14px;
+    min-height: 44px; /* iOS touch target */
+  }
+
+  /* Grid adjustments */
+  .stat-grid,
+  .attendance-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-content {
+    padding: 14px 12px;
+  }
+
+  .dashboard-topbar {
+    height: auto;
+    padding: 12px;
+  }
+
+  .dashboard-topbar h1 {
+    font-size: 1.1rem;
+  }
+
+  .hero-panel {
+    padding: 16px;
+    flex-direction: column;
+  }
+
+  .hero-title {
+    font-size: 1.2rem;
+  }
+
+  /* Tables */
+  .row {
+    grid-template-columns: 1fr;
+    padding: 12px 0;
+  }
+
+  .activity-table,
+  .attendance-table,
+  .payroll-table,
+  .role-table {
+    font-size: 13px;
+  }
+
+  /* Sidebar */
+  .dashboard-sidebar {
+    padding: 14px 12px;
+  }
+
+  .sidebar-link {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+
+  .brand-row {
+    margin-bottom: 16px;
+  }
+
+  .brand-mark {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .brand-name {
+    font-size: 1.2rem;
+  }
+
+  /* Cards */
+  .stat-card,
+  .panel {
+    padding: 14px 14px;
+  }
+
+  .stat-card h3,
+  .panel-title {
+    font-size: 0.95rem;
+  }
+
+  .stat-value {
+    font-size: 1.6rem;
+  }
+
+  /* Spacing utilities */
+  .department-row,
+  .leave-row {
+    gap: 6px;
+  }
+}
+
+/* Small Devices (480px - 640px) */
+@media (min-width: 481px) and (max-width: 640px) {
+  .dashboard-app {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .dashboard-content {
+    padding: 16px 14px;
+  }
+
+  .dashboard-topbar {
+    padding: 12px 14px;
+  }
+
+  .dashboard-topbar h1 {
+    font-size: 1.15rem;
+  }
+
+  .stat-grid,
+  .attendance-grid,
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-title {
+    font-size: 1.3rem;
+  }
+
+  .sidebar-nav {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-card,
+  .panel {
+    padding: 16px 16px;
+  }
+
+  .input-field {
+    font-size: 16px; /* Prevent zoom */
+  }
+}
+
+/* Tablets (641px - 1024px) */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .dashboard-app {
+    grid-template-columns: 1fr;
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .dashboard-sidebar {
+    height: auto;
+    position: relative;
+    top: 0;
+    border-radius: 14px;
+  }
+
+  .sidebar-nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .sidebar-link {
+    padding: 12px 14px;
+    font-size: 0.9rem;
+  }
+
+  .dashboard-topbar {
+    padding: 16px 20px;
+    height: auto;
+  }
+
+  .dashboard-topbar h1 {
+    font-size: 1.3rem;
+  }
+
+  .dashboard-content {
+    padding: 20px 20px;
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .attendance-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .split-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card,
+  .panel {
+    padding: 18px 18px;
+  }
+
+  .hero-panel {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .hero-title {
+    font-size: 1.4rem;
+  }
+
+  .roles-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .row,
+  .payroll-table .row,
+  .role-table .row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .department-row,
+  .leave-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  /* Forms on tablets */
+  .settings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Large Devices (1025px - 1440px) */
+@media (min-width: 1025px) and (max-width: 1440px) {
+  .dashboard-app {
+    grid-template-columns: 260px minmax(0, 1fr);
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .dashboard-sidebar {
+    height: calc(100vh - 32px);
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .roles-layout {
+    grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+  }
+
+  .split-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Extra Large Devices (> 1440px) */
+@media (min-width: 1441px) {
+  .dashboard-app {
+    grid-template-columns: 280px minmax(0, 1fr);
+    max-width: 1920px;
+    margin: 0 auto;
+  }
+
+  .dashboard-content {
+    max-width: 1800px;
+    margin: 0 auto;
+  }
+
+  .stat-card,
+  .panel {
+    padding: 24px 28px;
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Orientation-Specific Adjustments
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* Landscape on mobile */
+@media (max-width: 900px) and (orientation: landscape) {
+  .dashboard-sidebar {
+    height: auto;
+    max-height: 60px;
+  }
+
+  .sidebar-nav {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .dashboard-topbar {
+    height: auto;
+  }
+
+  .dashboard-content {
+    padding: 12px;
+  }
+}
+
+/* Ensure proper scrolling behavior */
+@media (max-height: 600px) {
+  .dashboard-sidebar {
+    overflow-y: auto;
+    max-height: 50vh;
+  }
+
+  .dashboard-content {
+    overflow-y: auto;
+    max-height: 50vh;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Accessibility & Print Styles
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* High DPI / Retina displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .chart-bar,
+  .stat-card,
+  .panel {
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.045);
+  }
+}
+
+/* Prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dark mode support (when available) */
+@media (prefers-color-scheme: dark) {
+  /* Maintain light theme as specified, but allow for future dark mode */
+  body {
+    background: #ffffff;
+    color: #0f172a;
+  }
+}
+
+/* Print styles */
+@media print {
+  .dashboard-sidebar,
+  .dashboard-topbar {
+    display: none;
+  }
+
+  .dashboard-app {
+    grid-template-columns: 1fr;
+    padding: 0;
+  }
+
+  .dashboard-content {
+    padding: 20px;
+  }
+
+  body {
+    background: white;
+  }
+}

@@ -1,7 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styles from '../HRDashboardLayout.module.css';
 
 const LeaveView = () => {
+  // CRUD / State Array management for leave records
+  const [leaveRequests, setLeaveRequests] = useState([
+    {
+      id: 1,
+      employee: 'Sarah Jenkins',
+      classification: 'Sick Leave (SL)',
+      chronoRange: 'Oct 24 - Oct 25',
+      status: 'Pending'
+    },
+    {
+      id: 2,
+      employee: 'Michael Ross',
+      classification: 'Casual Leave (CL)',
+      chronoRange: 'Nov 02 - Nov 03',
+      status: 'Approved' // Example of an already approved, non-clickable row
+    }
+  ]);
+
+  // Handle Approve Action Operation
+  const handleApprove = (id) => {
+    setLeaveRequests((prevRequests) =>
+      prevRequests.map((request) =>
+        request.id === id ? { ...request, status: 'Approved' } : request
+      )
+    );
+  };
+
   return (
     <div className={styles.dashboardGrid}>
       <div className={styles.chartsRow}>
@@ -49,13 +76,33 @@ const LeaveView = () => {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td><strong>Sarah Jenkins</strong></td>
-              <td>Sick Leave (SL)</td>
-              <td>Oct 24 - Oct 25</td>
-              <td><span className={`${styles.statusLabel} ${styles.statusOnboard}`}>Pending</span></td>
-              <td><button className={styles.inlineTableButton}>Approve</button></td>
-            </tr>
+            {leaveRequests.map((request) => {
+              const isApproved = request.status === 'Approved';
+              
+              return (
+                <tr key={request.id}>
+                  <td><strong>{request.employee}</strong></td>
+                  <td>{request.classification}</td>
+                  <td>{request.chronoRange}</td>
+                  <td>
+                    {/* Status badge changes color dynamically based on state */}
+                    <span className={`${styles.statusLabel} ${isApproved ? styles.statusActive : styles.statusOnboard}`}>
+                      {request.status}
+                    </span>
+                  </td>
+                  <td>
+                    {/* Button becomes disabled, visually altered, and non-clickable if Approved */}
+                    <button 
+                      className={isApproved ? styles.inlineTableButtonDisabled : styles.inlineTableButton}
+                      onClick={() => handleApprove(request.id)}
+                      disabled={isApproved}
+                    >
+                      {isApproved ? 'Approved' : 'Approve'}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

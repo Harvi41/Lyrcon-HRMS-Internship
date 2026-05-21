@@ -31,7 +31,12 @@ export default function LoginPage({ onLoginSuccess }) {
     setError('');
     
     try {
-      const { data } = await loginUser({ email, password });
+      const payload = {
+        email: email.trim().toLowerCase(),
+        password,
+      };
+
+      const { data } = await loginUser(payload);
 
       if (!data) {
         throw new Error('Unable to sign in right now.');
@@ -45,7 +50,7 @@ export default function LoginPage({ onLoginSuccess }) {
         onLoginSuccess(data);
       }
     } catch (loginError) {
-      setError(loginError.message || 'Unable to sign in right now.');
+      setError(loginError?.response?.data?.message || loginError.message || 'Unable to sign in right now.');
     } finally {
       setLoading(false);
     }

@@ -4,7 +4,7 @@ const seedRoles = async () => {
   try {
     const roles = [
       {
-        name: "Super Admin",
+        name: "Admin",
 
         description: "Full system access",
 
