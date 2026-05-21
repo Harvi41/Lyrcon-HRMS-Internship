@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import AssetsPanel from '../components/AssetsPanel';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -8,6 +9,7 @@ const navigation = [
   { key: 'attendance', label: 'Attendance' },
   { key: 'leave', label: 'Leave Management' },
   { key: 'payroll', label: 'Payroll' },
+  { key: 'assets', label: 'Asset Management' },
   { key: 'roles', label: 'Roles & Permissions' },
   { key: 'settings', label: 'Settings' },
 ];
@@ -99,6 +101,10 @@ const sectionMeta = {
   roles: {
     eyebrow: 'ACCESS GOVERNANCE',
     description: 'Inspect collections, permissions, and role mutations with confidence.',
+  },
+  assets: {
+    eyebrow: 'ASSET INVENTORY',
+    description: 'Track, assign, and manage company assets across all departments.',
   },
   settings: {
     eyebrow: 'WORKSPACE SETTINGS',
@@ -196,6 +202,7 @@ function Dashboard({ user, onLogout }) {
     attendance: 'Attendance Analytics Hub',
     leave: 'Leave Operations & Trends',
     payroll: 'Payroll Processing Pipeline',
+    assets: 'Company Asset Management',
     roles: 'RBAC Access Control Engine',
     settings: 'System Settings',
   };
@@ -506,6 +513,8 @@ function Dashboard({ user, onLogout }) {
         return renderLeave();
       case 'payroll':
         return renderPayroll();
+      case 'assets':
+        return <AssetsPanel />;
       case 'roles':
         return renderRoles();
       case 'settings':

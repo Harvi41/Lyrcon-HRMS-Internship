@@ -9,6 +9,7 @@ const assetSchema = new mongoose.Schema({
     status: { type: String, default: 'available' },
     damaged: { type: Boolean, default: false },
     damagedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    assignedTo: { type: String, trim: true, default: '' },
     comments: [{ type: String }]
 }, { timestamps: true });
 
