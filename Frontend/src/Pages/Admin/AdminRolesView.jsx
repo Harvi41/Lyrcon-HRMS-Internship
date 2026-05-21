@@ -222,23 +222,12 @@ export default function AdminRolesView() {
             onChange={(event) => setSelectedRoleName(event.target.value)}
           >
             {roleOptions.map((role) => (
-              <option key={role.name} value={getRoleKey(role)}>{role.name}</option>
-            ))}
-            <option value="custom">Custom role</option>
+                <option key={role.name} value={getRoleKey(role)}>{role.name}</option>
+              ))}
           </select>
         </div>
 
-        {selectedRoleName === 'custom' ? (
-          <div className="form-block">
-            <label>Custom role name</label>
-            <input
-              type="text"
-              value={customRoleName}
-              onChange={(event) => setCustomRoleName(event.target.value)}
-              placeholder="e.g. Manager"
-            />
-          </div>
-        ) : null}
+        {/* Custom role creation disabled temporarily */}
 
         <div className="form-block">
           <label>Selected permissions</label>

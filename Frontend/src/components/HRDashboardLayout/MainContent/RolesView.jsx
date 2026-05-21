@@ -143,7 +143,7 @@ const RolesView = () => {
               {rolesList.map((r) => (
                 <option key={r._id} value={r.name}>{r.name}</option>
               ))}
-              <option value="Custom">Custom</option>
+              {/* Custom role creation disabled temporarily */}
             </select>
           </div>
 
@@ -177,18 +177,7 @@ const RolesView = () => {
             </div>
           </div>
 
-          {selectedRole === 'Custom' && (
-            <div className={styles.inputGroup} style={{ marginTop: 12 }}>
-              <label>Custom role name</label>
-              <input
-                type="text"
-                value={customRoleName}
-                onChange={(e) => setCustomRoleName(e.target.value)}
-                className={styles.inspectorInputRead}
-                placeholder="e.g. Contractor"
-              />
-            </div>
-          )}
+          {/* Custom role creation disabled temporarily */}
 
           <div style={{ marginTop: 14 }}>
             <button onClick={handlePush} className={styles.primaryActionButtonWidth}>
