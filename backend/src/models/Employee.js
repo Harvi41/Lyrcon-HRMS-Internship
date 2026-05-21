@@ -63,6 +63,11 @@ const employeeSchema = new mongoose.Schema(
       ref: "Employee",
     },
 
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
     workLocation: {
       type: String,
       trim: true,
@@ -117,10 +122,62 @@ const employeeSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    probationStatus: {
+      type: String,
+      enum: ["Under Probation", "Confirmed", "Extended"],
+      default: "Under Probation",
+    },
+
+    performanceRating: {
+      type: Number,
+      default: 5,
+    },
   },
   {
     timestamps: true,
+    discriminatorKey: "roleType",
   },
 );
 
-module.exports = mongoose.model("Employee", employeeSchema);
+const Employee = mongoose.models.Employee || mongoose.model("Employee", employeeSchema);
+
+// Define Discriminators only if not already compiled
+if (!Employee.HR) {
+  Employee.HR = Employee.discriminator(
+    "HR",
+    new mongoose.Schema({
+      hrSpecialization: {
+        type: String,
+        default: "Generalist",
+        trim: true,
+      },
+      assignedDepartments: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+    })
+  );
+}
+
+if (!Employee.Admin) {
+  Employee.Admin = Employee.discriminator(
+    "Super Admin",
+    new mongoose.Schema({
+      adminLevel: {
+        type: Number,
+        default: 1,
+      },
+      systemAccessFlags: [
+        {
+          type: String,
+          default: "all",
+        },
+      ],
+    })
+  );
+}
+
+module.exports = Employee;
