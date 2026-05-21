@@ -43,7 +43,12 @@ const checkPermission = (requiredPermission) => {
 
 const authorizeRoles = (...allowedRoles) => {
     return (req, res, next) => {
-        const userRole = String(req.user?.roleName || req.user?.role || '').toLowerCase();
+        let userRole = String(req.user?.roleName || req.user?.role || '').toLowerCase();
+
+        // Treat legacy 'super admin' as 'admin' for compatibility
+        if (userRole === 'super admin' || userRole === 'superadmin' || userRole === 'super-admin') {
+            userRole = 'admin';
+        }
 
         if (!userRole || !allowedRoles.includes(userRole)) {
             return res.status(403).json({
