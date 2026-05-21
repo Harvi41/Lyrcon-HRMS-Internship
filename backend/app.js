@@ -11,6 +11,12 @@ const dashboardRoutes = require('./src/routes/dashboardRoutes');
 
 const app = express();
 
+const allowedOrigins = [
+	process.env.CLIENT_URL,
+	process.env.FRONTEND_URL,
+	'https://lyrcon-hrms-internship.vercel.app',
+].filter(Boolean);
+
 const startServer = async () => {
 	await connectDB();
 	await seedRoles();
@@ -27,7 +33,16 @@ startServer().catch((error) => {
 
 // Security and Parsers Middleware
 app.disable('x-powered-by');
-app.use(cors());
+app.use(cors({
+	origin: (origin, callback) => {
+		if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+			return callback(null, true);
+		}
+
+		return callback(new Error(`CORS blocked for origin: ${origin}`));
+	},
+	credentials: true,
+}));
 app.use(express.json());
 
 // Main Routing Layers
