@@ -30,7 +30,10 @@ const usersController = {
       }
 
       const normalizedRoleName = normalizeRoleName(roleName);
-      const role = await Role.findOne({ name: normalizedRoleName, isActive: true });
+      const role = await Role.findOne({
+        name: { $regex: `^${normalizedRoleName}$`, $options: 'i' },
+        isActive: true,
+      });
 
       if (!role) {
         return res.status(404).json({ message: `Role '${normalizedRoleName}' not found or inactive.` });

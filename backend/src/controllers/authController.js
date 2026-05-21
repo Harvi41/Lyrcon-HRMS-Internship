@@ -9,7 +9,14 @@ const authController = {
         try {
             const { email, password } = req.body;
 
-            const user = await User.findOne({ email }).populate('role');
+            const normalizedEmail = String(email || '').trim().toLowerCase();
+            const providedPassword = String(password || '');
+
+            if (!normalizedEmail || !providedPassword) {
+                return res.status(400).json({ message: 'Email and password are required.' });
+            }
+
+            const user = await User.findOne({ email: normalizedEmail }).populate('role');
             if (!user || !user.isActive) {
                 return res.status(400).json({ message: 'Invalid email or password' });
             }
@@ -24,7 +31,7 @@ const authController = {
                 return res.status(403).json({ message: 'Only the HR, admin, and employee accounts can access this dashboard.' });
             }
 
-            const isMatch = await bcrypt.compare(password, user.password);
+            const isMatch = await bcrypt.compare(providedPassword, user.password);
             if (!isMatch) {
                 return res.status(400).json({ message: 'Invalid email or password' });
             }
