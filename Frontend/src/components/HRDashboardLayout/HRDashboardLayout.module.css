@@ -1072,4 +1072,277 @@
   .chartContainer {
     padding: 24px 28px;
   }
+}/* ==========================================================================
+   Modal Structures
+   ========================================================================== */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.modalContent {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  width: 90%;
+  max-width: 650px;
+  max-height: 90vh;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+  position: relative;
+}
+
+.modalContentSuccess {
+  max-width: 500px;
+  text-align: center;
+  padding: 40px 30px;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.modalHeader h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #64748b;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.closeButton:hover {
+  color: #0f172a;
+}
+
+/* Modal Form Styles */
+.formSection {
+  margin-bottom: 24px;
+}
+
+.formSectionTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4338ca;
+  margin-bottom: 16px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroup.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.formLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.formInput,
+.formSelect {
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #0f172a;
+  background-color: #ffffff;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.formInput:focus,
+.formSelect:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 32px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 20px;
+}
+
+.btnCancel {
+  padding: 10px 20px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btnCancel:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.btnSubmit {
+  padding: 10px 20px;
+  border: none;
+  background: #4f46e5;
+  color: #ffffff;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btnSubmit:hover {
+  background: #4338ca;
+}
+
+/* Success Modal Specifics */
+.successIcon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid #22c55e;
+  color: #22c55e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin: 0 auto 20px;
+}
+
+.successTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1e1b4b;
+  margin-bottom: 8px;
+}
+
+.successSubtitle {
+  font-size: 0.95rem;
+  color: #334155;
+  margin-bottom: 24px;
+}
+
+.successDetailsCard {
+  border: 1px solid #312e81;
+  border-radius: 8px;
+  text-align: left;
+  margin-bottom: 32px;
+  overflow: hidden;
+}
+
+.successDetailsHeader {
+  display: flex;
+  border-bottom: 1px solid #312e81;
+}
+
+.successDetailsColumn {
+  flex: 1;
+  padding: 16px;
+}
+.successDetailsColumn + .successDetailsColumn {
+  border-left: 1px solid #312e81;
+}
+
+.successLabel {
+  font-size: 0.8rem;
+  color: #475569;
+  margin-bottom: 4px;
+}
+
+.successValue {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #000000;
+}
+
+.successDetailsBody {
+  padding: 16px;
+  background: #ffffff;
+}
+
+.successDetailRow {
+  display: flex;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+.successDetailRow:last-child {
+  margin-bottom: 0;
+}
+
+.successDetailRow strong {
+  color: #000000;
+  margin-right: 8px;
+  min-width: 160px;
+  font-weight: 700;
+}
+
+.successActions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.successActions > button {
+  flex: 1;
+  max-width: 200px;
+  padding: 12px 20px;
+}
+
+.btnPrimary {
+  border: none;
+  background: #3730a3;
+  color: #ffffff;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.btnPrimary:hover {
+  background: #312e81;
+}
+
+.btnOutline {
+  border: 1px solid #3730a3;
+  background: #ffffff;
+  color: #3730a3;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.btnOutline:hover {
+  background: #f8fafc;
 }
