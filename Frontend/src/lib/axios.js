@@ -1,11 +1,28 @@
 ﻿import axios from 'axios';
 
-// Create a reusable Axios instance targeting your backend port
+// Get API base URL from environment variables
+// Falls back to localhost:5000 if not defined
+const getBaseURL = () => {
+    const baseURL = import.meta.env.VITE_API_BASE_URL;
+    
+    if (!baseURL) {
+        console.warn(
+            '⚠️ VITE_API_BASE_URL is not defined. Falling back to http://localhost:5000'
+        );
+        return 'http://localhost:5000';
+    }
+    
+    console.log(`✅ Using API Base URL: ${baseURL}`);
+    return baseURL;
+};
+
+// Create a reusable Axios instance targeting your backend
 const API = axios.create({
-    baseURL: `${import.meta.env.VITE_API_BASE_URL}/api`,
+    baseURL: `${getBaseURL()}/api`,
     headers: {
         'Content-Type': 'application/json',
     },
+    timeout: 10000, // 10 seconds timeout
 });
 
 // Interceptor: Automatically injects the JWT token from localStorage before any request flies out
@@ -18,6 +35,21 @@ API.interceptors.request.use((config) => {
 }, (error) => {
     return Promise.reject(error);
 });
+
+// Interceptor: Handle response errors
+API.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // Clear session on unauthorized
+            localStorage.removeItem('corehr_token');
+            localStorage.removeItem('corehr_user');
+            localStorage.removeItem('corehr_role');
+            window.location.href = '/';
+        }
+        return Promise.reject(error);
+    }
+);
 
 // ==========================================
 // 🔐 AUTHENTICATION ENDPOINTS 

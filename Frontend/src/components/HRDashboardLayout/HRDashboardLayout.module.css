@@ -748,3 +748,328 @@
   border-color: #4f46e5;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   9. RESPONSIVE DESIGN - Mobile First Approach
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* Mobile Devices (< 640px) */
+@media (max-width: 640px) {
+  /* Layout */
+  .layoutContainer {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    padding: 12px 0;
+    height: auto;
+    max-height: 80px;
+    overflow-x: auto;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+  }
+
+  .logoContainer {
+    gap: 8px;
+    padding: 0 16px;
+    margin-bottom: 0;
+    min-width: fit-content;
+  }
+
+  .logoIcon {
+    width: 24px;
+    height: 24px;
+    font-size: 0.9rem;
+  }
+
+  .logoText {
+    font-size: 1rem;
+  }
+
+  .menuSection {
+    display: flex;
+    padding: 0;
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    flex: 1;
+  }
+
+  .menuTitle {
+    display: none;
+  }
+
+  .menuList {
+    display: flex;
+    gap: 0;
+    width: 100%;
+  }
+
+  .menuItem {
+    margin-bottom: 0;
+    min-width: fit-content;
+  }
+
+  .sidebarMenuButton {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    border-radius: 8px;
+  }
+
+  /* Header */
+  .topHeader {
+    height: 60px;
+    padding: 0 16px;
+    flex-wrap: wrap;
+  }
+
+  .pageTitle {
+    font-size: 1rem;
+    order: 1;
+    width: 100%;
+  }
+
+  .userInfo {
+    order: 2;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .userName {
+    display: none;
+  }
+
+  .userAvatar {
+    width: 30px;
+    height: 30px;
+    font-size: 0.9rem;
+  }
+
+  .logoutButton {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+
+  /* Content */
+  .mainWrapper {
+    flex: 1;
+  }
+
+  .contentArea {
+    padding: 16px;
+  }
+
+  /* Grid layouts */
+  .metricsRow {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .chartsRow {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .metricCard {
+    padding: 16px;
+  }
+
+  .metricCard h3 {
+    font-size: 0.7rem;
+    margin-bottom: 10px;
+  }
+
+  .metricValue {
+    font-size: 1.5rem;
+  }
+
+  .chartContainer {
+    padding: 16px;
+  }
+
+  .chartContainer h3 {
+    font-size: 0.95rem;
+    margin-bottom: 16px;
+  }
+
+  .chartPlaceholder {
+    height: 200px;
+  }
+
+  /* Depts metrics */
+  .deptMetricRow {
+    grid-template-columns: 80px 1fr 30px;
+    gap: 12px;
+  }
+
+  .deptName {
+    font-size: 0.85rem;
+  }
+
+  /* Table */
+  .activityTable {
+    font-size: 0.85rem;
+    border-radius: 8px;
+  }
+
+  .activityTable th,
+  .activityTable td {
+    padding: 12px;
+    font-size: 0.8rem;
+  }
+
+  /* Action bars */
+  .actionFilterBar {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .filterInput {
+    width: 100%;
+  }
+
+  /* Buttons */
+  .primaryActionButton {
+    padding: 9px 16px;
+    font-size: 0.85rem;
+  }
+
+  .primaryActionButtonWidth {
+    width: 100%;
+  }
+}
+
+/* Tablets (640px - 1024px) */
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* Layout */
+  .layoutContainer {
+    flex-direction: row;
+  }
+
+  .sidebar {
+    width: 200px;
+    padding: 16px 0;
+  }
+
+  .logoContainer {
+    padding: 0 16px;
+  }
+
+  .menuSection {
+    padding: 0 12px;
+  }
+
+  .sidebarMenuButton {
+    padding: 9px 14px;
+    font-size: 0.85rem;
+  }
+
+  /* Header */
+  .topHeader {
+    height: 64px;
+    padding: 0 20px;
+  }
+
+  .pageTitle {
+    font-size: 1.1rem;
+  }
+
+  .userInfo {
+    gap: 12px;
+  }
+
+  .userName {
+    display: block;
+    font-size: 0.9rem;
+  }
+
+  /* Content */
+  .contentArea {
+    padding: 20px;
+  }
+
+  /* Grid layouts */
+  .metricsRow {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .chartsRow {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .metricCard {
+    padding: 18px 20px;
+  }
+
+  .chartContainer {
+    padding: 18px 20px;
+  }
+
+  /* Table */
+  .activityTable {
+    font-size: 0.9rem;
+  }
+
+  .activityTable th,
+  .activityTable td {
+    padding: 14px;
+    font-size: 0.85rem;
+  }
+
+  /* Action bars */
+  .actionFilterBar {
+    flex-direction: row;
+    gap: 12px;
+  }
+
+  .filterInput {
+    width: auto;
+  }
+}
+
+/* Large Devices (> 1024px) */
+@media (min-width: 1025px) {
+  /* Layout - Default desktop styles already applied */
+  .layoutContainer {
+    flex-direction: row;
+  }
+
+  .sidebar {
+    width: 274px;
+    padding: 20px 0;
+  }
+
+  .contentArea {
+    padding: 28px;
+  }
+
+  /* Grid layouts - Default 3 columns */
+  .metricsRow {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .chartsRow {
+    grid-template-columns: 2fr 1.25fr;
+  }
+}
+
+/* Extra large displays (> 1440px) */
+@media (min-width: 1441px) {
+  .contentArea {
+    padding: 32px;
+    max-width: 1800px;
+    margin: 0 auto;
+  }
+
+  .metricCard {
+    padding: 24px 28px;
+  }
+
+  .chartContainer {
+    padding: 24px 28px;
+  }
+}
