@@ -14,7 +14,10 @@ exports.createAsset = async (req, res) => {
 
 exports.listAssets = async (req, res) => res.json(await Asset.find().populate('damagedBy', 'name email'));
 exports.getAssetById = async (req, res) => res.json(await Asset.findById(req.params.id).populate('damagedBy', 'name email'));
-exports.updateAsset = async (req, res) => res.json(await Asset.findByIdAndUpdate(req.params.id, req.body, { new: true }));
+exports.updateAsset = async (req, res) => {
+    const updated = await Asset.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('damagedBy', 'name email');
+    res.json(updated);
+};
 exports.deleteAsset = async (req, res) => res.json(await Asset.findByIdAndDelete(req.params.id));
 exports.addComment = async (req, res) => res.json(await Asset.findByIdAndUpdate(req.params.id, { $push: { comments: clean(req.body.comment) } }, { new: true }));
 exports.markDamaged = async (req, res) => res.json(await Asset.findByIdAndUpdate(req.params.id, { damaged: true, damagedBy: req.body.damagedBy, status: 'damaged' }, { new: true }));

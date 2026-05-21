@@ -13,6 +13,7 @@ import AdminPayrollView from './AdminPayrollView';
 import AdminRolesView from './AdminRolesView';
 import AdminSettingsView from './AdminSettingsView';
 import AdminUsersView from './AdminUsersView';
+import AssetsPanel from '../../components/AssetsPanel';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -25,6 +26,7 @@ const sectionComponents = {
   payroll: AdminPayrollView,
   roles: AdminRolesView,
   settings: AdminSettingsView,
+  assets: AssetsPanel,
 };
 
 export default function AdminDashboardLayout({ user, onLogout }) {

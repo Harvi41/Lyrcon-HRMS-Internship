@@ -5,6 +5,7 @@ export const adminNavigation = [
   { key: 'attendance', label: 'Attendance' },
   { key: 'leave', label: 'Leave Management' },
   { key: 'payroll', label: 'Payroll' },
+  { key: 'assets', label: 'Asset Management' },
   { key: 'roles', label: 'Roles & Permissions' },
   { key: 'settings', label: 'Settings' },
 ];
@@ -16,6 +17,7 @@ export const adminTitleMap = {
   attendance: 'Attendance Analytics Hub',
   leave: 'Leave Operations & Trends',
   payroll: 'Payroll Processing Pipeline',
+  assets: 'Company Asset Management',
   roles: 'RBAC Access Control Engine',
   settings: 'System Settings',
 };
@@ -44,6 +46,10 @@ export const adminSectionMeta = {
   payroll: {
     eyebrow: 'PAYROLL RUNS',
     description: 'Review monthly payouts, deductions, and execution status before release.',
+  },
+  assets: {
+    eyebrow: 'ASSET INVENTORY',
+    description: 'Track, assign, and manage company assets across all departments.',
   },
   roles: {
     eyebrow: 'ACCESS GOVERNANCE',
