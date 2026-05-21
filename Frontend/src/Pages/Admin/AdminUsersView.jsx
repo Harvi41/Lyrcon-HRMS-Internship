@@ -4,8 +4,10 @@ import { adminRoleRows } from './adminDashboardData';
 import { AdminPanel } from './AdminDashboardShared';
 
 const FALLBACK_ROLES = adminRoleRows;
+const DEFAULT_ROLE_ORDER = ['admin', 'hr', 'employee'];
 
 const normalizeRoleName = (roleName) => String(roleName || '').trim().toLowerCase();
+const isDefaultRoleKey = (roleKey) => DEFAULT_ROLE_ORDER.includes(roleKey);
 
 export default function AdminUsersView() {
   const [roles, setRoles] = useState(FALLBACK_ROLES);
@@ -34,16 +36,17 @@ export default function AdminUsersView() {
         const { data } = await getRoles();
         const apiRoles = Array.isArray(data?.roles) ? data.roles : [];
 
-        if (apiRoles.length > 0) {
-          const orderedRoles = ['Admin', 'HR', 'Employee']
-            .map((expectedName) => apiRoles.find((role) => normalizeRoleName(role.name) === expectedName.toLowerCase()) || null)
-            .filter(Boolean);
+        const defaultRoles = DEFAULT_ROLE_ORDER
+          .map((expectedRole) => apiRoles.find((role) => normalizeRoleName(role.name) === expectedRole) || null)
+          .filter(Boolean);
 
-          if (orderedRoles.length > 0) {
-            setRoles(orderedRoles);
-            setSelectedRoleName(normalizeRoleName(orderedRoles[0].name));
-            return;
-          }
+        const customRoles = apiRoles.filter((role) => !isDefaultRoleKey(normalizeRoleName(role.name)));
+        const combinedRoles = [...defaultRoles, ...customRoles];
+
+        if (combinedRoles.length > 0) {
+          setRoles(combinedRoles);
+          setSelectedRoleName(normalizeRoleName(combinedRoles[0].name));
+          return;
         }
 
         setRoles(FALLBACK_ROLES);
@@ -141,9 +144,9 @@ export default function AdminUsersView() {
             </div>
             <div className="form-block">
               <label>Role</label>
-              <select value={selectedRole?.name || 'Employee'} onChange={(event) => setSelectedRoleName(normalizeRoleName(event.target.value))}>
+              <select value={selectedRoleName} onChange={(event) => setSelectedRoleName(normalizeRoleName(event.target.value))}>
                 {roles.map((role) => (
-                  <option key={role.name} value={role.name}>{role.name}</option>
+                  <option key={role.name} value={normalizeRoleName(role.name)}>{role.name}</option>
                 ))}
               </select>
             </div>

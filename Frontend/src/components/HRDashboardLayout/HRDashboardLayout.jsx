@@ -10,6 +10,7 @@ import RecruitmentView from './MainContent/RecruitmentView';
 import TeamMonitoringView from './MainContent/TeamMonitoringView';
 import AnnouncementsView from './MainContent/AnnouncementsView';
 import RolesPermissionsView from './MainContent/RolesPermissionsView'; // Imported RBAC Page
+import AssetsPanel from '../AssetsPanel';
 import styles from './HRDashboardLayout.module.css';
 
 const HRDashboardLayout = ({ user, onLogout }) => {
@@ -28,6 +29,7 @@ const HRDashboardLayout = ({ user, onLogout }) => {
     'team-monitoring': { title: "Team Monitoring", component: <TeamMonitoringView /> },
     announcements: { title: "Announcements", component: <AnnouncementsView /> },
     'roles-permissions': { title: "RBAC Access Control Engine", component: <RolesPermissionsView /> } 
+    assets: { title: "Asset Management", component: <AssetsPanel /> },
   };
   
   const currentPage = pageMeta[activeTab] || pageMeta.dashboard;

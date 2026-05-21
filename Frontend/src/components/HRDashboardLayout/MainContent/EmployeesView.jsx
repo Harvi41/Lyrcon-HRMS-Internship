@@ -7,6 +7,8 @@ import DeleteEmployeeWizard from './DeleteEmployeeWizard';
 const EmployeesView = () => {
   // 1. DYNAMIC DATA SOURCE STATE ARRAY (Core Personnel Matrix)
   const [employeeDataList, setEmployeeDataList] = useState([
+const EmployeesView = ({ initialEmployees = [] }) => {
+  const [employeeDataList, setEmployeeDataList] = useState(initialEmployees && initialEmployees.length > 0 ? initialEmployees : [
     { id: 'EMP-1001', name: 'Prince Ghevariya', email: 'prince@company.com', dept: 'Engineering', role: 'Lead Systems Architect', status: 'Active' },
     { id: 'EMP-1042', name: 'Nidhish Zala', email: 'nidhish@company.com', dept: 'Engineering', role: 'Software Dev Intern', status: 'Onboarding' },
     { id: 'EMP-1002', name: 'Sarah Jenkins', email: 'sarah@company.com', dept: 'Human Resources', role: 'HR Lead Coordinator', status: 'Active' }
@@ -98,6 +100,12 @@ const EmployeesView = () => {
       emp.role.toLowerCase().includes(query)
     );
   });
+  // update local state when parent provides new employee list
+  React.useEffect(() => {
+    if (initialEmployees && initialEmployees.length > 0) {
+      setEmployeeDataList(initialEmployees);
+    }
+  }, [initialEmployees]);
 
   return (
     <div className={styles.dashboardGrid}>

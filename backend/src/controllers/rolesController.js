@@ -10,7 +10,7 @@ const DEFAULT_ROLES = [
   {
     name: 'HR',
     description: 'Human Resource Manager',
-    permissions: ['employee.view', 'employee.create', 'employee.edit', 'employee.delete'],
+    permissions: ['employee.view', 'employee.create', 'employee.edit', 'employee.delete', 'asset.view', 'asset.create', 'asset.edit', 'asset.delete'],
     isDefault: true,
   },
   {
@@ -64,6 +64,7 @@ const rolesController = {
     try {
       const roles = await Role.find({}).select('name permissions isActive createdAt updatedAt');
       const roleMap = new Map(roles.map((role) => [String(role.name || '').trim().toLowerCase(), role]));
+      const customRoles = roles.filter((role) => !['admin', 'hr', 'employee'].includes(String(role.name || '').trim().toLowerCase()));
 
       const mergedRoles = DEFAULT_ROLES.map((defaultRole) => {
         const existingRole = roleMap.get(defaultRole.name.toLowerCase());
@@ -75,7 +76,7 @@ const rolesController = {
         return defaultRole;
       });
 
-      return res.status(200).json({ roles: mergedRoles });
+      return res.status(200).json({ roles: [...mergedRoles, ...customRoles] });
     } catch (error) {
       console.error('roles.listRoles error:', error);
       return res.status(500).json({ message: 'Server error listing roles', error: error.message });

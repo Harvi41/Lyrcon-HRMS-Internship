@@ -9,20 +9,12 @@ const DEFAULT_ROLE_ORDER = ['admin', 'hr', 'employee'];
 const getRoleKey = (role) => String(role?.name || '').trim().toLowerCase();
 
 const getFallbackRole = (roleKey) => FALLBACK_ROLES.find((role) => getRoleKey(role) === roleKey) || null;
-
-const normalizeRole = (role) => {
-  const roleName = getRoleKey(role);
-
-  if (roleName === 'admin' || roleName === 'hr' || roleName === 'employee') {
-    return roleName;
-  }
-
-  return 'employee';
-};
+const isDefaultRoleKey = (roleKey) => DEFAULT_ROLE_ORDER.includes(roleKey);
 
 export default function AdminRolesView() {
   const [roles, setRoles] = useState(FALLBACK_ROLES);
   const [selectedRoleName, setSelectedRoleName] = useState('admin');
+  const [customRoleName, setCustomRoleName] = useState('');
   const [draftPermissions, setDraftPermissions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -30,9 +22,28 @@ export default function AdminRolesView() {
   const [error, setError] = useState('');
 
   const selectedRole = useMemo(
-    () => roles.find((role) => normalizeRole(role) === selectedRoleName) || roles[0],
+    () => roles.find((role) => getRoleKey(role) === selectedRoleName) || null,
     [roles, selectedRoleName],
   );
+
+  const roleOptions = useMemo(() => {
+    const orderedRoles = [...roles].sort((left, right) => {
+      const leftKey = getRoleKey(left);
+      const rightKey = getRoleKey(right);
+      const leftIndex = DEFAULT_ROLE_ORDER.indexOf(leftKey);
+      const rightIndex = DEFAULT_ROLE_ORDER.indexOf(rightKey);
+
+      if (leftIndex !== -1 || rightIndex !== -1) {
+        if (leftIndex === -1) return 1;
+        if (rightIndex === -1) return -1;
+        return leftIndex - rightIndex;
+      }
+
+      return left.name.localeCompare(right.name);
+    });
+
+    return orderedRoles;
+  }, [roles]);
 
   useEffect(() => {
     const loadRoles = async () => {
@@ -52,10 +63,14 @@ export default function AdminRolesView() {
           return getFallbackRole(expectedRole);
         }).filter(Boolean);
 
-        if (mergedRoles.length > 0) {
-          setRoles(mergedRoles);
-          const firstRole = mergedRoles[0];
-          setSelectedRoleName(normalizeRole(firstRole));
+        const customRoles = apiRoles.filter((role) => !isDefaultRoleKey(getRoleKey(role)));
+        const combinedRoles = [...mergedRoles, ...customRoles];
+
+        if (combinedRoles.length > 0) {
+          setRoles(combinedRoles);
+          const firstRole = combinedRoles[0];
+          setSelectedRoleName(getRoleKey(firstRole));
+          setCustomRoleName('');
           setDraftPermissions([...(firstRole.permissions || [])]);
           setMessage(apiRoles.length > 0 ? '' : 'Loaded default Admin, HR, and Employee roles.');
           return;
@@ -63,11 +78,13 @@ export default function AdminRolesView() {
 
         setRoles(FALLBACK_ROLES);
         setSelectedRoleName('admin');
+        setCustomRoleName('');
         setDraftPermissions([...(FALLBACK_ROLES[0]?.permissions || [])]);
         setMessage('Loaded default Admin, HR, and Employee roles.');
       } catch (loadError) {
         setRoles(FALLBACK_ROLES);
         setSelectedRoleName('admin');
+        setCustomRoleName('');
         setDraftPermissions([...(FALLBACK_ROLES[0]?.permissions || [])]);
         setMessage('Loaded default Admin, HR, and Employee roles.');
         setError(loadError?.response?.data?.message || '');
@@ -82,8 +99,14 @@ export default function AdminRolesView() {
   useEffect(() => {
     if (selectedRole) {
       setDraftPermissions([...(selectedRole.permissions || [])]);
+      setCustomRoleName('');
+      return;
     }
-  }, [selectedRole]);
+
+    if (selectedRoleName === 'custom') {
+      setDraftPermissions([]);
+    }
+  }, [selectedRole, selectedRoleName]);
 
   const togglePermission = (permission) => {
     setDraftPermissions((current) => {
@@ -97,6 +120,13 @@ export default function AdminRolesView() {
 
   const handleSave = async () => {
     if (!selectedRole) {
+      if (selectedRoleName !== 'custom') {
+        return;
+      }
+    }
+
+    if (selectedRoleName === 'custom' && !customRoleName.trim()) {
+      setError('Enter a custom role name before saving.');
       return;
     }
 
@@ -106,24 +136,41 @@ export default function AdminRolesView() {
 
     try {
       const payload = {
-        role: normalizeRole(selectedRole),
+        role: selectedRoleName === 'custom' ? 'custom' : (selectedRole?.name || 'Employee'),
         permissions: draftPermissions,
       };
+
+      if (selectedRoleName === 'custom' && customRoleName.trim()) {
+        payload.customName = customRoleName.trim();
+      }
 
       const { data } = await updateRolePermissions(payload);
       const updatedRole = data?.role;
 
       if (updatedRole) {
-        setRoles((current) => current.map((role) => {
-          if (normalizeRole(role) === normalizeRole(updatedRole)) {
-            return updatedRole;
+        setRoles((current) => {
+          const updatedRoleKey = getRoleKey(updatedRole);
+          const existingIndex = current.findIndex((role) => getRoleKey(role) === updatedRoleKey);
+
+          if (existingIndex === -1) {
+            return [...current, updatedRole];
           }
 
-          return role;
-        }));
+          return current.map((role) => {
+            if (getRoleKey(role) === updatedRoleKey) {
+              return updatedRole;
+            }
+
+            return role;
+          });
+        });
+
+        setSelectedRoleName(getRoleKey(updatedRole));
+        setCustomRoleName('');
+        setDraftPermissions([...(updatedRole.permissions || draftPermissions)]);
       }
 
-      setMessage(`${selectedRole.name} permissions updated successfully.`);
+      setMessage(`${selectedRole?.name || customRoleName || 'Custom role'} permissions updated successfully.`);
     } catch (saveError) {
       setError(saveError?.response?.data?.message || 'Unable to update role permissions.');
     } finally {
@@ -141,7 +188,7 @@ export default function AdminRolesView() {
             <span>Permissions</span>
           </div>
           {roles.map((role) => {
-            const roleKey = normalizeRole(role);
+            const roleKey = getRoleKey(role);
             const isSelected = selectedRoleName === roleKey;
 
             return (
@@ -169,8 +216,35 @@ export default function AdminRolesView() {
 
       <AdminPanel title="Schema Mutation Inspector" className="roles-panel inspector-panel">
         <div className="form-block">
-          <label>Collection Target name</label>
-          <input type="text" readOnly value={selectedRole?.name || 'Admin'} />
+          <label>Role selector</label>
+          <select
+            value={selectedRoleName}
+            onChange={(event) => setSelectedRoleName(event.target.value)}
+          >
+            {roleOptions.map((role) => (
+              <option key={role.name} value={getRoleKey(role)}>{role.name}</option>
+            ))}
+            <option value="custom">Custom role</option>
+          </select>
+        </div>
+
+        {selectedRoleName === 'custom' ? (
+          <div className="form-block">
+            <label>Custom role name</label>
+            <input
+              type="text"
+              value={customRoleName}
+              onChange={(event) => setCustomRoleName(event.target.value)}
+              placeholder="e.g. Manager"
+            />
+          </div>
+        ) : null}
+
+        <div className="form-block">
+          <label>Selected permissions</label>
+          <p className="muted-label">
+            {(draftPermissions.length > 0 ? draftPermissions : selectedRole?.permissions || []).join(', ') || 'No permissions selected.'}
+          </p>
         </div>
 
         {loading ? <p className="muted-label">Loading roles...</p> : null}
