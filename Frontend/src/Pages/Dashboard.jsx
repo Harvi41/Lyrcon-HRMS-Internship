@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://lyrcon-hrms-internship.onrender.com';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const navigation = [
   { key: 'dashboard', label: 'Dashboard' },
