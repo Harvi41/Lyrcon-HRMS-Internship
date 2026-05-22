@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import LoginPage from "./components/Authform/LoginPage"; 
+import ResetPasswordPage from "./components/Authform/ResetPasswordPage";
 import HRDashboardLayout from "./components/HRDashboardLayout/HRDashboardLayout";
 import AdminDashboardLayout from "./components/AdminDashboardLayout/AdminDashboardLayout"; 
 //import EmployeeDashboardLayout from "./Pages/Employee/EmployeeDashboardLayout";
@@ -44,6 +45,10 @@ function readStoredSession() {
 
 export default function App() {
   const [session, setSession] = useState(() => readStoredSession());
+  const [resetToken, setResetToken] = useState(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    return queryParams.get('token');
+  });
 
   const handleLoginSuccess = (authData) => {
     // 1. Core safety check for incoming payloads
@@ -79,6 +84,21 @@ export default function App() {
     window.localStorage.removeItem('corehr_role');
     setSession(null);
   };
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PASSWORD RESET INTERCEPT ROUTER
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (resetToken) {
+    return (
+      <ResetPasswordPage 
+        token={resetToken} 
+        onComplete={() => {
+          window.history.replaceState({}, document.title, '/');
+          setResetToken(null);
+        }} 
+      />
+    );
+  }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // ROLE-BASED DASHBOARD ROUTING ENGINE

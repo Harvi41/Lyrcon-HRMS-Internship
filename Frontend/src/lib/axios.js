@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 
 // Get API base URL from environment variables
 // Falls back to localhost:5000 if not defined
@@ -44,6 +44,8 @@ API.interceptors.response.use(
 // 🔐 AUTHENTICATION ENDPOINTS 
 // ==========================================
 export const loginUser = (credentials) => API.post('/auth/login', credentials);
+export const forgotPassword = (email) => API.post('/auth/forgot-password', { email });
+export const resetPassword = (token, newPassword) => API.post('/auth/reset-password', { token, newPassword });
 
 // ==========================================
 // 👥 EMPLOYEE ENDPOINTS
