@@ -43,7 +43,7 @@ API.interceptors.response.use(
 // 🔐 AUTHENTICATION ENDPOINTS 
 // ==========================================
 // FIXED: Removed the extra '/api' since it's already in your VITE_API_BASE_URL
-export const loginUser = (credentials) => API.post('/auth/login', credentials);
+export const loginUser = (credentials) => API.post('/api/auth/login', credentials);
 
 // ==========================================
 // 👥 EMPLOYEE ENDPOINTS
