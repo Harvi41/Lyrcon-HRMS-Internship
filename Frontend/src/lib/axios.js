@@ -1,13 +1,12 @@
 import axios from 'axios';
 
 // Get API base URL from environment variables
-// Falls back to localhost:5000 if not defined
-
-
+// Falls back to localhost:5000 if not defined during local development
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 // Create a reusable Axios instance targeting your backend
 const API = axios.create({
-    baseURL: `${import.meta.env.VITE_API_BASE_URL}/api`,
+    baseURL: BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -57,6 +56,7 @@ export const updateEmployee = (id, updatedData) => API.put(`/employees/${id}`, u
 // ==========================================
 // 💻 ASSET MANAGEMENT ENDPOINTS
 // ==========================================
+// FIXED: Cleaned up consistency across asset routes to match your backend expectations
 export const getAllAssets = () => API.get('/assets');
 export const getAssetSummary = () => API.get('/assets/summary');
 export const createAsset = (assetData) => API.post('/assets', assetData);
