@@ -1,51 +1,64 @@
+// RolesPermissionsView.jsx
 import React, { useState } from 'react';
 import styles from '../AdminDashboardLayout.module.css';
-import MutationSuccessModal from './MutationSuccessModal'; // Import the new third popup module
+import MutationSuccessModal from './MutationSuccessModal';
 
 const RolesPermissionsView = () => {
-  // 1. DYNAMIC CORE STATE DATA
+  // 1. DYNAMIC CORE STATE DATA - Mapped perfectly to match your screenshot database collection state
   const [rolesCollections, setRolesCollections] = useState([
     {
-      _id: '64f1a29b3c...',
+      _id: '64f1a29b3a1a...',
+      name: 'Admin',
+      status: 'Active',
+      permissions: ['run_payroll', 'manage_roles', 'audit_logs']
+    },
+    {
+      _id: '64f1a29b3c4f...',
       name: 'HR',
+      status: 'Active',
       permissions: ['manage_employees', 'approve_leaves', 'view_reports']
     },
     {
-      _id: '64f1a29b7f...',
-      name: 'Engineering',
-      permissions: ['view_reports']
-    },
-    {
-      _id: '64f1a29c1a...',
-      name: 'Finance',
-      permissions: ['view_reports', 'run_payroll']
+      _id: '64f1a29c1a7f...',
+      name: 'Employee',
+      status: 'Active',
+      permissions: ['employee.view_self']
     }
   ]);
 
+  // Comprehensive 11-row permutation checkbox collection matching your second screen captures
   const availablePermissions = [
-    'manage_employees',
-    'approve_leaves',
-    'view_reports',
-    'run_payroll'
+    { label: 'Full access (* wildcard)', value: 'all' },
+    { label: 'View employees', value: 'view_employees' },
+    { label: 'Create employees', value: 'create_employees' },
+    { label: 'Edit employees', value: 'edit_employees' },
+    { label: 'Delete employees', value: 'delete_employees' },
+    { label: 'View own profile', value: 'employee.view_self' },
+    { label: 'Approve leaves', value: 'approve_leaves' },
+    { label: 'View reports', value: 'view_reports' },
+    { label: 'Run payroll', value: 'run_payroll' },
+    { label: 'Manage roles', value: 'manage_roles' },
+    { label: 'Audit logs', value: 'audit_logs' },
+    { label: 'Manage employees', value: 'manage_employees' }
   ];
 
   // 2. ACTIVE ROW TRACKING & POPUP VISIBILITY STATES
-  const [activeRoleName, setActiveRoleName] = useState('HR');
+  const [activeRoleName, setActiveRoleName] = useState('Employee');
   const [isMutationModalOpen, setIsMutationModalOpen] = useState(false);
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false); // Third popup state toggle
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
-  // Derives the currently selected database profile row automatically from state parameters
-  const activeRoleRecord = rolesCollections.find(role => role.name === activeRoleName) || rolesCollections[0];
+  // Derives active dataset item configuration smoothly
+  const activeRoleRecord = rolesCollections.find(role => role.name === activeRoleName) || rolesCollections[2];
 
   // 3. REACTIVE MUTATION ARRAY CONTROLLERS
-  const handleTogglePermissionString = (permissionToken) => {
+  const handleTogglePermissionString = (permissionValue) => {
     setRolesCollections(prevList =>
       prevList.map(role => {
         if (role.name === activeRoleRecord.name) {
-          const holdsTokenAlready = role.permissions.includes(permissionToken);
+          const holdsTokenAlready = role.permissions.includes(permissionValue);
           const alteredTokens = holdsTokenAlready
-            ? role.permissions.filter(p => p !== permissionToken)
-            : [...role.permissions, permissionToken];
+            ? role.permissions.filter(p => p !== permissionValue)
+            : [...role.permissions, permissionValue];
           
           return { ...role, permissions: alteredTokens };
         }
@@ -59,30 +72,30 @@ const RolesPermissionsView = () => {
     setIsMutationModalOpen(true);
   };
 
-  // Step 2 to Step 3 Sequential Modal Handshake Link
   const handleExecuteDatabaseMutation = () => {
-    setIsMutationModalOpen(false); // Close staging review panel
-    setIsSuccessModalOpen(true);    // Instantly cascade open the new custom success notification
+    setIsMutationModalOpen(false);
+    setIsSuccessModalOpen(true);
   };
 
   return (
     <div className={styles.dashboardGrid}>
       
-      {/* Main Splits Frame Container Layout */}
-      <div className={styles.chartsRow} style={{ marginTop: '10px', alignItems: 'flex-start', gap: '24px' }}>
+      {/* ── Main Splits Frame Container Layout (REMOVED REDUNDANT INNER HEADER BANNER) ── */}
+      <div className={styles.chartsRow} style={{ alignItems: 'flex-start', gap: '24px', marginTop: '10px' }}>
         
         {/* LEFT CARD COLUMN: Active Database Collections Tracker Grid */}
-        <div className={styles.chartContainer} style={{ flex: 1.6, minHeight: '520px' }}>
-          <h3 style={{ marginBottom: '20px', color: '#0f172a', fontWeight: '600' }}>Active Database Collections</h3>
+        <div className={styles.chartContainer} style={{ flex: 1.5, minHeight: '520px' }}>
+          <h3 style={{ marginBottom: '20px', color: '#0f172a', fontWeight: '700', fontSize: '1rem' }}>
+            Active Database Collections
+          </h3>
           
           <div className={styles.activityStream} style={{ boxShadow: 'none', padding: 0, border: 'none', marginTop: 0 }}>
-            <table className={styles.activityTable}>
+            <table className={styles.activityTable} style={{ border: '1px solid #cbd5e1' }}>
               <thead>
                 <tr>
-                  <th style={{ color: '#64748b', fontSize: '0.8rem', letterSpacing: '0.02em' }}>_id OBJECT</th>
-                  <th style={{ color: '#64748b', fontSize: '0.8rem', letterSpacing: '0.02em' }}>name STACK</th>
-                  <th style={{ color: '#64748b', fontSize: '0.8rem', letterSpacing: '0.02em' }}>permissions ENUM MAPPING</th>
-                  <th style={{ color: '#4f46e5', fontSize: '0.8rem', textAlign: 'right' }}>STATUS</th>
+                  <th style={{ color: '#475569', fontSize: '0.78rem', fontWeight: '600', width: '120px' }}>ROLE</th>
+                  <th style={{ color: '#475569', fontSize: '0.78rem', fontWeight: '600', width: '100px' }}>STATUS</th>
+                  <th style={{ color: '#475569', fontSize: '0.78rem', fontWeight: '600' }}>PERMISSIONS</th>
                 </tr>
               </thead>
               <tbody>
@@ -91,42 +104,38 @@ const RolesPermissionsView = () => {
                   
                   return (
                     <tr 
-                      key={role._id} 
+                      key={role.name} 
                       onClick={() => setActiveRoleName(role.name)}
                       style={{ 
                         cursor: 'pointer', 
-                        backgroundColor: isSelectedRow ? '#f8fafc' : 'transparent',
-                        transition: 'background-color 0.2s ease'
+                        backgroundColor: isSelectedRow ? '#f1f5f9' : '#f8fafc',
+                        borderBottom: '2px solid #0f172a'
                       }}
                     >
-                      <td style={{ color: '#94a3b8', fontFamily: 'monospace', fontSize: '0.85rem' }}>{role._id}</td>
+                      <td style={{ color: '#64748b', fontSize: '0.88rem', fontWeight: '500', padding: '20px 16px' }}>
+                        {role.name}
+                      </td>
                       <td>
-                        <span className={styles.statusLabel} style={{ backgroundColor: '#e0e7ff', color: '#4f46e5', fontWeight: '700', padding: '4px 12px' }}>
-                          {role.name}
+                        <span style={{ color: '#16a34a', fontWeight: '700', fontSize: '0.8rem' }}>
+                          {role.status}
                         </span>
                       </td>
                       <td>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px 0' }}>
                           {role.permissions.map((perm) => (
                             <span 
                               key={perm} 
-                              className={styles.statusLabel}
-                              style={{ fontSize: '0.75rem', backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #e2e8f0', fontFamily: 'monospace' }}
+                              style={{ 
+                                fontSize: '0.82rem', 
+                                color: '#4f46e5', 
+                                fontWeight: '600', 
+                                fontFamily: 'monospace' 
+                              }}
                             >
-                              "{perm}"
+                              {perm}
                             </span>
                           ))}
-                          {role.permissions.length === 0 && (
-                            <span style={{ color: '#94a3b8', fontSize: '0.8rem', fontStyle: 'italic', paddingLeft: '4px' }}>[] empty string array</span>
-                          )}
                         </div>
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        {isSelectedRow ? (
-                          <strong style={{ color: '#4f46e5', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Selected</strong>
-                        ) : (
-                          <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>Inspect</span>
-                        )}
                       </td>
                     </tr>
                   );
@@ -138,103 +147,130 @@ const RolesPermissionsView = () => {
 
         {/* RIGHT CARD COLUMN: Schema Mutation Inspector Active Form Control */}
         <div className={styles.chartContainer} style={{ flex: 1, minHeight: '520px', display: 'flex', flexDirection: 'column' }}>
-          <h3>Schema Mutation Inspector</h3>
+          <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#0f172a', marginBottom: '16px' }}>
+            Schema Mutation Inspector
+          </h3>
           
-          <form onSubmit={handleOpenMutationWizard} style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between', marginTop: '20px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <form onSubmit={handleOpenMutationWizard} style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              {/* Role Selector Dropdown Input Block */}
               <div className={styles.inputGroup} style={{ width: '100%' }}>
-                <label style={{ fontSize: '0.85rem', color: '#475569', fontWeight: '600', marginBottom: '8px', display: 'block' }}>
-                  Collection Target name
+                <label style={{ fontSize: '0.85rem', color: '#1e293b', fontWeight: '600', marginBottom: '6px' }}>
+                  Role selector
                 </label>
-                <input 
-                  type="text" 
-                  value={`"${activeRoleRecord.name}"`}
-                  style={{ 
-                    width: '100%', padding: '12px 14px', borderRadius: '8px', border: '2px solid #4f46e5', 
-                    backgroundColor: '#ffffff', color: '#0f172a', fontWeight: '700', fontSize: '1rem', letterSpacing: '0.02em'
-                  }}
-                  readOnly 
-                />
+                <select 
+                  value={activeRoleName}
+                  onChange={(e) => setActiveRoleName(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.9rem', fontWeight: '500', background: '#ffffff', outline: 'none' }}
+                >
+                  {rolesCollections.map(r => (
+                    <option key={r.name} value={r.name}>{r.name}</option>
+                  ))}
+                </select>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '4px' }}>
-                <label style={{ fontSize: '0.85rem', color: '#475569', fontWeight: '600', marginBottom: '2px', display: 'block' }}>
-                  Mutate permissions String Array
-                </label>
-                
-                {availablePermissions.map((permissionToken) => {
-                  const hasTokenAttached = activeRoleRecord.permissions.includes(permissionToken);
-                  
-                  return (
-                    <label 
-                      key={permissionToken} 
-                      style={{ 
-                        display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', 
-                        fontSize: '0.9rem', fontWeight: '600', color: hasTokenAttached ? '#0f172a' : '#94a3b8',
-                        transition: 'color 0.2s ease', fontFamily: 'monospace'
-                      }}
-                    >
-                      <input 
-                        type="checkbox" checked={hasTokenAttached}
-                        onChange={() => handleTogglePermissionString(permissionToken)}
-                        style={{ width: '18px', height: '18px', accentColor: '#4f46e5', cursor: 'pointer', borderRadius: '4px' }}
-                      />
-                      <span>"{permissionToken}"</span>
-                    </label>
-                  );
-                })}
+              {/* Selected Permissions Tracker Value String Output Block */}
+              <div>
+                <span style={{ fontSize: '0.85rem', color: '#1e293b', fontWeight: '600', display: 'block', marginBottom: '6px' }}>
+                  Selected permissions
+                </span>
+                <div style={{ color: '#64748b', fontSize: '0.9rem', fontFamily: 'monospace', minHeight: '24px' }}>
+                  {activeRoleRecord.permissions.join(', ') || 'none'}
+                </div>
               </div>
+
+              {/* Informative Helper Alert Label Matrix */}
+              <div style={{ fontSize: '0.82rem', color: '#064e3b', fontWeight: '600', background: 'transparent', lineHeight: '1.4' }}>
+                Loaded default Admin, HR, and Employee roles.
+              </div>
+
+              {/* Checkbox Permission Tree List Container */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '4px' }}>
+                <span style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'block', marginBottom: '2px' }}>
+                  Mutate permissions String Array
+                </span>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '310px', overflowY: 'auto', paddingRight: '4px' }}>
+                  {availablePermissions.map((item) => {
+                    const isChecked = activeRoleRecord.permissions.includes(item.value);
+                    return (
+                      <label 
+                        key={item.value}
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '10px', 
+                          cursor: 'pointer',
+                          fontSize: '0.88rem', 
+                          fontWeight: isChecked ? '700' : '500', 
+                          color: '#0f172a' 
+                        }}
+                      >
+                        <input 
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => handleTogglePermissionString(item.value)}
+                          style={{ width: '16px', height: '16px', accentColor: '#2563eb', cursor: 'pointer' }}
+                        />
+                        <span>{item.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
             </div>
 
+            {/* Save Action Submit Button Element Container block */}
             <button 
-              type="submit" className={styles.primaryActionButton}
-              style={{ width: '100%', padding: '14px', backgroundColor: '#4f46e5', borderRadius: '8px', fontSize: '0.95rem', fontWeight: '600', letterSpacing: '0.02em', marginTop: '40px' }}
+              type="submit" 
+              className={styles.primaryActionButton}
+              style={{ width: '100%', padding: '12px', backgroundColor: '#2563eb', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '600', color: '#ffffff', border: 'none', cursor: 'pointer', marginTop: '24px' }}
             >
-              Push Document Update
+              Save Permissions
             </button>
           </form>
         </div>
 
       </div>
 
-      {/* ── SECOND POPUP: JSON PAYLOAD CONFIRMATION STAGING MODAL ── */}
+      {/* ── JSON PAYLOAD OVERRIDE OVERLAY CONFIRMATION STAGING MODAL ── */}
       {isMutationModalOpen && (
         <div className={styles.modalOverlay} onClick={() => setIsMutationModalOpen(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
-            <div className={styles.modalHeader}>
-              <h2>Confirm Schema Mutation</h2>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px', padding: '24px', borderRadius: '12px' }}>
+            <div className={styles.modalHeader} style={{ padding: '0 0 14px 0', marginBottom: '14px' }}>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: '700' }}>Confirm Schema Mutation</h2>
               <button className={styles.modalCloseBtn} onClick={() => setIsMutationModalOpen(false)}>&times;</button>
             </div>
 
-            <div style={{ padding: '10px 0' }}>
-              <p style={{ fontSize: '0.9rem', color: '#475569', margin: '0 0 14px 0', lineHeight: '1.5' }}>
-                You are executing a role permission array schema override mutation. This directly impacts baseline authentication endpoints.
-              </p>
+            <p style={{ fontSize: '0.88rem', color: '#475569', margin: '0 0 16px 0', lineHeight: '1.5' }}>
+              You are executing a role permission array schema override mutation for collection <strong>{activeRoleRecord.name}</strong>.
+            </p>
 
-              <div style={{ backgroundColor: '#0f172a', color: '#38bdf8', padding: '16px', borderRadius: '10px', fontFamily: 'monospace', fontSize: '0.85rem', lineHeight: '1.6', overflowX: 'auto', border: '1px solid #334155' }}>
-                <div style={{ color: '#64748b', marginBottom: '4px' }}>// Proposed MongoDB Update Payload</div>
-                <span style={{ color: '#e2e8f0' }}>{`{`}</span> <br />
-                &nbsp;&nbsp;<span style={{ color: '#f43f5e' }}>"_id"</span><span style={{ color: '#e2e8f0' }}>:</span> <span style={{ color: '#a7f3d0' }}>"{activeRoleRecord._id}"</span><span style={{ color: '#e2e8f0' }}>,</span><br />
-                &nbsp;&nbsp;<span style={{ color: '#f43f5e' }}>"collection"</span><span style={{ color: '#e2e8f0' }}>:</span> <span style={{ color: '#a7f3d0' }}>"{activeRoleRecord.name}"</span><span style={{ color: '#e2e8f0' }}>,</span><br />
-                &nbsp;&nbsp;<span style={{ color: '#f43f5e' }}>"$set"</span><span style={{ color: '#e2e8f0' }}>: {`{`}</span><br />
-                &nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#38bdf8' }}>"permissions"</span><span style={{ color: '#e2e8f0' }}>: [</span><br />
-                {activeRoleRecord.permissions.map((p, idx) => (
-                  <div key={p}>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#fbcfe8' }}>"{p}"</span>
-                    {idx < activeRoleRecord.permissions.length - 1 ? <span style={{ color: '#e2e8f0' }}>,</span> : ''}
-                  </div>
-                ))}
-                &nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#e2e8f0' }}>]</span><br />
-                &nbsp;&nbsp;<span style={{ color: '#e2e8f0' }}>{`}`}</span><br />
-                <span style={{ color: '#e2e8f0' }}>{`}`}</span>
-              </div>
+            <div style={{ backgroundColor: '#0f172a', color: '#38bdf8', padding: '16px', borderRadius: '8px', fontFamily: 'monospace', fontSize: '0.82rem', lineHeight: '1.6', overflowX: 'auto' }}>
+              <span style={{ color: '#e2e8f0' }}>{`{`}</span> <br />
+              &nbsp;&nbsp;<span style={{ color: '#f43f5e' }}>"collection"</span>: <span style={{ color: '#a7f3d0' }}>"{activeRoleRecord.name}"</span>,<br />
+              &nbsp;&nbsp;<span style={{ color: '#f43f5e' }}>"$set"</span>: <span style={{ color: '#e2e8f0' }}>{`{`}</span><br />
+              &nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#38bdf8' }}>"permissions"</span>: [<br />
+              {activeRoleRecord.permissions.map((p, idx) => (
+                <div key={p}>
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#fbcfe8' }}>"{p}"</span>
+                  {idx < activeRoleRecord.permissions.length - 1 ? <span style={{ color: '#e2e8f0' }}>,</span> : ''}
+                </div>
+              ))}
+              &nbsp;&nbsp;&nbsp;&nbsp;]<br />
+              &nbsp;&nbsp;<span style={{ color: '#e2e8f0' }}>{`}`}</span><br />
+              <span style={{ color: '#e2e8f0' }}>{`}`}</span>
             </div>
 
-            <div className={styles.modalActionButtons} style={{ marginTop: '16px' }}>
-              <button type="button" className={styles.secondaryActionButton} onClick={() => setIsMutationModalOpen(false)}>Abort</button>
+            <div className={styles.modalActionButtons} style={{ marginTop: '20px', padding: '14px 0 0 0' }}>
+              <button type="button" className={styles.btnCancel} onClick={() => setIsMutationModalOpen(false)}>Abort</button>
               <button 
-                type="button" className={styles.primaryActionButton} onClick={handleExecuteDatabaseMutation}
-                style={{ backgroundColor: '#4f46e5', padding: '10px 24px', borderRadius: '10px' }}
+                type="button" 
+                className={styles.btnSubmit} 
+                onClick={handleExecuteDatabaseMutation}
+                style={{ backgroundColor: '#2563eb', padding: '10px 20px', color: '#ffffff', borderRadius: '6px', border: 'none', fontWeight: '600', cursor: 'pointer' }}
               >
                 Commit Changes
               </button>
@@ -243,7 +279,7 @@ const RolesPermissionsView = () => {
         </div>
       )}
 
-      {/* ── THIRD POPUP: IN-APP REACTION SUCCESS NOTIFICATION ── */}
+      {/* ── IN-APP REACTION SUCCESS NOTIFICATION POPUP MOUNT ── */}
       <MutationSuccessModal 
         isOpen={isSuccessModalOpen}
         onClose={() => setIsSuccessModalOpen(false)}

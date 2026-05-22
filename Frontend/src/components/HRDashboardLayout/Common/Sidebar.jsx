@@ -9,10 +9,9 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     { label: 'Leave Management', id: 'leave' },
     { label: 'Payroll', id: 'payroll' },
     { label: 'Recruitment', id: 'recruitment' },
-    { label: 'Team Monitoring', id: 'team-monitoring' },
-    { label: 'Announcements', id: 'announcements' },
     { label: 'Roles & Permissions', id: 'roles-permissions' }, // Added mapping navigation routing node
-    { label: 'Asset Management', id: 'assets' }
+    { label: 'Asset Management', id: 'assets' },
+    { label: 'Announcements', id: 'announcements' }
   ];
 
   return (

@@ -7,7 +7,6 @@ import AttendanceView from './MainContent/AttendanceView';
 import LeaveView from './MainContent/LeaveView';
 import PayrollView from './MainContent/PayrollView';
 import RecruitmentView from './MainContent/RecruitmentView';
-import TeamMonitoringView from './MainContent/TeamMonitoringView';
 import AnnouncementsView from './MainContent/AnnouncementsView';
 import RolesPermissionsView from './MainContent/RolesPermissionsView'; 
 import AssetsPanel from './MainContent/AssetsPanel';
@@ -20,16 +19,16 @@ const HRDashboardLayout = ({ user, onLogout }) => {
 
   // Unified layout router dictionary
   const pageMeta = {
-    dashboard: { title: "Task & Team Monitoring", component: <HRDashboardHome /> },
+    dashboard: { title: "HRMS Operational Intelligence", component: <HRDashboardHome /> },
     employees: { title: "Employee Overview", component: <EmployeesView /> },
     attendance: { title: "Attendance Analytics Hub", component: <AttendanceView /> },
     leave: { title: "Leave Management", component: <LeaveView /> },
     payroll: { title: "Payroll Management", component: <PayrollView /> },
     recruitment: { title: "Recruitment", component: <RecruitmentView /> },
-    'team-monitoring': { title: "Team Monitoring", component: <TeamMonitoringView /> },
     announcements: { title: "Announcements", component: <AnnouncementsView /> },
     'roles-permissions': { title: "RBAC Access Control Engine", component: <RolesPermissionsView /> }, // FIXED: Added missing trailing comma here
-    assets: { title: "Asset Management", component: <AssetsPanel /> }
+    assets: { title: "Asset Management", component: <AssetsPanel /> },
+    announcements: { title: "Announcements", component: <AnnouncementsView /> }
   };
   
   const currentPage = pageMeta[activeTab] || pageMeta.dashboard;
