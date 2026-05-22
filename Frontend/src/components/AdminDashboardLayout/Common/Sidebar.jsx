@@ -1,26 +1,30 @@
+// Sidebar.jsx
 import React from 'react';
 import styles from '../AdminDashboardLayout.module.css';
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
+  // Synchronized item array perfectly mirroring the text labels from your layout routes
   const menuItems = [
-    { label: 'Dashboard', id: 'dashboard' },
-    { label: 'Employee Overview', id: 'employees' },
-    { label: 'Attendance Management', id: 'attendance' },
-    { label: 'Leave Management', id: 'leave' },
-    { label: 'Payroll', id: 'payroll' },
-    { label: 'Recruitment', id: 'recruitment' },
-    { label: 'Team Monitoring', id: 'team-monitoring' },
-    { label: 'Announcements', id: 'announcements' },
-    { label: 'Roles & Permissions', id: 'roles-permissions' }, // Added mapping navigation routing node
-    { label: 'Asset Management', id: 'assets' }
+    { label: 'Dashboard', id: 'Dashboard' },
+    { label: 'Users', id: 'Users' },
+    { label: 'Employees', id: 'Employees' },
+    { label: 'Attendance', id: 'Attendance' },
+    { label: 'Leave Management', id: 'Leave Management' },
+    { label: 'Payroll', id: 'Payroll' },
+    { label: 'Recruitment', id: 'Recruitment' },
+    { label: 'Team Monitoring', id: 'Team Monitoring' }, // ADDED: Directly points to your tracking view
+    { label: 'Roles & Permissions', id: 'Roles & Permissions' },
+    { label: 'Asset Management', id: 'assets' },
+    { label: 'Settings', id: 'Settings' }
   ];
 
   return (
     <nav className={styles.sidebar}>
+      
       {/* Brand Identity Branding Header */}
       <div className={styles.logoContainer}>
         <div className={styles.logoIcon}>C</div>
-        <span className={styles.logoText}>HR</span>
+        <span className={styles.logoText}>CoreHR</span>
       </div>
       
       {/* Navigation Links Routing Engine */}
@@ -29,6 +33,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         <ul className={styles.menuList}>
           {menuItems.map((item) => {
             const isActive = item.id === activeTab;
+            
             return (
               <li 
                 key={item.id} 
@@ -46,6 +51,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           })}
         </ul>
       </div>
+
     </nav>
   );
 };

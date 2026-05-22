@@ -79,15 +79,7 @@ export default function LoginPage({ onLoginSuccess }) {
           <p className={styles.subheadline}>
             Sign in to manage payroll, benefits,<br />and global team performance.
           </p>
-
-          {/* Payroll Processed Indicator Widget */}
-          <div className={styles.payrollWidget}>
-            <PayrollIcon />
-            <div className={styles.widgetText}>
-              <span className={styles.widgetTitle}>Payroll Processed</span>
-              <span className={styles.widgetSub}>All employee deposits completed.</span>
-            </div>
-          </div>
+         
         </div>
       </aside>
 

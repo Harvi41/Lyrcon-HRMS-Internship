@@ -7,7 +7,7 @@
 
 // Create a reusable Axios instance targeting your backend
 const API = axios.create({
-    baseURL: `${import.meta.env.VITE_API_BASE_URL}/api`,
+    baseURL: import.meta.env.VITE_API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },

@@ -1,3 +1,4 @@
+// LeaveView.jsx
 import React, { useState } from 'react';
 import styles from '../AdminDashboardLayout.module.css';
 
@@ -39,12 +40,10 @@ const LeaveView = () => {
   // ═══════════════════════════════════════════════════════════════════════════
   // 2. DYNAMIC ANALYTICS CALCULATIONS ENGINE
   // ═══════════════════════════════════════════════════════════════════════════
-  // Filter out approved items to represent real-time active absences
   const approvedAbsencesCount = leaveRequests.filter(r => r.status === 'Approved').length;
   const totalStaffCount = 142; 
   const computedAvailability = ((totalStaffCount - approvedAbsencesCount) / totalStaffCount * 100).toFixed(1);
 
-  // Calculate dynamic category proportions from approved records
   const approvedRecords = leaveRequests.filter(r => r.status === 'Approved');
   const totalApproved = approvedRecords.length;
 
@@ -58,53 +57,59 @@ const LeaveView = () => {
   const slPercent = getCategoryPercentage('Sick');
   const elPercent = getCategoryPercentage('Earned');
 
-  // Fallback defaults if no items are approved yet to keep charts visual
   const clDisplayWidth = totalApproved > 0 ? `${clPercent}%` : '64%';
   const slDisplayWidth = totalApproved > 0 ? `${slPercent}%` : '22%';
   const elDisplayWidth = totalApproved > 0 ? `${elPercent}%` : '14%';
 
-  // Helper mapping function to toggle CSS class tokens dynamically
+  // Maps explicitly onto your global stylesheet tokens
   const getValidationStyle = (status) => {
     switch (status) {
       case 'Approved':
-        return styles.statusActive;    // Green text and backdrop
+        return styles.badgeActive;       // Green background backdrop pill token
       case 'Rejected':
-        return styles.statusLabelRed;  // Red text and backdrop
+        return styles.statusLabelRed;    // Red background backdrop pill token
       case 'Pending':
       default:
-        return styles.statusOnboard;   // Orange text and backdrop
+        return styles.statusOnboard;     // Orange/Amber background backdrop pill token
     }
   };
 
   return (
     <div className={styles.dashboardGrid}>
+      
+      
+
       <div className={styles.chartsRow}>
         
-        {/* LEFT COMPONENT: Dynamic Monthly Leave Proportions */}
+        {/* LEFT COMPONENT: Dynamic Monthly Leave Proportions Progress Bars */}
         <div className={styles.chartContainer}>
           <h3>Monthly Leave Class Proportions</h3>
-          <div className={styles.chartPlaceholderVertical}>
-            <div className={styles.deptMetric}>
-              <span>Casual Leave (CL)</span>
-              <div className={styles.progressBar}>
-                <div style={{ width: clDisplayWidth, transition: 'width 0.3s ease' }}></div>
+          <div className={styles.chartPlaceholderVertical} style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
+            
+            <div className={styles.deptMetricRow} style={{ display: 'grid', gridTemplateColumns: '130px 1fr 40px', alignItems: 'center', gap: '16px' }}>
+              <span className={styles.deptName}>Casual Leave (CL)</span>
+              <div className={styles.progressBarContainer} style={{ height: '10px', backgroundColor: '#eef2f7', borderRadius: '9999px', overflow: 'hidden' }}>
+                <div style={{ width: clDisplayWidth, backgroundColor: '#635bff', height: '100%', borderRadius: '9999px', transition: 'width 0.3s ease' }}></div>
               </div>
-              <strong>{totalApproved > 0 ? `${clPercent}%` : '64%'}</strong>
+              <strong className={styles.deptCount}>{totalApproved > 0 ? `${clPercent}%` : '64%'}</strong>
             </div>
-            <div className={styles.deptMetric}>
-              <span>Sick Leave (SL)</span>
-              <div className={styles.progressBar}>
-                <div style={{ width: slDisplayWidth, backgroundColor: '#10b981', transition: 'width 0.3s ease' }}></div>
+            
+            <div className={styles.deptMetricRow} style={{ display: 'grid', gridTemplateColumns: '130px 1fr 40px', alignItems: 'center', gap: '16px' }}>
+              <span className={styles.deptName}>Sick Leave (SL)</span>
+              <div className={styles.progressBarContainer} style={{ height: '10px', backgroundColor: '#eef2f7', borderRadius: '9999px', overflow: 'hidden' }}>
+                <div style={{ width: slDisplayWidth, backgroundColor: '#10b981', height: '100%', borderRadius: '9999px', transition: 'width 0.3s ease' }}></div>
               </div>
-              <strong>{totalApproved > 0 ? `${slPercent}%` : '22%'}</strong>
+              <strong className={styles.deptCount}>{totalApproved > 0 ? `${slPercent}%` : '22%'}</strong>
             </div>
-            <div className={styles.deptMetric}>
-              <span>Earned Leave (EL)</span>
-              <div className={styles.progressBar}>
-                <div style={{ width: elDisplayWidth, backgroundColor: '#f59e0b', transition: 'width 0.3s ease' }}></div>
+            
+            <div className={styles.deptMetricRow} style={{ display: 'grid', gridTemplateColumns: '130px 1fr 40px', alignItems: 'center', gap: '16px' }}>
+              <span className={styles.deptName}>Earned Leave (EL)</span>
+              <div className={styles.progressBarContainer} style={{ height: '10px', backgroundColor: '#eef2f7', borderRadius: '9999px', overflow: 'hidden' }}>
+                <div style={{ width: elDisplayWidth, backgroundColor: '#f59e0b', height: '100%', borderRadius: '9999px', transition: 'width 0.3s ease' }}></div>
               </div>
-              <strong>{totalApproved > 0 ? `${elPercent}%` : '14%'}</strong>
+              <strong className={styles.deptCount}>{totalApproved > 0 ? `${elPercent}%` : '14%'}</strong>
             </div>
+
           </div>
         </div>
 
@@ -113,10 +118,10 @@ const LeaveView = () => {
           <h3>Operational Balance Metrics</h3>
           <div className={styles.operationalContainer}>
             <span className={styles.subTextEmail}>Active Absences (Today)</span>
-            <div className={styles.hugeHighlightedValue} style={{ color: '#6366f1', margin: '8px 0' }}>
+            <div className={styles.hugeHighlightedValue} style={{ color: '#5d55fa', margin: '6px 0', fontSize: '2.5rem' }}>
               {approvedAbsencesCount} {approvedAbsencesCount === 1 ? 'Employee' : 'Employees'}
             </div>
-            <div className={styles.complianceSafeBadge}>
+            <div className={styles.complianceSafeBadge} style={{ color: '#10b981', fontWeight: '600' }}>
               ✓ Staffing limits within safe thresholds ({computedAvailability}% available)
             </div>
           </div>
@@ -132,7 +137,7 @@ const LeaveView = () => {
               <th>CLASSIFICATION</th>
               <th>CHRONO RANGE</th>
               <th>STATUS VALIDATION</th>
-              <th>GOVERNANCE METRIC</th>
+              <th style={{ textAlign: 'center' }}>GOVERNANCE METRIC</th>
             </tr>
           </thead>
           <tbody>
@@ -145,33 +150,38 @@ const LeaveView = () => {
                   <td>{request.classification}</td>
                   <td>{request.chronoRange}</td>
                   <td>
-                    <span className={`${styles.statusLabel} ${getValidationStyle(request.status)}`}>
+                    {/* FIXED: Swapped statusPillBadge class for your stylesheet's native statusLabel descriptor */}
+                    <span className={`${styles.statusLabel} ${getValidationStyle(request.status)}`} style={{ display: 'inline-block', minWidth: '95px', textAlign: 'center', padding: '5px 12px', borderRadius: '12px' }}>
                       {request.status}
                     </span>
                   </td>
                   <td>
-                    {isFinalized ? (
-                      <button className={styles.inlineTableButtonDisabled} disabled>
-                        {request.status}
-                      </button>
-                    ) : (
-                      <div className={styles.rightActionButtonGroup} style={{ gap: '8px' }}>
-                        <button 
-                          className={styles.inlineTableButton} 
-                          onClick={() => handleStatusUpdate(request.id, 'Approved')}
-                          type="button"
-                        >
-                          Approve
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
+                      {isFinalized ? (
+                        <button className={styles.inlineTableButtonDisabled} style={{ padding: '6px 16px', borderRadius: '6px', fontSize: '0.85rem' }} disabled>
+                          Actioned
                         </button>
-                        <button 
-                          className={styles.dangerInlineActionButton} 
-                          onClick={() => handleStatusUpdate(request.id, 'Rejected')}
-                          type="button"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    )}
+                      ) : (
+                        <>
+                          <button 
+                            className={styles.primaryActionButton} 
+                            style={{ padding: '6px 16px', borderRadius: '6px', fontSize: '0.85rem', background: '#4f46e5', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: '600' }}
+                            onClick={() => handleStatusUpdate(request.id, 'Approved')}
+                            type="button"
+                          >
+                            Approve
+                          </button>
+                          <button 
+                            className={styles.dangerInlineActionButton} 
+                            style={{ padding: '6px 16px', borderRadius: '6px', fontSize: '0.85rem', background: '#ef4444', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: '600' }}
+                            onClick={() => handleStatusUpdate(request.id, 'Rejected')}
+                            type="button"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
