@@ -10,6 +10,7 @@ const assetRoutes = require('./src/routes/assetRoutes');
 const dashboardRoutes = require('./src/routes/dashboardRoutes');
 const rolesRoutes = require('./src/routes/rolesRoutes');
 const usersRoutes = require('./src/routes/usersRoutes');
+const leaveRoutes = require('./src/routes/leaveRoutes');
 
 const app = express();
 
@@ -80,3 +81,4 @@ app.use('/api/roles', rolesRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/assets', assetRoutes);
+app.use('/api/leaves', leaveRoutes);

@@ -15,11 +15,13 @@ const authController = {
             const providedPassword = String(password || '');
 
             if (!normalizedEmail || !providedPassword) {
+                console.log('[LOGIN FAILED] Missing email or password. Email:', email, 'Password provided?', !!password);
                 return res.status(400).json({ message: 'Email and password are required.' });
             }
 
             const user = await User.findOne({ email: normalizedEmail }).populate('role');
             if (!user || !user.isActive) {
+                console.log(`[LOGIN FAILED] User not found or inactive for email: ${normalizedEmail}`);
                 return res.status(400).json({ message: 'Invalid email or password' });
             }
 
@@ -30,11 +32,13 @@ const authController = {
             const normalized = roleName === 'super admin' ? 'admin' : roleName;
 
             if (!allowedRoles.has(roleName) && normalized !== 'admin') {
+                console.log(`[LOGIN FAILED] Role not allowed: ${roleName}`);
                 return res.status(403).json({ message: 'Only the HR, admin, and employee accounts can access this dashboard.' });
             }
 
             const isMatch = await bcrypt.compare(providedPassword, user.password);
             if (!isMatch) {
+                console.log(`[LOGIN FAILED] Password mismatch for user: ${normalizedEmail}`);
                 return res.status(400).json({ message: 'Invalid email or password' });
             }
 

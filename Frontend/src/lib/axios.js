@@ -79,4 +79,11 @@ export const updateRolePermissions = (payload) => API.post('/roles/update', payl
 // ==========================================
 export const createDashboardUser = (payload) => API.post('/users', payload);
 
+// ==========================================
+// 🏖️ LEAVE MANAGEMENT ENDPOINTS
+// ==========================================
+export const getAllLeaves = () => API.get('/leaves');
+export const applyLeave = (leaveData) => API.post('/leaves/apply', leaveData);
+export const processLeave = (id, status) => API.put(`/leaves/process/${id}`, { status });
+
 export default API;
