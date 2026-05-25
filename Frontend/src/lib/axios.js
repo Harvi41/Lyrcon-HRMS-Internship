@@ -1,22 +1,12 @@
 ﻿import axios from 'axios';
 
 // Get API base URL from environment variables
-// Falls back to localhost:5000 if not defined
-const getBaseURL = () => {
-    const baseURL = import.meta.env.VITE_API_BASE_URL;
-    
-    if (!baseURL) {
-        console.warn(
-            '⚠️ VITE_API_BASE_URL is not defined. Falling back to http://localhost:5000'
-        );
-        return 'http://localhost:5000';
-    }
-    return baseURL;
-};
+// Falls back to localhost:5000 if not defined during local development
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 // Create a reusable Axios instance targeting your backend
 const API = axios.create({
-    baseURL: `${getBaseURL()}/api`,
+    baseURL: BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -53,6 +43,8 @@ API.interceptors.response.use(
 // 🔐 AUTHENTICATION ENDPOINTS 
 // ==========================================
 export const loginUser = (credentials) => API.post('/auth/login', credentials);
+export const forgotPassword = (email) => API.post('/auth/forgot-password', { email });
+export const resetPassword = (token, newPassword) => API.post('/auth/reset-password', { token, newPassword });
 
 // ==========================================
 // 👥 EMPLOYEE ENDPOINTS
@@ -64,10 +56,22 @@ export const updateEmployee = (id, updatedData) => API.put(`/employees/${id}`, u
 // ==========================================
 // 💻 ASSET MANAGEMENT ENDPOINTS
 // ==========================================
+// FIXED: Cleaned up consistency across asset routes to match your backend expectations
 export const getAllAssets = () => API.get('/assets');
 export const getAssetSummary = () => API.get('/assets/summary');
 export const createAsset = (assetData) => API.post('/assets', assetData);
 export const addAssetComment = (id, commentText) => API.post(`/assets/${id}/comment`, { comment: commentText });
 export const markAssetDamaged = (id, userId) => API.put(`/assets/${id}/damage`, { damagedBy: userId });
+
+// ==========================================
+// 🔐 ROLE MANAGEMENT ENDPOINTS
+// ==========================================
+export const getRoles = () => API.get('/roles');
+export const updateRolePermissions = (payload) => API.post('/roles/update', payload);
+
+// ==========================================
+// 👤 USER PROVISIONING ENDPOINTS
+// ==========================================
+export const createDashboardUser = (payload) => API.post('/users', payload);
 
 export default API;

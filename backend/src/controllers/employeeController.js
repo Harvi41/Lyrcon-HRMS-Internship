@@ -54,7 +54,31 @@ exports.createEmployee = async (req, res) => {
             role: targetRole._id
         });
 
-        const newEmployee = new Employee({
+        // 5. Select the correct Mongoose Model and extract role-specific fields
+        let EmployeeModel;
+        let roleSpecificFields = {};
+
+        if (targetRole.name === 'Super Admin') {
+            EmployeeModel = Employee.Admin;
+            roleSpecificFields = {
+                adminLevel: req.body.adminLevel,
+                systemAccessFlags: req.body.systemAccessFlags
+            };
+        } else if (targetRole.name === 'HR') {
+            EmployeeModel = Employee.HR;
+            roleSpecificFields = {
+                hrSpecialization: req.body.hrSpecialization,
+                assignedDepartments: req.body.assignedDepartments
+            };
+        } else {
+            EmployeeModel = Employee; // Base model representing standard employees
+            roleSpecificFields = {
+                probationStatus: req.body.probationStatus,
+                performanceRating: req.body.performanceRating
+            };
+        }
+
+        const newEmployee = new EmployeeModel({
             userId: newUser._id, 
             employeeCode,
             firstName,
@@ -69,7 +93,8 @@ exports.createEmployee = async (req, res) => {
             managerId: managerId || null,
             workLocation,
             emergencyContact,
-            address
+            address,
+            ...roleSpecificFields
         });
 
         const savedEmployee = await newEmployee.save();

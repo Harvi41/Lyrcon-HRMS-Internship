@@ -1,11 +1,12 @@
 /* ==========================================================================
-   1. Core Layout Shell Structures
+   1. Core Layout Shell Structures (Fixed Sidebar & Far-Right Scrollbar Track)
    ========================================================================== */
 
 .layoutContainer {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;        /* Lock the dashboard layout container to viewport height */
   width: 100%;
+  overflow: hidden;     /* Disable scroll tracks on the root container background */
   font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   color: #0f172a;
   background: #eef2f7;
@@ -15,13 +16,18 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  height: 100%;         /* Restrict size inside parent viewport bounds */
+  overflow-y: auto;     /* PUSHES THE GLOBAL SCROLLBAR TO THE ABSOLUTE RIGHT WINDOW EDGE */
   background: linear-gradient(180deg, #f8fbff 0%, #eef2f7 100%);
 }
 
 .contentArea {
   flex: 1;
   padding: 28px;
-  overflow-y: auto;
+  overflow: visible;    /* Allows workspace cards to scale vertically without generating twin scrollbars */
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* ==========================================================================
@@ -30,6 +36,7 @@
 
 .sidebar {
   width: 274px;
+  height: 100%;         /* Ensure sidebar runs 100% top to bottom */
   flex-shrink: 0;
   background: linear-gradient(180deg, #201b61 0%, #1b174f 100%);
   color: #ffffff;
@@ -133,11 +140,14 @@
 }
 
 /* ==========================================================================
-   3. Application View Headers
+   3. Application View Sticky Headers
    ========================================================================== */
 
 .topHeader {
   height: 72px;
+  position: sticky;     /* Keeps the navigation line pinned during scroll operations */
+  top: 0;
+  z-index: 100;         /* Ensures header layers float above scrollable view vectors */
   background-color: #ffffff;
   border-bottom: 1px solid #e5eaf2;
   display: flex;
@@ -145,6 +155,7 @@
   justify-content: space-between;
   padding: 0 28px;
   box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+  flex-shrink: 0;       /* Restricts compression adjustments */
 }
 
 .pageTitle {
@@ -339,7 +350,6 @@
   font-weight: 500;
 }
 
-/* Department Metrics Flex Layout with Horizontal Progress Bars */
 .departmentMetricsFlex {
   display: flex;
   flex-direction: column;
@@ -408,6 +418,26 @@
   justify-content: space-between;
   font-size: 0.8rem;
   color: #94a3b8;
+}
+
+.deptMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.progressBar {
+  height: 10px;
+  background-color: #eef2f7;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progressBar div {
+  height: 100%;
+  background-color: #635bff;
+  border-radius: 9999px;
 }
 
 /* ==========================================================================
@@ -587,6 +617,18 @@
   cursor: pointer;
 }
 
+.inlineTableButtonDisabled {
+  padding: 6px 14px;
+  background-color: #cbd5e1;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: not-allowed;
+  opacity: 0.8;
+  transition: all 0.2s ease;
+}
+
 .staticDateBadge {
   padding: 10px 16px;
   background-color: white;
@@ -749,15 +791,611 @@
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   9. RESPONSIVE DESIGN - Mobile First Approach
-═══════════════════════════════════════════════════════════════════════════ */
+/* ==========================================================================
+   9. Interactive Dialog Modals Framework 
+   ========================================================================== */
 
-/* Mobile Devices (< 640px) */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeInModal 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modalContent {
+  background-color: #ffffff;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 540px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modalContentSuccess {
+  max-width: 500px;
+  text-align: center;
+  padding: 40px 30px;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+}
+
+.modalHeader h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.modalCloseBtn,
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.75rem;
+  color: #64748b;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+  transition: color 0.2s ease;
+}
+
+.modalCloseBtn:hover,
+.closeButton:hover {
+  color: #0f172a;
+}
+
+.modalForm {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formSection {
+  margin-bottom: 24px;
+}
+
+.formSectionTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4338ca;
+  margin-bottom: 16px;
+}
+
+.formGrid,
+.formRowGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroup.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.formLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.formInput,
+.formSelect,
+.modalForm select {
+  padding: 12px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #0f172a;
+  background-color: #ffffff;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.modalForm select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
+}
+
+.formInput:focus,
+.formSelect:focus,
+.modalForm select:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.modalActions,
+.modalActionButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 20px;
+}
+
+.btnCancel {
+  padding: 10px 20px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btnCancel:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.btnSubmit {
+  padding: 10px 20px;
+  border: none;
+  background: #4f46e5;
+  color: #ffffff;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btnSubmit:hover {
+  background: #4338ca;
+}
+
+/* Success Elements Specifics */
+.successIcon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid #22c55e;
+  color: #22c55e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin: 0 auto 20px;
+}
+
+.successTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1e1b4b;
+  margin-bottom: 8px;
+}
+
+.successSubtitle {
+  font-size: 0.95rem;
+  color: #334155;
+  margin-bottom: 24px;
+}
+
+.successDetailsCard {
+  border: 1px solid #312e81;
+  border-radius: 8px;
+  text-align: left;
+  margin-bottom: 32px;
+  overflow: hidden;
+}
+
+.successDetailsHeader {
+  display: flex;
+  border-bottom: 1px solid #312e81;
+}
+
+.successDetailsColumn {
+  flex: 1;
+  padding: 16px;
+}
+
+.successDetailsColumn + .successDetailsColumn {
+  border-left: 1px solid #312e81;
+}
+
+.successValue {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #000000;
+}
+
+.successDetailsBody {
+  padding: 16px;
+  background: #ffffff;
+}
+
+.successDetailRow {
+  display: flex;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.successDetailRow:last-child {
+  margin-bottom: 0;
+}
+
+.successDetailRow strong {
+  color: #000000;
+  margin-right: 8px;
+  min-width: 160px;
+  font-weight: 700;
+}
+
+.successActions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.successActions > button {
+  flex: 1;
+  max-width: 200px;
+  padding: 12px 20px;
+}
+
+.btnPrimary {
+  border: none;
+  background: #3730a3;
+  color: #ffffff;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.btnPrimary:hover {
+  background: #312e81;
+}
+
+.btnOutline {
+  border: 1px solid #3730a3;
+  background: #ffffff;
+  color: #3730a3;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.btnOutline:hover {
+  background: #f8fafc;
+}
+
+/* ==========================================================================
+   10. Sequential Secure Deletion Wizard System
+   ========================================================================== */
+
+.wizardStepBody {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+}
+
+.wizardWarningHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.warningIconCircle {
+  width: 56px;
+  height: 56px;
+  background-color: #fee2e2;
+  color: #ef4444;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  font-weight: bold;
+}
+
+.wizardSubtitleText {
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: #334155;
+  margin-bottom: 8px;
+}
+
+.wizardSubtitleText strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.wizardMutedText {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin-bottom: 24px;
+}
+
+.wizardFooterActions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.dangerActionButton {
+  padding: 12px 28px;
+  background-color: #dc2626;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.dangerActionButton:hover:not(:disabled) {
+  background-color: #b91c1c;
+}
+
+.dangerActionButton:disabled {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  border: 1px solid #e2e8f0;
+}
+
+.wizardHeaderSimple {
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.wizardHeaderSimple h2 {
+  font-size: 1.35rem;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+
+.nameTemplateTargetBox {
+  width: 100%;
+  padding: 14px;
+  background-color: #fef2f2;
+  border: 1px dashed #f87171;
+  color: #dc2626;
+  font-size: 1.15rem;
+  font-weight: 700;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  letter-spacing: 0.02em;
+}
+
+.inputValidMatch {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+}
+
+.inputInvalidMatch:focus {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+}
+
+.modalCloseTopCornerBtn {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.modalCloseTopCornerBtn:hover {
+  color: #475569;
+}
+
+.wizardSuccessHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+.successIconCircle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: #fef2f2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fee2e2;
+}
+
+.successTitleLabel {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #991b1b;
+  margin: 0;
+}
+
+.purgeSummaryMetadataGrid {
+  width: 100%;
+  background-color: #fafafa;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.summaryMetaRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  background-color: #ffffff;
+  text-align: left;
+}
+
+.summaryMetaRow div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metaLabelText {
+  font-size: 0.78rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.metaValueText {
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.summarySystemLogsBox {
+  padding: 16px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: #ffffff;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.summarySystemLogsBox p {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.summarySystemLogsBox strong {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.summarySystemLogsBox span {
+  color: #475569;
+}
+
+.returnDirectoryButton {
+  width: 100%;
+  padding: 14px;
+  background-color: #0f172a;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.returnDirectoryButton:hover {
+  background-color: #1e293b;
+}
+
+.tableActionFlexContainerIconicRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.iconicTableActionButton {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.iconicTableActionButton:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.iconicDeleteColorBtn:hover {
+  background-color: #fef2f2;
+  color: #ef4444;
+}
+
+/* ==========================================================================
+   11. Supplementary Leave Governance Actions & Core Animations
+   ========================================================================== */
+
+.statusLabelRed {
+  background-color: #fee2e2; 
+  color: #991b1b;            
+}
+
+.dangerInlineActionButton {
+  padding: 6px 14px;
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.dangerInlineActionButton:hover {
+  opacity: 0.9;
+}
+
+@keyframes fadeInModal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleInModal {
+  from { transform: scale(0.95) translateY(10px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* ==========================================================================
+   12. RESPONSIVE DESIGN - Mobile First Breakpoint Mappings
+   ========================================================================== */
+
+/* Mobile Displays (< 640px) */
 @media (max-width: 640px) {
-  /* Layout */
   .layoutContainer {
     flex-direction: column;
+    height: auto;
+    overflow: auto;
   }
 
   .sidebar {
@@ -818,7 +1456,11 @@
     border-radius: 8px;
   }
 
-  /* Header */
+  .mainWrapper {
+    height: auto;
+    overflow: visible;
+  }
+
   .topHeader {
     height: 60px;
     padding: 0 16px;
@@ -852,27 +1494,19 @@
     font-size: 0.8rem;
   }
 
-  /* Content */
-  .mainWrapper {
-    flex: 1;
-  }
-
   .contentArea {
     padding: 16px;
+    overflow-y: visible;
   }
 
-  /* Grid layouts */
-  .metricsRow {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
+  .metricsRow,
   .chartsRow {
     grid-template-columns: 1fr;
     gap: 12px;
   }
 
-  .metricCard {
+  .metricCard,
+  .chartContainer {
     padding: 16px;
   }
 
@@ -885,10 +1519,6 @@
     font-size: 1.5rem;
   }
 
-  .chartContainer {
-    padding: 16px;
-  }
-
   .chartContainer h3 {
     font-size: 0.95rem;
     margin-bottom: 16px;
@@ -898,7 +1528,6 @@
     height: 200px;
   }
 
-  /* Depts metrics */
   .deptMetricRow {
     grid-template-columns: 80px 1fr 30px;
     gap: 12px;
@@ -908,7 +1537,6 @@
     font-size: 0.85rem;
   }
 
-  /* Table */
   .activityTable {
     font-size: 0.85rem;
     border-radius: 8px;
@@ -920,7 +1548,6 @@
     font-size: 0.8rem;
   }
 
-  /* Action bars */
   .actionFilterBar {
     flex-direction: column;
     gap: 12px;
@@ -930,7 +1557,6 @@
     width: 100%;
   }
 
-  /* Buttons */
   .primaryActionButton {
     padding: 9px 16px;
     font-size: 0.85rem;
@@ -939,15 +1565,15 @@
   .primaryActionButtonWidth {
     width: 100%;
   }
+  
+  .formRowGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 }
 
-/* Tablets (640px - 1024px) */
+/* Tablet Media Mappings (640px - 1024px) */
 @media (min-width: 641px) and (max-width: 1024px) {
-  /* Layout */
-  .layoutContainer {
-    flex-direction: row;
-  }
-
   .sidebar {
     width: 200px;
     padding: 16px 0;
@@ -966,7 +1592,6 @@
     font-size: 0.85rem;
   }
 
-  /* Header */
   .topHeader {
     height: 64px;
     padding: 0 20px;
@@ -985,12 +1610,10 @@
     font-size: 0.9rem;
   }
 
-  /* Content */
   .contentArea {
     padding: 20px;
   }
 
-  /* Grid layouts */
   .metricsRow {
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
@@ -1001,17 +1624,9 @@
     gap: 16px;
   }
 
-  .metricCard {
-    padding: 18px 20px;
-  }
-
+  .metricCard,
   .chartContainer {
     padding: 18px 20px;
-  }
-
-  /* Table */
-  .activityTable {
-    font-size: 0.9rem;
   }
 
   .activityTable th,
@@ -1020,7 +1635,6 @@
     font-size: 0.85rem;
   }
 
-  /* Action bars */
   .actionFilterBar {
     flex-direction: row;
     gap: 12px;
@@ -1031,13 +1645,8 @@
   }
 }
 
-/* Large Devices (> 1024px) */
+/* Large Desktop Displays (> 1024px) */
 @media (min-width: 1025px) {
-  /* Layout - Default desktop styles already applied */
-  .layoutContainer {
-    flex-direction: row;
-  }
-
   .sidebar {
     width: 274px;
     padding: 20px 0;
@@ -1047,7 +1656,6 @@
     padding: 28px;
   }
 
-  /* Grid layouts - Default 3 columns */
   .metricsRow {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -1057,7 +1665,7 @@
   }
 }
 
-/* Extra large displays (> 1440px) */
+/* Ultra-Wide Large Monitors (> 1440px) */
 @media (min-width: 1441px) {
   .contentArea {
     padding: 32px;
@@ -1065,11 +1673,160 @@
     margin: 0 auto;
   }
 
-  .metricCard {
-    padding: 24px 28px;
-  }
-
+  .metricCard,
   .chartContainer {
     padding: 24px 28px;
+  }
+}
+
+/* Add this block to your existing HRDashboardLayout.module.css file */
+
+/* ==========================================================================
+   👥 CORE MODAL WIDESCREEN GRID ARCHITECTURE
+   ========================================================================== */
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeInModal 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modalContentWide {
+  background-color: #ffffff;
+  border-radius: 16px;
+  width: 92%;
+  max-width: 840px;
+  box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.18);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 28px;
+  border-bottom: 1px solid #e5eaf2;
+  background-color: #ffffff;
+}
+
+.modalHeader h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+/* Fluid form scroll workspace track preventing layout overflows */
+.modalScrollForm {
+  padding: 28px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  box-sizing: border-box;
+}
+
+.modalFormSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modalSectionSubTitle {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #4f46e5;
+  letter-spacing: 0.05em;
+  margin: 0;
+  border-bottom: 1px dashed #e2e8f0;
+  padding-bottom: 8px;
+}
+
+/* Balanced grid allocations following snapshot column tracks */
+.modalFormGridThree {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px 20px;
+}
+
+.modalFormGridTwo {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 20px;
+}
+
+.modalFieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.modalFieldGroup label {
+  font-size: 0.8rem;
+  color: #334155;
+  font-weight: 600;
+}
+
+.modalFieldGroup input,
+.modalFieldGroup select {
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  color: #0f172a;
+  background-color: #ffffff;
+  outline: none;
+  font-family: inherit;
+  box-sizing: border-box;
+  width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.modalFieldGroup input:focus,
+.modalFieldGroup select:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.modalActionButtons {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 28px;
+  border-top: 1px solid #e5eaf2;
+  background-color: #ffffff;
+}
+
+/* Tablet & Mobile Grid Auto-Collapse Media Query Rules */
+@media (max-width: 768px) {
+  .modalContentWide {
+    max-height: 95vh;
+    width: 95%;
+  }
+  
+  .modalFormGridThree,
+  .modalFormGridTwo {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  
+  .modalScrollForm {
+    padding: 16px;
+    gap: 20px;
   }
 }
