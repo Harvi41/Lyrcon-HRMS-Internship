@@ -1679,6 +1679,173 @@
   }
 }
 
+/* ==========================================================================
+   10. Notification Bell & Dropdown Styles
+   ========================================================================== */
+.notificationWrapper {
+  position: relative;
+  display: inline-block;
+  margin-right: 14px;
+}
+
+.bellButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  position: relative;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.bellButton:hover {
+  background-color: #f1f5f9;
+  color: #4f46e5;
+}
+
+.unreadBadge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background-color: #ef4444;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+}
+
+.notificationDropdown {
+  position: absolute;
+  right: 0;
+  top: 48px;
+  width: 320px;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.dropdownHeader {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f8fafc;
+}
+
+.dropdownHeader h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.dropdownHeader button {
+  background: none;
+  border: none;
+  color: #4f46e5;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dropdownHeader button:hover {
+  text-decoration: underline;
+}
+
+.notificationList {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.notificationItem {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notificationItem:hover {
+  background-color: #f8fafc;
+}
+
+.notificationItemUnread {
+  background-color: #f0f4ff;
+}
+
+.notificationItemUnread:hover {
+  background-color: #e5edff;
+}
+
+.notificationItemTitle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notificationItemDesc {
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.notificationItemMeta {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.notificationPriorityBadge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.priorityHigh {
+  background-color: #fee2e2;
+  color: #ef4444;
+}
+
+.priorityMedium {
+  background-color: #ffedd5;
+  color: #f97316;
+}
+
+.priorityLow {
+  background-color: #f0fdf4;
+  color: #22c55e;
+}
+
+.emptyNotifications {
+  padding: 24px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.82rem;
+}
 /* Add this block to your existing HRDashboardLayout.module.css file */
 
 /* ==========================================================================

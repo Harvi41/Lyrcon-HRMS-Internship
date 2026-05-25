@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 
 // Get API base URL from environment variables
 // Falls back to localhost:5000 if not defined during local development
@@ -80,58 +80,18 @@ export const updateRolePermissions = (payload) => API.post('/roles/update', payl
 export const createDashboardUser = (payload) => API.post('/users', payload);
 
 // ==========================================
+// 📣 ANNOUNCEMENT & NOTIFICATION ENDPOINTS
+// ==========================================
+export const getAnnouncements = () => API.get('/announcements');
+export const publishAnnouncement = (payload) => API.post('/announcements', payload);
+export const markAnnouncementAsRead = (id) => API.post(`/announcements/${id}/read`);
+export const getTargetOptions = () => API.get('/announcements/targets');
+
+
 // 🏖️ LEAVE MANAGEMENT ENDPOINTS
 // ==========================================
 export const getAllLeaves = () => API.get('/leaves');
 export const applyLeave = (leaveData) => API.post('/leaves/apply', leaveData);
-export const processLeave = (id, status) => API.put(`/leaves/process/${id}`, { status });
-
-// ==========================================
-// 💰 PAYROLL MANAGEMENT ENDPOINTS
-// ==========================================
-
-// 👔 Administrative HR/Admin Operations
-export const calculateMonthlyPayroll = (employeeId, payrollMonth) => 
-    API.post('/payroll/calculate', { employeeId, payrollMonth });
-
-export const getMonthlyPayrollDashboard = (month) => 
-    API.get(`/payroll/dashboard?month=${month}`);
-
-export const updatePayrollStatus = (id, status, remarks) => 
-    API.put(`/payroll/status/${id}`, { status, remarks });
-
-export const executePaymentDisbursement = (id, disbursementDetails) => 
-    API.put(`/payroll/disburse/${id}`, disbursementDetails);
-
-// 👥 Employee Self-Service Operations
-export const getSelfPayrollHistory = () => 
-    API.get('/payroll/self-history');
-
-// 🖨️ Payslip PDF Binary Stream Download
-export const downloadPayslipFile = async (id, filename = 'payslip.pdf') => {
-    try {
-        const response = await API.get(`/payroll/download/${id}`, {
-            responseType: 'blob', // 💎 CRITICAL: Tells Axios to handle binary data instead of passing a string parsing array
-        });
-
-        // Create a local virtual browser download link anchor element
-        const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', filename);
-        
-        document.body.appendChild(link);
-        link.click();
-        
-        // Cleanup virtual browser memory allocations immediately after click triggers
-        link.parentNode.removeChild(link);
-        window.URL.revokeObjectURL(url);
-        
-        return true;
-    } catch (error) {
-        console.error("Frontend PDF download stream execution failed:", error);
-        throw error;
-    }
-};
+export const processLeave = (id, status) => API.put(`/leaves/${id}/review`, { status });
 
 export default API;

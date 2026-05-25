@@ -15,6 +15,7 @@ router.get('/my-requests', leaveController.getMyLeaves);
 // ==========================================
 // 👔 ADMINISTRATIVE & MANAGEMENT PANEL RESTRICTIONS
 // ==========================================
+router.get('/', checkPermission('leave.review'), leaveController.getAllLeaves);
 router.get('/pending', checkPermission('leave.review'), leaveController.getPendingLeaves);
 router.put('/:id/review', checkPermission('leave.review'), leaveController.reviewLeave);
 

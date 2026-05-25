@@ -8,7 +8,7 @@ import LeaveView from './MainContent/LeaveView';
 import PayrollView from './MainContent/PayrollView';
 import RecruitmentView from './MainContent/RecruitmentView';
 import AnnouncementsView from './MainContent/AnnouncementsView';
-import RolesPermissionsView from './MainContent/RolesPermissionsView'; 
+import RolesPermissionsView from './MainContent/RolesPermissionsView';
 import AssetsPanel from './MainContent/AssetsPanel';
 import styles from './HRDashboardLayout.module.css';
 
@@ -30,30 +30,30 @@ const HRDashboardLayout = ({ user, onLogout }) => {
     assets: { title: "Asset Management", component: <AssetsPanel /> },
     announcements: { title: "Announcements", component: <AnnouncementsView /> }
   };
-  
+
   const currentPage = pageMeta[activeTab] || pageMeta.dashboard;
 
   return (
     <div className={styles.layoutContainer}>
       {/* 1. Left Fixed Element: Always spans 100% height without scrolling */}
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      
+
       {/* 2. Right Flex Wrapper: Fills remainder of screen window widths */}
       <div className={styles.mainWrapper}>
-        
+
         {/* Top Header Row Panel: Stays locked at a fixed 72px height */}
-        <Header 
+        <Header
           title={currentPage.title}
           userName={userName}
           avatarLetter={avatarLetter}
           onLogout={onLogout}
         />
-        
+
         {/* 3. Independent Scroll Container Window */}
         <main className={styles.contentArea}>
           {currentPage.component}
         </main>
-        
+
       </div>
     </div>
   );

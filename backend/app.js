@@ -8,6 +8,9 @@ const authRoutes = require('./src/routes/authRoutes');
 const employeeRoutes = require('./src/routes/employeeRoutes');
 const assetRoutes = require('./src/routes/assetRoutes');
 const dashboardRoutes = require('./src/routes/dashboardRoutes');
+const rolesRoutes = require('./src/routes/rolesRoutes');
+const usersRoutes = require('./src/routes/usersRoutes');
+const announcementRoutes = require('./src/routes/announcementRoutes');
 const leaveRoutes = require('./src/routes/leaveRoutes'); 
 const payrollRoutes = require('./src/routes/payrollRoutes'); 
 
@@ -57,6 +60,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/assets', assetRoutes);
+app.use('/api/announcements', announcementRoutes);
 app.use('/api/leaves', leaveRoutes); 
 app.use('/api/payroll', payrollRoutes);   
 
