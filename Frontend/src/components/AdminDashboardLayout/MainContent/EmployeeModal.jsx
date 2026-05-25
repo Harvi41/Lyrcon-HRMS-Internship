@@ -104,7 +104,7 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
           {/* Section 1: Personal Details */}
           <div className={styles.modalFormSection}>
             <h3 className={styles.modalSectionSubTitle}>Personal Details</h3>
-            <div className={styles.modalFormGridThree}>
+            <div className={styles.modalFormGridTwo}>
               <div className={styles.modalFieldGroup}>
                 <label>First Name</label>
                 <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} required />
@@ -139,7 +139,7 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
           {/* Section 2: Employment & Organization */}
           <div className={styles.modalFormSection}>
             <h3 className={styles.modalSectionSubTitle}>Employment & Organization</h3>
-            <div className={styles.modalFormGridThree}>
+            <div className={styles.modalFormGridTwo}>
               <div className={styles.modalFieldGroup}>
                 <label>Joining Date</label>
                 <input type="date" name="joiningDate" value={formData.joiningDate} onChange={handleChange} required />
