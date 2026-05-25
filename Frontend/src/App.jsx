@@ -3,7 +3,7 @@ import LoginPage from "./components/Authform/LoginPage";
 import HRDashboardLayout from "./components/HRDashboardLayout/HRDashboardLayout";
 import Dashboard from "./Pages/Dashboard";
 
-const allowedRoles = new Set(['hr', 'super admin']);
+const allowedRoles = new Set(['hr', 'super admin', 'employee']);
 
 function readStoredSession() {
   const token = window.localStorage.getItem('corehr_token');

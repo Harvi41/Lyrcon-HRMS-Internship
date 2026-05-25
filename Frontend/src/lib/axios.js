@@ -11,8 +11,6 @@ const getBaseURL = () => {
         );
         return 'http://localhost:5000';
     }
-    
-    console.log(`✅ Using API Base URL: ${baseURL}`);
     return baseURL;
 };
 
