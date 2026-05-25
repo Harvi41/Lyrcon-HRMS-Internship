@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 
 // Get API base URL from environment variables
 // Falls back to localhost:5000 if not defined during local development
@@ -87,11 +87,11 @@ export const publishAnnouncement = (payload) => API.post('/announcements', paylo
 export const markAnnouncementAsRead = (id) => API.post(`/announcements/${id}/read`);
 export const getTargetOptions = () => API.get('/announcements/targets');
 
-export default API;
+
 // 🏖️ LEAVE MANAGEMENT ENDPOINTS
 // ==========================================
 export const getAllLeaves = () => API.get('/leaves');
 export const applyLeave = (leaveData) => API.post('/leaves/apply', leaveData);
-export const processLeave = (id, status) => API.put(`/leaves/process/${id}`, { status });
+export const processLeave = (id, status) => API.put(`/leaves/${id}/review`, { status });
 
 export default API;

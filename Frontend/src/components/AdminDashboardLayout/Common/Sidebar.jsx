@@ -15,6 +15,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     { label: 'Team Monitoring', id: 'Team Monitoring' }, // ADDED: Directly points to your tracking view
     { label: 'Roles & Permissions', id: 'Roles & Permissions' },
     { label: 'Asset Management', id: 'assets' },
+    { label: 'Announcements', id: 'Announcements' },
     { label: 'Settings', id: 'Settings' }
   ];
 

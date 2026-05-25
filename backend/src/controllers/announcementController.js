@@ -170,16 +170,18 @@ const announcementController = {
       // Append live unread indicators
       const announcementsWithReadStatus = announcements.map((ann) => {
         const isRead = ann.readBy.includes(req.user.userId);
+        const senderId = ann.sender?._id ? String(ann.sender._id) : null;
         return {
           ...ann.toObject(),
-          isRead: isRead || String(ann.sender._id) === String(req.user.userId),
+          isRead: isRead || (senderId === String(req.user.userId)),
         };
       });
 
       // Calculate unread count (exclude what logged in user sent themselves)
-      const unreadCount = announcementsWithReadStatus.filter(
-        (ann) => !ann.isRead && String(ann.sender._id) !== String(req.user.userId)
-      ).length;
+      const unreadCount = announcementsWithReadStatus.filter((ann) => {
+        const senderId = ann.sender?._id ? String(ann.sender._id) : null;
+        return !ann.isRead && (senderId !== String(req.user.userId));
+      }).length;
 
       res.status(200).json({
         announcements: announcementsWithReadStatus,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../HRDashboardLayout.module.css';
-import { publishAnnouncement, getTargetOptions } from '../../../lib/axios';
+import { publishAnnouncement, getTargetOptions, applyLeave } from '../../../lib/axios';
 import { MdOutlineCalendarToday } from 'react-icons/md';
 import { IoCloseOutline, IoChevronDown } from 'react-icons/io5';
 
@@ -228,6 +228,7 @@ const LeaveView = () => {
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [notification, setNotification] = useState(null);
 
   // Today's date in YYYY-MM-DD format to prevent past leave requests
   const todayStr = new Date().toISOString().split('T')[0];
@@ -236,12 +237,12 @@ const LeaveView = () => {
   const handleSubmitLeave = async (e) => {
     e.preventDefault();
     if (!startDate || !endDate || !reason.trim()) {
-      alert('Please fill out all required fields.');
+      setNotification({ type: 'error', message: 'Please fill out all required fields.' });
       return;
     }
 
     if (new Date(startDate) > new Date(endDate)) {
-      alert('End Date must be on or after Start Date.');
+      setNotification({ type: 'error', message: 'End Date must be on or after Start Date.' });
       return;
     }
 
@@ -249,17 +250,15 @@ const LeaveView = () => {
 
     try {
       const payload = {
-        title: 'HR Leave Request',
-        description: `HR Admin has requested ${leaveType} (from ${startDate} to ${endDate}) for reason: "${reason.trim()}". Pending Admin approval.`,
-        category: 'HR Notice',
-        priority: 'High',
-        targetAudience: adminUserId ? 'individual' : 'all',
-        targetRecipient: adminUserId || undefined
+        leaveType,
+        startDate,
+        endDate,
+        reason: reason.trim()
       };
 
-      await publishAnnouncement(payload);
+      await applyLeave(payload);
 
-      alert(`📣 Leave request submitted successfully!\nA notification containing your dates and reason has been sent directly to the Admin.`);
+      setNotification({ type: 'success', message: '📣 Leave request submitted successfully!\nA notification containing your dates and reason has been sent directly to the Admin.' });
 
       // Reset form states
       setStartDate('');
@@ -267,8 +266,9 @@ const LeaveView = () => {
       setReason('');
       setIsModalOpen(false);
     } catch (err) {
-      console.error('Failed to submit simulated leave request:', err);
-      alert('Error sending leave request notification.');
+      console.error('Failed to submit leave request:', err);
+      const errorMessage = err.response?.data?.message || 'Error sending leave request notification.';
+      setNotification({ type: 'error', message: errorMessage });
     } finally {
       setSubmitting(false);
     }
@@ -322,7 +322,7 @@ const LeaveView = () => {
             Monthly Leave Class Proportions
           </h3>
           <div className={styles.chartPlaceholderVertical}>
-            
+
             <div className={styles.deptMetricRow} style={{ gridTemplateColumns: '140px 1fr 50px' }}>
               <span className={styles.deptName}>Casual Leave (CL)</span>
               <div className={styles.progressBarContainer}>
@@ -425,10 +425,9 @@ const LeaveView = () => {
                         </button>
                         <button
                           className={styles.dangerInlineActionButton}
-                          style={{ padding: '6px 14px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '500' }}
+                          style={{ padding: '6px 12px', fontSize: '0.85rem', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '500' }}
                           onClick={() => handleStatusUpdate(request.id, 'Rejected')}
                           type="button"
-                          style={{ padding: '6px 12px', fontSize: '0.85rem' }}
                         >
                           Reject
                         </button>
@@ -497,7 +496,7 @@ const LeaveView = () => {
                         onChange={(e) => setStartDate(e.target.value)}
                         required
                       />
-                      <MdOutlineCalendarToday style={modalStyles.calendarIcon} />
+
                     </div>
                   </div>
                   <div style={{ ...modalStyles.fieldGroup, flex: 1 }}>
@@ -512,7 +511,7 @@ const LeaveView = () => {
                         onChange={(e) => setEndDate(e.target.value)}
                         required
                       />
-                      <MdOutlineCalendarToday style={modalStyles.calendarIcon} />
+
                     </div>
                   </div>
                 </div>
@@ -556,6 +555,29 @@ const LeaveView = () => {
               </div>
             </form>
 
+          </div>
+        </div>
+      )}
+
+      {/* ── Notification Modal ── */}
+      {notification && (
+        <div style={{ ...modalStyles.overlay, zIndex: 10001 }} onClick={() => setNotification(null)}>
+          <div style={{ ...modalStyles.modal, width: '400px', textAlign: 'center', padding: '32px' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>
+              {notification.type === 'success' ? '✅' : '⚠️'}
+            </div>
+            <h3 style={{ margin: '0 0 12px', color: '#0f172a' }}>
+              {notification.type === 'success' ? 'Success' : 'Notice'}
+            </h3>
+            <p style={{ color: '#475569', fontSize: '15px', lineHeight: '1.5', margin: '0 0 24px', whiteSpace: 'pre-line' }}>
+              {notification.message}
+            </p>
+            <button
+              onClick={() => setNotification(null)}
+              style={{ ...modalStyles.buttonBase, backgroundColor: '#4f46e5', color: '#ffffff', width: '100%', padding: '12px' }}
+            >
+              Okay
+            </button>
           </div>
         </div>
       )}

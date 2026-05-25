@@ -130,6 +130,20 @@ const leaveController = {
         }
     },
 
+    // 🌐 GET ALL LEAVES (For Admin Dashboard Metrics & Ledgers)
+    getAllLeaves: async (req, res) => {
+        try {
+            const allLeaves = await Leave.find()
+                .populate('userId', 'name email') 
+                .sort({ createdAt: -1 });
+
+            return res.status(200).json(allLeaves);
+        } catch (error) {
+            console.error("Get All Leaves Error:", error);
+            return res.status(500).json({ message: "Server error fetching all leaves", error: error.message });
+        }
+    },
+
     // 📋 3. GET ALL PENDING LEAVES (For Management Interface Boards)
     getPendingLeaves: async (req, res) => {
         try {

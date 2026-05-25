@@ -10,7 +10,14 @@ const LeaveView = () => {
     const fetchLeaves = async () => {
       try {
         const { data } = await getAllLeaves();
-        setLeaveRequests(data);
+        const mappedData = data.map(leave => ({
+          id: leave._id,
+          employee: leave.userId?.name || leave.userId?.email || 'Unknown',
+          classification: leave.leaveType,
+          chronoRange: `${new Date(leave.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric'})} - ${new Date(leave.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric'})}`,
+          status: leave.status
+        }));
+        setLeaveRequests(mappedData);
       } catch (error) {
         console.error('Failed to fetch leaves:', error);
       }

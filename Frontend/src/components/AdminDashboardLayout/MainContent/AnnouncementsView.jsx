@@ -42,10 +42,10 @@ const AnnouncementsView = () => {
         const list = annResponse.data.announcements || [];
         setAnnouncements(list);
         setTotalCount(list.length);
-        
+
         // Live metric calculations
         setHighPriorityCount(list.filter(ann => ann.priority === 'High').length);
-        
+
         const today = new Date().toDateString();
         setPublishedTodayCount(list.filter(ann => new Date(ann.createdAt).toDateString() === today).length);
       }
@@ -53,7 +53,7 @@ const AnnouncementsView = () => {
       if (targetResponse.data) {
         setDepartments(targetResponse.data.departments || []);
         setUsers(targetResponse.data.users || []);
-        
+
         // Set default target selections if lists populated
         if (targetResponse.data.departments?.length > 0) {
           setTargetGroup(targetResponse.data.departments[0]);
@@ -97,11 +97,11 @@ const AnnouncementsView = () => {
       };
 
       await publishAnnouncement(payload);
-      
+
       setFormSuccess('Announcement successfully published & broadcasted!');
       setTitle('');
       setDescription('');
-      
+
       // Refresh list
       loadData();
     } catch (err) {
@@ -143,7 +143,7 @@ const AnnouncementsView = () => {
             <span className={styles.metricValue}>{totalCount}</span>
           </div>
         </div>
-        
+
         <div className={styles.metricCard}>
           <h3>CRITICAL ALERTS</h3>
           <div className={styles.metricValueWrapper}>
@@ -160,22 +160,33 @@ const AnnouncementsView = () => {
 
       {/* ── SPLIT WORKSPACE: Left Form, Right Feeds ── */}
       <div className={styles.chartsRow} style={{ alignItems: 'flex-start', gap: '24px' }}>
-        
+
         {/* LEFT COLUMN: PUBLISH ANNOUNCEMENT FORM */}
         <div className={styles.chartContainer} style={{ flex: 1 }}>
-          <h3 style={{ borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', color: '#0f172a' }}>
-            Publish Announcement
-          </h3>
-          
-          <form onSubmit={handlePublish} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '14px' }}>
-            {formSuccess && <div style={{ backgroundColor: '#dcfce7', color: '#15803d', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600' }}>{formSuccess}</div>}
-            {formError && <div style={{ backgroundColor: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600' }}>{formError}</div>}
+          <div className={styles.formHeaderContainer}>
+            <h3 className={styles.formHeaderTitle}>
+              <span className={styles.formHeaderIcon}></span> Publish Announcement
+            </h3>
+          </div>
+
+          <form onSubmit={handlePublish} className={styles.announcementForm}>
+            {formSuccess && (
+              <div className={`${styles.alertBox} ${styles.alertBoxSuccess}`}>
+                <span>✓</span> {formSuccess}
+              </div>
+            )}
+            {formError && (
+              <div className={`${styles.alertBox} ${styles.alertBoxError}`}>
+                <span>⚠️</span> {formError}
+              </div>
+            )}
 
             <div className={styles.inputGroup}>
-              <label>Announcement Title *</label>
-              <input 
-                type="text" 
-                placeholder="e.g., Office Maintenance Scheduled" 
+              <label htmlFor="announcementTitle">Announcement Title *</label>
+              <input
+                type="text"
+                id="announcementTitle"
+                placeholder="e.g., Office Maintenance Scheduled"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
@@ -183,9 +194,9 @@ const AnnouncementsView = () => {
             </div>
 
             <div className={styles.inputGroup}>
-              <label>Description / Details *</label>
-              <textarea 
-                style={{ width: '100%', minHeight: '100px', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '8px', outline: 'none', fontFamily: 'inherit', resize: 'vertical' }}
+              <label htmlFor="announcementDesc">Description / Details *</label>
+              <textarea
+                id="announcementDesc"
                 placeholder="Type details of the announcement here..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -193,11 +204,11 @@ const AnnouncementsView = () => {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div className={styles.inputGroupGrid}>
               <div className={styles.inputGroup}>
-                <label>Category</label>
-                <select 
-                  style={{ padding: '11px', border: '1px solid #cbd5e1', borderRadius: '8px', outline: 'none', backgroundColor: '#fff', fontSize: '0.95rem' }}
+                <label htmlFor="announcementCategory">Category</label>
+                <select
+                  id="announcementCategory"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                 >
@@ -210,9 +221,9 @@ const AnnouncementsView = () => {
               </div>
 
               <div className={styles.inputGroup}>
-                <label>Priority</label>
-                <select 
-                  style={{ padding: '11px', border: '1px solid #cbd5e1', borderRadius: '8px', outline: 'none', backgroundColor: '#fff', fontSize: '0.95rem' }}
+                <label htmlFor="announcementPriority">Priority</label>
+                <select
+                  id="announcementPriority"
                   value={priority}
                   onChange={(e) => setPriority(e.target.value)}
                 >
@@ -224,9 +235,9 @@ const AnnouncementsView = () => {
             </div>
 
             <div className={styles.inputGroup}>
-              <label>Target Audience *</label>
-              <select 
-                style={{ padding: '11px', border: '1px solid #cbd5e1', borderRadius: '8px', outline: 'none', backgroundColor: '#fff', fontSize: '0.95rem' }}
+              <label htmlFor="announcementTarget">Target Audience *</label>
+              <select
+                id="announcementTarget"
                 value={targetAudience}
                 onChange={(e) => setTargetAudience(e.target.value)}
               >
@@ -241,9 +252,9 @@ const AnnouncementsView = () => {
             {/* Contextual Target Selections */}
             {targetAudience === 'group' && (
               <div className={styles.inputGroup}>
-                <label>Target Department *</label>
-                <select 
-                  style={{ padding: '11px', border: '1px solid #cbd5e1', borderRadius: '8px', outline: 'none', backgroundColor: '#fff', fontSize: '0.95rem' }}
+                <label htmlFor="announcementTargetGroup">Target Department *</label>
+                <select
+                  id="announcementTargetGroup"
                   value={targetGroup}
                   onChange={(e) => setTargetGroup(e.target.value)}
                 >
@@ -257,9 +268,9 @@ const AnnouncementsView = () => {
 
             {targetAudience === 'individual' && (
               <div className={styles.inputGroup}>
-                <label>Target Employee *</label>
-                <select 
-                  style={{ padding: '11px', border: '1px solid #cbd5e1', borderRadius: '8px', outline: 'none', backgroundColor: '#fff', fontSize: '0.95rem' }}
+                <label htmlFor="announcementTargetRecipient">Target Employee *</label>
+                <select
+                  id="announcementTargetRecipient"
                   value={targetRecipient}
                   onChange={(e) => setTargetRecipient(e.target.value)}
                 >
@@ -273,10 +284,9 @@ const AnnouncementsView = () => {
               </div>
             )}
 
-            <button 
-              type="submit" 
-              className={styles.primaryActionButton}
-              style={{ width: '100%', padding: '12px', marginTop: '10px' }}
+            <button
+              type="submit"
+              className={styles.broadcastButton}
               disabled={submitting}
             >
               {submitting ? 'Publishing & Broadcasting...' : 'Broadcast Announcement'}
@@ -286,9 +296,11 @@ const AnnouncementsView = () => {
 
         {/* RIGHT COLUMN: ACTIVE ANNOUNCEMENTS LIST */}
         <div className={styles.chartContainer} style={{ flex: 1.5 }}>
-          <h3 style={{ borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', color: '#0f172a' }}>
-            Active Announcements Feed
-          </h3>
+          <div className={styles.announcementFeedHeader}>
+            <h3 className={styles.announcementFeedTitle}>
+              Active Announcements Feed
+            </h3>
+          </div>
 
           <div className={styles.activityStream} style={{ padding: 0, border: 'none', boxShadow: 'none', marginTop: '14px', width: '100%' }}>
             {loading ? (
@@ -332,7 +344,7 @@ const AnnouncementsView = () => {
                       </td>
                       <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{formatDate(item.createdAt)}</td>
                       <td style={{ textAlign: 'center' }}>
-                        <span 
+                        <span
                           className={`${styles.notificationPriorityBadge} ${getPriorityClass(item.priority)}`}
                           style={{ display: 'inline-block', minWidth: '70px', textAlign: 'center', padding: '3px 8px', borderRadius: '6px' }}
                         >

@@ -6,6 +6,7 @@ const Header = ({ title, userName, avatarLetter, onLogout }) => {
   const [announcements, setAnnouncements] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const dropdownRef = useRef(null);
 
   // 1. POLLING ENGINE: Fetch active announcements and unread counts
@@ -57,7 +58,7 @@ const Header = ({ title, userName, avatarLetter, onLogout }) => {
         console.error('Error marking announcement as read:', error);
       }
     }
-    alert(`📢 ${announcement.title}\nCategory: ${announcement.category}\n\n${announcement.description}`);
+    setSelectedAnnouncement(announcement);
   };
 
   // 4. MARK ALL AS READ
@@ -163,13 +164,12 @@ const Header = ({ title, userName, avatarLetter, onLogout }) => {
                       </div>
                       <div className={styles.notificationItemMeta}>
                         <span
-                          className={`${styles.notificationPriorityBadge} ${
-                            ann.priority === 'High'
+                          className={`${styles.notificationPriorityBadge} ${ann.priority === 'High'
                               ? styles.priorityHigh
                               : ann.priority === 'Medium'
-                              ? styles.priorityMedium
-                              : styles.priorityLow
-                          }`}
+                                ? styles.priorityMedium
+                                : styles.priorityLow
+                            }`}
                         >
                           {ann.priority}
                         </span>
@@ -192,6 +192,141 @@ const Header = ({ title, userName, avatarLetter, onLogout }) => {
           </button>
         ) : null}
       </div>
+
+      {/* ── Beautiful Custom Center Modal for Announcement Details ── */}
+      {selectedAnnouncement && (
+        <div
+          className={styles.modalOverlay}
+          style={{ display: 'flex', zIndex: 99999 }}
+          onClick={() => setSelectedAnnouncement(null)}
+        >
+          <div
+            className={styles.modalContent}
+            style={{ maxWidth: '520px', padding: '28px', position: 'relative', overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Close Button Icon */}
+            <button
+              type="button"
+              onClick={() => setSelectedAnnouncement(null)}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                background: '#f1f5f9',
+                border: 'none',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#64748b',
+                fontWeight: 'bold',
+                transition: 'background-color 0.2s ease',
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#e2e8f0'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+            >
+              ✕
+            </button>
+
+            {/* Modal Icon Indicator and Category Badge */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+              <span style={{ fontSize: '1.5rem' }}></span>
+              <span
+                style={{
+                  fontSize: '0.78rem',
+                  fontWeight: '700',
+                  textTransform: 'uppercase',
+                  color: '#4f46e5',
+                  backgroundColor: '#eef2ff',
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                {selectedAnnouncement.category || 'General'}
+              </span>
+
+              <span
+                className={`${styles.notificationPriorityBadge} ${selectedAnnouncement.priority === 'High'
+                    ? styles.priorityHigh
+                    : selectedAnnouncement.priority === 'Medium'
+                      ? styles.priorityMedium
+                      : selectedAnnouncement.priority === 'Low'
+                        ? styles.priorityLow
+                        : ''
+                  }`}
+                style={{ padding: '4px 10px', borderRadius: '6px' }}
+              >
+                {selectedAnnouncement.priority} Priority
+              </span>
+            </div>
+
+            {/* Title */}
+            <h2
+              style={{
+                fontSize: '1.4rem',
+                fontWeight: '800',
+                color: '#0f172a',
+                lineHeight: '1.3',
+                margin: '0 0 16px 0',
+                letterSpacing: '-0.02em',
+                textAlign: 'left'
+              }}
+            >
+              {selectedAnnouncement.title}
+            </h2>
+
+            {/* Time Stamp & Sender details */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: '0.8rem',
+                color: '#94a3b8',
+                borderBottom: '1px solid #f1f5f9',
+                paddingBottom: '14px',
+                marginBottom: '20px'
+              }}
+            >
+              <span>By: <strong>{selectedAnnouncement.sender?.name || 'System'}</strong></span>
+              <span>{formatTime(selectedAnnouncement.createdAt)}</span>
+            </div>
+
+            {/* Content Body */}
+            <div
+              style={{
+                fontSize: '0.95rem',
+                color: '#334155',
+                lineHeight: '1.6',
+                whiteSpace: 'pre-line',
+                maxHeight: '260px',
+                overflowY: 'auto',
+                paddingRight: '6px',
+                textAlign: 'left'
+              }}
+            >
+              {selectedAnnouncement.description}
+            </div>
+
+            {/* Bottom Button Action */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+              <button
+                type="button"
+                className={styles.btnSubmit}
+                style={{ borderRadius: '8px', padding: '10px 24px', background: '#4f46e5', color: '#fff', border: 'none', fontWeight: '600', cursor: 'pointer' }}
+                onClick={() => setSelectedAnnouncement(null)}
+              >
+                Acknowledge
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </header>
   );
 };
