@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import LoginPage from "./components/Authform/LoginPage"; 
+import LoginPage from "./components/Authform/LoginPage";
 import ResetPasswordPage from "./components/Authform/ResetPasswordPage";
 import HRDashboardLayout from "./components/HRDashboardLayout/HRDashboardLayout";
-import AdminDashboardLayout from "./components/AdminDashboardLayout/AdminDashboardLayout"; 
+import AdminDashboardLayout from "./components/AdminDashboardLayout/AdminDashboardLayout";
 //import EmployeeDashboardLayout from "./Pages/Employee/EmployeeDashboardLayout";
 
 // Standardized lookup set for allowed lower-cased role mappings
@@ -10,7 +10,7 @@ const allowedRoles = new Set(['hr', 'admin', 'employee']);
 
 function normalizeRole(roleString) {
   const cleanRole = String(roleString || '').trim().toLowerCase();
-  
+
   // Map any Super Admin variations to the target 'admin' dashboard layer
   if (cleanRole === 'super admin' || cleanRole === 'superadmin' || cleanRole === 'super-admin') {
     return 'admin';
@@ -29,7 +29,7 @@ function readStoredSession() {
 
   try {
     const user = JSON.parse(rawUser);
-    
+
     // Safely normalize the incoming role string
     const role = normalizeRole(user?.role || storedRole);
 
@@ -90,12 +90,12 @@ export default function App() {
   // ═══════════════════════════════════════════════════════════════════════════
   if (resetToken) {
     return (
-      <ResetPasswordPage 
-        token={resetToken} 
+      <ResetPasswordPage
+        token={resetToken}
         onComplete={() => {
           window.history.replaceState({}, document.title, '/');
           setResetToken(null);
-        }} 
+        }}
       />
     );
   }
@@ -107,14 +107,14 @@ export default function App() {
     switch (session.role) {
       case 'hr':
         return <HRDashboardLayout user={session.user} onLogout={handleLogout} />;
-      
+
       case 'employee':
-        return <EmployeeDashboardLayout user={session.user} onLogout={handleLogout} />;
-      
+        return <div>Employee Dashboard Not Implemented</div>;
+
       case 'admin':
         // This natively catches both 'admin' and parsed 'super admin' strings now!
         return <AdminDashboardLayout user={session.user} onLogout={handleLogout} />;
-        
+
       default:
         return <LoginPage onLoginSuccess={handleLoginSuccess} />;
     }
