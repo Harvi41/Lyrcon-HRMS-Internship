@@ -86,7 +86,7 @@ export default function AssetsPanel() {
     <div className={styles.dashboardGrid}>
       
       {/* ── Top Analytical Inventory Metrics Row ── */}
-      <div className={styles.metricsRow} style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+      <div className={styles.metricsRow} style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
         <div className={styles.metricCard}>
           <h3>TOTAL ASSETS REGISTERED</h3>
           <div className={styles.metricValueWrapper}>
@@ -94,10 +94,26 @@ export default function AssetsPanel() {
           </div>
         </div>
         <div className={styles.metricCard}>
-          <h3>ACTIVE IN-USE ALLOCATIONS</h3>
+          <h3>IN STOCK (AVAILABLE)</h3>
+          <div className={styles.metricValueWrapper}>
+            <span className={styles.metricValue} style={{ color: '#22c55e' }}>
+              {assets.filter(a => !a.damaged && (!a.assignedTo || a.assignedTo === '')).length} Available
+            </span>
+          </div>
+        </div>
+        <div className={styles.metricCard}>
+          <h3>IN USE</h3>
           <div className={styles.metricValueWrapper}>
             <span className={styles.metricValue} style={{ color: '#6366f1' }}>
-              {assets.filter(a => a.status?.toLowerCase() === 'active' || a.assignedTo).length} Assigned
+              {assets.filter(a => a.assignedTo && a.assignedTo !== '').length} Assigned
+            </span>
+          </div>
+        </div>
+        <div className={styles.metricCard}>
+          <h3>DAMAGED</h3>
+          <div className={styles.metricValueWrapper}>
+            <span className={styles.metricValue} style={{ color: '#dc2626' }}>
+              {assets.filter(a => a.damaged).length} Damaged
             </span>
           </div>
         </div>
@@ -126,16 +142,17 @@ export default function AssetsPanel() {
               <th style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: '600' }}>ASSET NAME</th>
               <th style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: '600' }}>CATEGORY</th>
               <th style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: '600' }}>ASSIGNED TO</th>
+              <th style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: '600' }}>CONDITION</th>
               <th style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: '600' }}>STATUS</th>
               <th style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: '600', width: '100px' }}>ACTIONS</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="6" style={{ textAlign: 'center', padding: '24px' }}>Loading inventory...</td></tr>
+              <tr><td colSpan="7" style={{ textAlign: 'center', padding: '24px' }}>Loading inventory...</td></tr>
             ) : filteredAssets.length === 0 ? (
               <tr>
-                <td colSpan="6" className={styles.emptyState} style={{ padding: '24px', textAlign: 'center' }}>
+                <td colSpan="7" className={styles.emptyState} style={{ padding: '24px', textAlign: 'center' }}>
                   No registered hardware hardware profiles matched validation tokens.
                 </td>
               </tr>
@@ -146,6 +163,14 @@ export default function AssetsPanel() {
                   <td><strong style={{ color: '#0f172a', fontWeight: '700' }}>{asset.name}</strong></td>
                   <td style={{ color: '#475569', fontWeight: '500' }}>{asset.category}</td>
                   <td style={{ color: '#0f172a', fontWeight: '600' }}>{asset.assignedTo || 'Unassigned'}</td>
+                  <td>
+                    {asset.damaged 
+                      ? <span className={`${styles.statusLabel}`} style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>Damaged</span> 
+                      : (asset.assignedTo && asset.assignedTo !== '' 
+                         ? <span className={`${styles.statusLabel}`} style={{ backgroundColor: '#e0e7ff', color: '#4f46e5' }}>In Use</span> 
+                         : <span className={`${styles.statusLabel}`} style={{ backgroundColor: '#dcfce7', color: '#16a34a' }}>In Stock</span>)
+                    }
+                  </td>
                   <td>
                     <span className={`${styles.statusLabel} ${styles.statusActive}`}>
                       {asset.status || 'Active'}

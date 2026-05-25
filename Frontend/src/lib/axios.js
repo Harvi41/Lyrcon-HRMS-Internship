@@ -2,7 +2,12 @@
 
 // Get API base URL from environment variables
 // Falls back to localhost:5000 if not defined during local development
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+let BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+// Self-healing check: if production URL is passed without the /api suffix, append it automatically
+if (!BASE_URL.endsWith('/api') && !BASE_URL.endsWith('/api/')) {
+    BASE_URL = `${BASE_URL.replace(/\/+$/, '')}/api`;
+}
 
 // Create a reusable Axios instance targeting your backend
 const API = axios.create({
@@ -15,7 +20,7 @@ const API = axios.create({
 
 // Interceptor: Automatically injects the JWT token from localStorage before any request flies out
 API.interceptors.request.use((config) => {
-    const token = localStorage.getItem('corehr_token'); 
+    const token = localStorage.getItem('corehr_token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -73,5 +78,12 @@ export const updateRolePermissions = (payload) => API.post('/roles/update', payl
 // 👤 USER PROVISIONING ENDPOINTS
 // ==========================================
 export const createDashboardUser = (payload) => API.post('/users', payload);
+
+// ==========================================
+// 🏖️ LEAVE MANAGEMENT ENDPOINTS
+// ==========================================
+export const getAllLeaves = () => API.get('/leaves');
+export const applyLeave = (leaveData) => API.post('/leaves/apply', leaveData);
+export const processLeave = (id, status) => API.put(`/leaves/process/${id}`, { status });
 
 export default API;

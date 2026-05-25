@@ -1,40 +1,36 @@
-// LeaveView.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from '../AdminDashboardLayout.module.css';
+import { getAllLeaves, processLeave } from '../../../lib/axios';
 
 const LeaveView = () => {
   // 1. DATA SOURCE STATE ARRAY
-  const [leaveRequests, setLeaveRequests] = useState([
-    {
-      id: 1,
-      employee: 'Sarah Jenkins',
-      classification: 'Sick Leave (SL)',
-      chronoRange: 'Oct 24 - Oct 25',
-      status: 'Pending'
-    },
-    {
-      id: 2,
-      employee: 'Michael Ross',
-      classification: 'Casual Leave (CL)',
-      chronoRange: 'Nov 02 - Nov 03',
-      status: 'Approved'
-    },
-    {
-      id: 3,
-      employee: 'Nidhish Zala',
-      classification: 'Earned Leave (EL)',
-      chronoRange: 'Nov 10 - Nov 12',
-      status: 'Approved'
-    }
-  ]);
+  const [leaveRequests, setLeaveRequests] = useState([]);
+
+  useEffect(() => {
+    const fetchLeaves = async () => {
+      try {
+        const { data } = await getAllLeaves();
+        setLeaveRequests(data);
+      } catch (error) {
+        console.error('Failed to fetch leaves:', error);
+      }
+    };
+    fetchLeaves();
+  }, []);
 
   // Unified status modifier function handling both approvals and rejections
-  const handleStatusUpdate = (id, newStatus) => {
-    setLeaveRequests((prevRequests) =>
-      prevRequests.map((request) =>
-        request.id === id ? { ...request, status: newStatus } : request
-      )
-    );
+  const handleStatusUpdate = async (id, newStatus) => {
+    try {
+      await processLeave(id, newStatus);
+      setLeaveRequests((prevRequests) =>
+        prevRequests.map((request) =>
+          request.id === id ? { ...request, status: newStatus } : request
+        )
+      );
+    } catch (error) {
+      console.error('Failed to update leave status:', error);
+      alert('Failed to process leave request. Please try again.');
+    }
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
