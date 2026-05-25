@@ -1,4 +1,4 @@
-require('dotenv').config({ quiet: true }); 
+require('dotenv').config({ quiet: true });
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./src/config/db');
@@ -29,7 +29,13 @@ const isAllowedOrigin = (origin) => {
 
 	try {
 		const url = new URL(origin);
-		if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+		if (
+			url.hostname === 'localhost' ||
+			url.hostname === '127.0.0.1' ||
+			url.hostname.endsWith('vercel.app') ||
+			url.hostname.endsWith('onrender.com') ||
+			url.hostname.endsWith('netlify.app')
+		) {
 			return true;
 		}
 	} catch (error) {
