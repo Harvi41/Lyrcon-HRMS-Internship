@@ -1,19 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const leaveController = require('../controllers/leaveController');
+const { verifyToken, checkPermission } = require('../middlewares/auth');
 
-// 💡 Import your authentication validation middleware layers
-// Adjust these paths to match wherever your project's middleware folder lives!
-const { verifyToken, checkPermission } = require('../middlewares/auth.js'); 
-
-// 🔒 LAYER 1: Enforce global login checks across all endpoints
+// Enforce global login token verification across all leave operational paths
 router.use(verifyToken);
 
-// 👤 LAYER 2: Employee Self-Service Capabilities
+// ==========================================
+// 👥 EMPLOYEE SELF-SERVICE PATHS
+// ==========================================
 router.post('/apply', leaveController.applyLeave);
 router.get('/my-requests', leaveController.getMyLeaves);
 
-// 👑 LAYER 3: Administrative / Management Panel Restrictions
+// ==========================================
+// 👔 ADMINISTRATIVE & MANAGEMENT PANEL RESTRICTIONS
+// ==========================================
 router.get('/pending', checkPermission('leave.review'), leaveController.getPendingLeaves);
 router.put('/:id/review', checkPermission('leave.review'), leaveController.reviewLeave);
 

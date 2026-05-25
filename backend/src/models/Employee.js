@@ -133,6 +133,8 @@ const employeeSchema = new mongoose.Schema(
       type: Number,
       default: 5,
     },
+    
+    baseCTC: { type: Number, required: true, default: 0 }
   },
   {
     timestamps: true,
@@ -164,7 +166,7 @@ if (!Employee.HR) {
 
 if (!Employee.Admin) {
   Employee.Admin = Employee.discriminator(
-    "Super Admin",
+    "Admin",
     new mongoose.Schema({
       adminLevel: {
         type: Number,

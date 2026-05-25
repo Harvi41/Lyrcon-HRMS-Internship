@@ -1,8 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
+const usersController = require('../controllers/usersController'); 
+const { verifyToken, authorizeRoles } = require('../middlewares/auth'); 
 
 // Authentication routes
+router.post('/register-user', verifyToken, authorizeRoles('admin', 'hr'), usersController.createUser);
 router.post('/login', authController.login);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);

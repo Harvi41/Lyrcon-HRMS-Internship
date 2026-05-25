@@ -8,9 +8,8 @@ const authRoutes = require('./src/routes/authRoutes');
 const employeeRoutes = require('./src/routes/employeeRoutes');
 const assetRoutes = require('./src/routes/assetRoutes');
 const dashboardRoutes = require('./src/routes/dashboardRoutes');
-const rolesRoutes = require('./src/routes/rolesRoutes');
-const usersRoutes = require('./src/routes/usersRoutes');
 const leaveRoutes = require('./src/routes/leaveRoutes'); 
+const payrollRoutes = require('./src/routes/payrollRoutes'); 
 
 const app = express();
 
@@ -39,7 +38,7 @@ const isAllowedOrigin = (origin) => {
   return false;
 };
 
-// Execute Global Security & Body Parsers First!
+// 🛡️ Execute Global Security & Body Parsers First!
 app.disable('x-powered-by');
 app.use(cors({
   origin: (origin, callback) => {
@@ -53,18 +52,17 @@ app.use(cors({
 
 app.use(express.json());
 
-// Mount Protected Core Business Routing Surfaces
-app.use('/api/auth', authRoutes);
+// 🚪 Mount Protected Core Business Routing Surfaces
+app.use('/api/auth', authRoutes);         
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/roles', rolesRoutes);
-app.use('/api/users', usersRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/assets', assetRoutes);
 app.use('/api/leaves', leaveRoutes); 
+app.use('/api/payroll', payrollRoutes);   
 
-// Server Initialization Loop 
+// ⚙️ Server Initialization Loop 
 const startServer = async () => {
-  await connectDB(); 
+  await connectDB();
 
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
