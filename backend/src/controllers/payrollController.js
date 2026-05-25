@@ -1,6 +1,7 @@
 const Payroll = require('../models/Payroll');
 const Employee = require('../models/Employee');
 const Leave = require('../models/Leave');
+const { generatePayslipPDF } = require('../services/pdfService');
 
 const payrollController = {
     // 1. Core Engine: Calculate / Upsert Payroll Draft
@@ -200,7 +201,51 @@ const payrollController = {
         } catch (error) {
             return res.status(500).json({ message: "Server error serving individual payload lines", error: error.message });
         }
-    }
+    },
+
+    downloadPayslip : async (req, res) => {
+            try {
+                const { id } = req.params;
+                
+                // 🛡️ Safe Extraction Check: Handle both common middleware signature variations
+                const userId = req.user?.userId || req.user?.id;
+                const userRole = req.user?.role;
+
+                if (!userId) {
+                    return res.status(401).json({ message: "Access Denied. User session token data is corrupt or missing." });
+                }
+
+                // 1. Target the targeted payslip record
+                const payroll = await Payroll.findById(id);
+                if (!payroll) {
+                    return res.status(404).json({ message: "Requested payroll record not found." });
+                }
+
+                // 2. SECURITY GUARD: Workers can only download their OWN finalized statements!
+                if (userRole === 'Employee') {
+                    const employeeProfile = await Employee.findOne({ userId: userId });
+                    
+                    if (!employeeProfile || payroll.employeeId.toString() !== employeeProfile._id.toString()) {
+                        return res.status(403).json({ message: "Access Denied. You cannot pull financial sheets belonging to others." });
+                    }
+                    if (!['Approved', 'Paid'].includes(payroll.paymentStatus)) {
+                        return res.status(403).json({ message: "Access Denied. Unverified salary drafts are hidden." });
+                    }
+                }
+
+                // 3. Set standard downstream streaming response header types
+                res.setHeader('Content-Type', 'application/pdf');
+                res.setHeader('Content-Disposition', `attachment; filename=payslip-${payroll.payrollMonth}-${id}.pdf`);
+
+                // 4. Trigger the layout engine stream direct to browser pipeline
+                const pdfStream = generatePayslipPDF(payroll);
+                pdfStream.pipe(res);
+
+            } catch (error) {
+                console.error("PDF generation failure:", error);
+                return res.status(500).json({ message: "Server error compiling binary document", error: error.message });
+            }
+        }
 };
 
 module.exports = payrollController;

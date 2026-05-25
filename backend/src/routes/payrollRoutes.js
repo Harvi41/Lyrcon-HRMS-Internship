@@ -11,5 +11,6 @@ router.get('/dashboard', verifyToken, authorizeRoles('admin', 'hr'), payrollCont
 router.post('/calculate', verifyToken, authorizeRoles('admin', 'hr'), payrollController.calculateMonthlyPayroll);
 router.put('/status/:id', verifyToken, authorizeRoles('admin', 'hr'), payrollController.updatePayrollStatus);
 router.put('/disburse/:id', verifyToken, authorizeRoles('admin', 'hr'), payrollController.executePaymentDisbursement);
+router.get('/download/:id', verifyToken, authorizeRoles('admin', 'hr'), payrollController.downloadPayslip);
 
 module.exports = router;
