@@ -1,4 +1,3 @@
-// EmployeeModal.jsx
 import React, { useState, useEffect } from 'react';
 import styles from '../AdminDashboardLayout.module.css'; 
 
@@ -17,7 +16,8 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
     managerId: '',
     status: 'Active',
     address: '',
-    emergencyContact: ''
+    emergencyContact: '',
+    salary: '' 
   });
 
   useEffect(() => {
@@ -38,7 +38,8 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
         managerId: employeeData.managerId || 'EMP-1002 (Sarah J.)',
         status: employeeData.status || 'Active',
         address: employeeData.address || '102 Sky Tower, Andheri East, MH, IN, 400069',
-        emergencyContact: employeeData.emergencyContact || 'Ramesh Ghevariya - +91 98331 22211'
+        emergencyContact: employeeData.emergencyContact || 'Ramesh Ghevariya - +91 98331 22211',
+        salary: employeeData.salary || '82400.00' 
       });
     } else {
       setFormData({
@@ -55,7 +56,8 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
         managerId: '',
         status: 'Active',
         address: '',
-        emergencyContact: ''
+        emergencyContact: '',
+        salary: '' 
       });
     }
   }, [employeeData, mode, isOpen]);
@@ -67,6 +69,26 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // STATUTORY PAYROLL LEDGER MATH LOGIC
+  // ═══════════════════════════════════════════════════════════════════════════
+  const numericCTC = Number(formData.salary) || 0;
+  
+  const basicSalary = numericCTC * 0.40; 
+  const hra = basicSalary * 0.25;        
+  const medicalReimbursement = numericCTC > 0 ? 1250 : 0;
+  const lta = numericCTC > 0 ? 2500 : 0;
+  const specialAllowance = Math.max(0, numericCTC - (basicSalary + hra + medicalReimbursement + lta));
+
+  const epfDeduction = basicSalary * 0.12; 
+  const professionalTax = numericCTC > 0 ? 200 : 0; 
+  
+  const netTakeHomePay = Math.max(0, numericCTC - epfDeduction - professionalTax);
+
+  const formatCurrency = (val) => {
+    return val.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const submittedData = {
@@ -74,7 +96,8 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
       id: mode === 'edit' ? employeeData.id : `EMP-${Math.floor(Math.random() * 1000) + 2000}`,
       name: `${formData.firstName} ${formData.lastName}`.trim(),
       dept: formData.department,
-      role: formData.designation
+      role: formData.designation,
+      salary: formData.salary 
     };
     onSuccess(submittedData, mode);
   };
@@ -83,22 +106,13 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalContentWide} onClick={(e) => e.stopPropagation()}>
         
-        {/* Modal Main Header Wrapper */}
+        {/* Header Block */}
         <div className={styles.modalHeader}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#0f172a', margin: 0 }}>
-            {mode === 'edit' ? 'Edit Employee Profile' : 'Create Employee Profile'}
-          </h2>
-          <button 
-            type="button" 
-            className={styles.btnCancel} 
-            onClick={onClose} 
-            style={{ padding: '2px 10px', minWidth: 'auto', border: 'none', background: 'transparent', fontSize: '1.65rem', color: '#64748b' }}
-          >
-            &times;
-          </button>
+          <h2>{mode === 'edit' ? 'Edit Employee Profile' : 'Create Employee Profile'}</h2>
+          <button type="button" className={styles.modalCloseBtn} onClick={onClose}>&times;</button>
         </div>
 
-        {/* Scrollable Form Workspace Canvas Area */}
+        {/* Scrollable Form Window Workspace Canvas */}
         <form onSubmit={handleSubmit} className={styles.modalScrollForm}>
           
           {/* Section 1: Personal Details */}
@@ -192,8 +206,105 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
             </div>
           </div>
 
-          {/* Action Trigger Buttons Footer Row */}
-          <div className={styles.modalActionButtons} style={{ margin: 0, paddingBottom: 0 }}>
+          {/* ── SECTION 4: CLASS-BOUND COMPENSATION DETAILS ── */}
+          <div className={styles.modalFormSection}>
+            <h3 className={styles.modalSectionSubTitle} style={{ color: '#4f46e5' }}>Compensation Details</h3>
+            
+            <div className={styles.salaryInputRow}>
+              <div className={styles.modalFieldGroup}>
+                <label style={{ fontWeight: '700' }}>Gross CTC / Base Salary (Monthly)</label>
+                <div className={styles.currencyInputContainer}>
+                  <span className={styles.currencyPrefix}>Core ₹</span>
+                  <input 
+                    type="number" 
+                    name="salary" 
+                    placeholder="e.g. 82400" 
+                    value={formData.salary} 
+                    onChange={handleChange} 
+                    required 
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Completely Styled Ledger Box Node Container Mapping */}
+            <div className={styles.ledgerWrapper}>
+              
+              {/* Earnings Headers */}
+              <div className={styles.ledgerHeaderRow}>
+                <div>Earnings & Allowances</div>
+                <div>Monthly</div>
+                <div>Est. Annual CTC</div>
+              </div>
+
+              {/* Earnings Content Body */}
+              <div className={styles.ledgerBody}>
+                <div className={styles.ledgerDataRow}>
+                  <span>Basic Salary (40% of CTC)</span>
+                  <span>₹ {formatCurrency(basicSalary)}</span>
+                  <span>₹ {formatCurrency(basicSalary * 12)}</span>
+                </div>
+                <div className={styles.ledgerDataRow}>
+                  <span>House Rent Allowance (25% of Basic)</span>
+                  <span>₹ {formatCurrency(hra)}</span>
+                  <span>₹ {formatCurrency(hra * 12)}</span>
+                </div>
+                <div className={styles.ledgerDataRow}>
+                  <span>Special Allowance (Residual)</span>
+                  <span>₹ {formatCurrency(specialAllowance)}</span>
+                  <span>₹ {formatCurrency(specialAllowance * 12)}</span>
+                </div>
+                <div className={styles.ledgerDataRow}>
+                  <span>Medical Reimbursement</span>
+                  <span>₹ {formatCurrency(medicalReimbursement)}</span>
+                  <span>₹ {formatCurrency(medicalReimbursement * 12)}</span>
+                </div>
+                <div className={styles.ledgerDataRow} style={{ border: 'none' }}>
+                  <span>Leave Travel Allowance (LTA)</span>
+                  <span>₹ {formatCurrency(lta)}</span>
+                  <span>₹ {formatCurrency(lta * 12)}</span>
+                </div>
+              </div>
+
+              {/* Deductions Header Row Section */}
+              <div className={styles.ledgerDeductionsHeader}>
+                <div>Statutory Deductions</div>
+                <div>Personal Voluntary PPF Contrib.</div>
+              </div>
+
+              {/* Deductions Split Layout block */}
+              <div className={styles.ledgerDeductionsSplit}>
+                <div className={styles.deductionsListColumn}>
+                  <div className={styles.deductionsItemRow}>
+                    <span>EPF (12% of Basic)</span>
+                    <strong className={styles.deductionNegativeText}>- ₹ {formatCurrency(epfDeduction)}</strong>
+                  </div>
+                  <div className={styles.deductionsItemRow}>
+                    <span>Professional Tax (PT)</span>
+                    <strong className={styles.deductionNegativeText}>- ₹ {formatCurrency(professionalTax)}</strong>
+                  </div>
+                </div>
+
+                <div className={styles.ppfAdvisoryBlock}>
+                  <div className={styles.ppfStatusGreenDot}>
+                    <span className={styles.greenPulseIndicator}></span>
+                    ₹ 0.00 / User Managed
+                  </div>
+                  <span className={styles.ppfSubMetaText}>(PPF falls outside corporate payroll ledger limits)</span>
+                </div>
+              </div>
+
+              {/* Take-Home Net Result Balance Panel Footer */}
+              <div className={styles.ledgerTakeHomeSummaryFooter}>
+                <span>Est. Net Monthly Take-Home</span>
+                <strong>₹ {formatCurrency(netTakeHomePay)}.00</strong>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Form Action Controls Row */}
+          <div className={styles.modalActionButtons} style={{ marginTop: '12px', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
             <button type="button" className={styles.btnCancel} onClick={onClose}>Cancel</button>
             <button type="submit" className={styles.btnSubmit}>
               {mode === 'edit' ? 'Save Changes' : 'Create'}
