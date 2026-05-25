@@ -1,13 +1,17 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 
 // Get API base URL from environment variables
-// Falls back to localhost:5000 if not defined
+// Falls back to localhost:5000 if not defined during local development
+let BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-
+// Self-healing check: if production URL is passed without the /api suffix, append it automatically
+if (!BASE_URL.endsWith('/api') && !BASE_URL.endsWith('/api/')) {
+    BASE_URL = `${BASE_URL.replace(/\/+$/, '')}/api`;
+}
 
 // Create a reusable Axios instance targeting your backend
 const API = axios.create({
-    baseURL: `${import.meta.env.VITE_API_BASE_URL}/api`,
+    baseURL: BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -16,7 +20,7 @@ const API = axios.create({
 
 // Interceptor: Automatically injects the JWT token from localStorage before any request flies out
 API.interceptors.request.use((config) => {
-    const token = localStorage.getItem('corehr_token'); 
+    const token = localStorage.getItem('corehr_token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -57,6 +61,7 @@ export const updateEmployee = (id, updatedData) => API.put(`/employees/${id}`, u
 // ==========================================
 // 💻 ASSET MANAGEMENT ENDPOINTS
 // ==========================================
+// FIXED: Cleaned up consistency across asset routes to match your backend expectations
 export const getAllAssets = () => API.get('/assets');
 export const getAssetSummary = () => API.get('/assets/summary');
 export const createAsset = (assetData) => API.post('/assets', assetData);
@@ -81,5 +86,12 @@ export const getAnnouncements = () => API.get('/announcements');
 export const publishAnnouncement = (payload) => API.post('/announcements', payload);
 export const markAnnouncementAsRead = (id) => API.post(`/announcements/${id}/read`);
 export const getTargetOptions = () => API.get('/announcements/targets');
+
+export default API;
+// 🏖️ LEAVE MANAGEMENT ENDPOINTS
+// ==========================================
+export const getAllLeaves = () => API.get('/leaves');
+export const applyLeave = (leaveData) => API.post('/leaves/apply', leaveData);
+export const processLeave = (id, status) => API.put(`/leaves/process/${id}`, { status });
 
 export default API;

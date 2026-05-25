@@ -21,7 +21,8 @@ exports.createEmployee = async (req, res) => {
             workLocation, 
             emergencyContact, 
             address,
-            roleName
+            roleName,
+            baseCTC
         } = req.body;
         
         // 1. Check if an employee with the same email or code already exists
@@ -58,7 +59,7 @@ exports.createEmployee = async (req, res) => {
         let EmployeeModel;
         let roleSpecificFields = {};
 
-        if (targetRole.name === 'Super Admin') {
+        if (targetRole.name === 'Admin') {
             EmployeeModel = Employee.Admin;
             roleSpecificFields = {
                 adminLevel: req.body.adminLevel,

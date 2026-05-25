@@ -143,6 +143,7 @@ const AnnouncementsView = () => {
             <span className={styles.metricValue}>{totalCount}</span>
           </div>
         </div>
+        
         <div className={styles.metricCard}>
           <h3>CRITICAL ALERTS</h3>
           <div className={styles.metricValueWrapper}>

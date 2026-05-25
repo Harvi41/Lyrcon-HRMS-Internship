@@ -318,38 +318,48 @@ const LeaveView = () => {
 
         {/* LEFT COMPONENT: Dynamic Monthly Leave Proportions */}
         <div className={styles.chartContainer}>
-          <h3>Monthly Leave Class Proportions</h3>
+          <h3 style={{ margin: '0 0 16px 0', fontSize: '1rem', fontWeight: '700', color: '#1e293b' }}>
+            Monthly Leave Class Proportions
+          </h3>
           <div className={styles.chartPlaceholderVertical}>
-            <div className={styles.deptMetric}>
-              <span>Casual Leave (CL)</span>
-              <div className={styles.progressBar}>
-                <div style={{ width: clDisplayWidth, transition: 'width 0.3s ease' }}></div>
+            
+            <div className={styles.deptMetricRow} style={{ gridTemplateColumns: '140px 1fr 50px' }}>
+              <span className={styles.deptName}>Casual Leave (CL)</span>
+              <div className={styles.progressBarContainer}>
+                <div className={styles.progressBarFill} style={{ width: clDisplayWidth, backgroundColor: '#635bff' }}></div>
               </div>
-              <strong>{totalApproved > 0 ? `${clPercent}%` : '64%'}</strong>
+              <strong className={styles.deptCount}>{totalApproved > 0 ? `${clPercent}%` : '64%'}</strong>
             </div>
-            <div className={styles.deptMetric}>
-              <span>Sick Leave (SL)</span>
-              <div className={styles.progressBar}>
-                <div style={{ width: slDisplayWidth, backgroundColor: '#10b981', transition: 'width 0.3s ease' }}></div>
+
+            <div className={styles.deptMetricRow} style={{ gridTemplateColumns: '140px 1fr 50px' }}>
+              <span className={styles.deptName}>Sick Leave (SL)</span>
+              <div className={styles.progressBarContainer}>
+                <div className={styles.progressBarFill} style={{ width: slDisplayWidth, backgroundColor: '#10b981' }}></div>
               </div>
-              <strong>{totalApproved > 0 ? `${slPercent}%` : '22%'}</strong>
+              <strong className={styles.deptCount}>{totalApproved > 0 ? `${slPercent}%` : '22%'}</strong>
             </div>
-            <div className={styles.deptMetric}>
-              <span>Earned Leave (EL)</span>
-              <div className={styles.progressBar}>
-                <div style={{ width: elDisplayWidth, backgroundColor: '#f59e0b', transition: 'width 0.3s ease' }}></div>
+
+            <div className={styles.deptMetricRow} style={{ gridTemplateColumns: '140px 1fr 50px' }}>
+              <span className={styles.deptName}>Earned Leave (EL)</span>
+              <div className={styles.progressBarContainer}>
+                <div className={styles.progressBarFill} style={{ width: elDisplayWidth, backgroundColor: '#f59e0b' }}></div>
               </div>
-              <strong>{totalApproved > 0 ? `${elPercent}%` : '14%'}</strong>
+              <strong className={styles.deptCount}>{totalApproved > 0 ? `${elPercent}%` : '14%'}</strong>
             </div>
+
           </div>
         </div>
 
         {/* RIGHT COMPONENT: Dynamic Operational Metrics Card */}
         <div className={styles.chartContainer}>
-          <h3>Operational Balance Metrics</h3>
+          <h3 style={{ margin: '0 0 16px 0', fontSize: '1rem', fontWeight: '700', color: '#1e293b' }}>
+            Operational Balance Metrics
+          </h3>
           <div className={styles.operationalContainer}>
-            <span className={styles.subTextEmail}>Active Absences (Today)</span>
-            <div className={styles.hugeHighlightedValue} style={{ color: '#6366f1', margin: '8px 0' }}>
+            <span className={styles.subTextEmail} style={{ fontSize: '0.85rem', fontWeight: '500' }}>
+              Active Absences (Today)
+            </span>
+            <div className={styles.hugeHighlightedValue} style={{ margin: '12px 0' }}>
               {approvedAbsencesCount} {approvedAbsencesCount === 1 ? 'Employee' : 'Employees'}
             </div>
             <div className={styles.complianceSafeBadge}>
@@ -357,6 +367,7 @@ const LeaveView = () => {
             </div>
           </div>
         </div>
+
       </div>
 
       {/* ── Table Action Filter Bar with single '+ Apply for Leave' trigger ── */}
@@ -389,9 +400,9 @@ const LeaveView = () => {
 
               return (
                 <tr key={request.id}>
-                  <td><strong>{request.employee}</strong></td>
-                  <td>{request.classification}</td>
-                  <td>{request.chronoRange}</td>
+                  <td><strong style={{ color: '#0f172a', fontWeight: '700' }}>{request.employee}</strong></td>
+                  <td style={{ color: '#475569', fontWeight: '500' }}>{request.classification}</td>
+                  <td style={{ color: '#475569', fontWeight: '500' }}>{request.chronoRange}</td>
                   <td>
                     <span className={`${styles.statusLabel} ${getValidationStyle(request.status)}`}>
                       {request.status}
@@ -399,7 +410,7 @@ const LeaveView = () => {
                   </td>
                   <td>
                     {isFinalized ? (
-                      <button className={styles.inlineTableButtonDisabled} disabled>
+                      <button className={styles.inlineTableButtonDisabled} style={{ width: '100%', textAlign: 'center' }} disabled>
                         {request.status}
                       </button>
                     ) : (
@@ -408,6 +419,7 @@ const LeaveView = () => {
                           className={styles.inlineTableButton}
                           onClick={() => handleStatusUpdate(request.id, 'Approved')}
                           type="button"
+                          style={{ padding: '6px 12px', fontSize: '0.85rem' }}
                         >
                           Approve
                         </button>
@@ -416,6 +428,7 @@ const LeaveView = () => {
                           style={{ padding: '6px 14px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '500' }}
                           onClick={() => handleStatusUpdate(request.id, 'Rejected')}
                           type="button"
+                          style={{ padding: '6px 12px', fontSize: '0.85rem' }}
                         >
                           Reject
                         </button>

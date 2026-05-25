@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import styles from '../HRDashboardLayout.module.css';
 
+import { jsPDF } from 'jspdf';
+
 const PayrollView = () => {
   // 1. DYNAMIC METRICS SUMMARY STATE
   const [disbursementTotal, setDisbursementTotal] = useState(1245000);
@@ -57,27 +59,76 @@ const PayrollView = () => {
   const handleDownloadPayslipAsset = (emp) => {
     if (emp.status !== 'Paid') return;
 
-    const documentationBody = `
-============================================================
-             COREHR MANAGEMENT PAYROLL LEDGER STATEMENT
-============================================================
-  Employee ID       : ${emp.id}
-  Staff Name        : ${emp.name}
-  Allocated Dept    : ${emp.dept}
-------------------------------------------------------------
-  Base Earnings Struct  : ₹${emp.baseSalary.toLocaleString('en-IN')}.00
-  Regulatory Provident  : Deductions Finalized
-------------------------------------------------------------
-  NET CASH PAYOUT   : ₹${emp.netPayout.toLocaleString('en-IN')}.00
-  TXN TRANSFER LOG  : Committed & Released
-============================================================
-   Generated securely via CoreHR Corporate Cloud Portal
-    `;
+    const monthName = new Date().toLocaleString('en-US', { month: 'long' });
+    const doc = new jsPDF();
 
-    const blobFileElement = new Blob([documentationBody], { type: 'text/plain;charset=utf-8;' });
+    // Styles & Titles
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(33, 28, 109);
+    doc.text("CoreHR Management Payroll Ledger", 105, 20, { align: "center" });
+
+    doc.setFontSize(12);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Salary Statement - ${monthName} ${new Date().getFullYear()}`, 105, 28, { align: "center" });
+
+    // Employee Detils
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    
+    doc.text(`Employee ID: ${emp.id}`, 20, 45);
+    doc.text(`Staff Name: ${emp.name}`, 20, 52);
+    doc.text(`Department: ${emp.dept || 'N/A'}`, 20, 59);
+
+    // Box for financial
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(20, 68, 170, 75);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Earnings & Regulatory Deductions", 25, 78);
+    
+    doc.setFont("helvetica", "normal");
+    doc.text("Base Salary (Gross Earnings)", 25, 90);
+    doc.text(`Rs. ${emp.baseSalary.toLocaleString('en-IN')}.00`, 180, 90, { align: "right" });
+
+    doc.setDrawColor(230, 230, 230);
+    doc.line(25, 95, 185, 95);
+
+    doc.text("Provident Fund / Tax Withholding", 25, 105);
+    const deductions = emp.baseSalary - emp.netPayout;
+    doc.text(`- Rs. ${deductions.toLocaleString('en-IN')}.00`, 180, 105, { align: "right" });
+
+    doc.line(25, 110, 185, 110);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("NET CASH PAYOUT", 25, 125);
+    const netPayoutStr = `Rs. ${emp.netPayout.toLocaleString('en-IN')}.00`;
+    doc.text(netPayoutStr, 180, 125, { align: "right" });
+
+    // Footer
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Generated securely via CoreHR Corporate Cloud Portal.", 105, 160, { align: "center" });
+
+    // Properties
+    const filename = `lyrcon_${monthName.toLowerCase()}_salary.pdf`;
+    doc.setProperties({
+        title: filename,
+        subject: `Salary Statement for ${emp.name}`,
+    });
+
+    const pdfBlobUrl = doc.output('bloburl');
+    // Open in a new Chrome tab/window for the user to view using PDF viewer
+    window.open(pdfBlobUrl, '_blank');
+    
+    // Automatically trigger a download as well
     const virtualAnchorNode = document.createElement('a');
-    virtualAnchorNode.setAttribute('href', URL.createObjectURL(blobFileElement));
-    virtualAnchorNode.setAttribute('download', `Payslip_${emp.id}_Statement.txt`);
+    virtualAnchorNode.setAttribute('href', pdfBlobUrl);
+    virtualAnchorNode.setAttribute('download', filename);
     virtualAnchorNode.style.visibility = 'hidden';
     document.body.appendChild(virtualAnchorNode);
     virtualAnchorNode.click();
