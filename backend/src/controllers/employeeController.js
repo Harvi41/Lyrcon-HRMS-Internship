@@ -95,6 +95,7 @@ exports.createEmployee = async (req, res) => {
             workLocation,
             emergencyContact,
             address,
+            baseCTC : Number(baseCTC) || 0,
             ...roleSpecificFields
         });
 
