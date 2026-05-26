@@ -2,14 +2,19 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../AdminDashboardLayout.module.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export default function AssetDeleteWizard({ isOpen, asset, onClose, onPurgeConfirmed }) {
   const [currentStep, setCurrentStep] = useState(1); // 1 = Warning prompt, 2 = ID verify, 3 = Cleared state
   const [typedId, setTypedId] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     if (!isOpen) {
       setCurrentStep(1);
       setTypedId('');
+      setErrorMsg('');
     }
   }, [isOpen]);
 
@@ -17,10 +22,32 @@ export default function AssetDeleteWizard({ isOpen, asset, onClose, onPurgeConfi
 
   const handleNextStep = () => setCurrentStep(2);
 
-  const handleFinalSubmission = (e) => {
+  const handleFinalSubmission = async (e) => {
     e.preventDefault();
-    if (typedId.trim() === asset._id) {
+    if (typedId.trim() !== asset._id) return;
+
+    setErrorMsg('');
+    setLoading(true);
+    try {
+      const token = window.localStorage.getItem('corehr_token');
+      const response = await fetch(`${API_BASE_URL}/api/assets/${asset._id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Scrub action failed on ledger states');
+      }
+
       setCurrentStep(3);
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(err.message || 'An unexpected error occurred while deleting the asset.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -61,6 +88,24 @@ export default function AssetDeleteWizard({ isOpen, asset, onClose, onPurgeConfi
             <div className={styles.nameTemplateTargetBox} style={{ width: '100%', textAlign: 'center', boxSizing: 'border-box' }}>
               {asset._id}
             </div>
+
+            {errorMsg && (
+              <div style={{
+                backgroundColor: '#fee2e2',
+                border: '1px solid #fca5a5',
+                color: '#b91c1c',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                marginBottom: '16px',
+                fontSize: '0.82rem',
+                fontWeight: '500',
+                width: '100%',
+                boxSizing: 'border-box'
+              }}>
+                {errorMsg}
+              </div>
+            )}
+
             <div className={styles.inputGroup} style={{ width: '100%', textAlign: 'left', marginBottom: '20px' }}>
               <label style={{ fontSize: '0.82rem', fontWeight: '600', color: '#475569' }}>Type Asset ID Here</label>
               <input 
@@ -70,12 +115,13 @@ export default function AssetDeleteWizard({ isOpen, asset, onClose, onPurgeConfi
                 onChange={(e) => setTypedId(e.target.value)} 
                 className={typedId.trim() === asset._id ? styles.inputValidMatch : styles.inputInvalidMatch} 
                 placeholder="e.g., AST-101"
+                disabled={loading}
               />
             </div>
             <div className={styles.wizardFooterActions}>
-              <button type="button" className={styles.secondaryActionButton} onClick={onClose}>Cancel</button>
-              <button type="submit" className={styles.dangerActionButton} disabled={typedId.trim() !== asset._id}>
-                Confirm Delete
+              <button type="button" className={styles.secondaryActionButton} onClick={onClose} disabled={loading}>Cancel</button>
+              <button type="submit" className={styles.dangerActionButton} disabled={typedId.trim() !== asset._id || loading}>
+                {loading ? 'Deleting...' : 'Confirm Delete'}
               </button>
             </div>
           </form>

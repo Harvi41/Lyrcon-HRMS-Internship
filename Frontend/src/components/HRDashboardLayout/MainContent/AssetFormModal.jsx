@@ -10,10 +10,14 @@ export default function AssetFormModal({ isOpen, mode, assetData, onClose, onSav
     name: '', _id: '', category: '', modelNumber: '', brand: '', manufactureYear: '',
     assignedTo: '', department: 'Engineering', issueDate: '', returnDate: '', status: 'Active', condition: 'Excellent', assetValue: ''
   });
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     if (isOpen) {
       setCurrentStep(1);
+      setErrorMsg('');
       if (mode === 'edit' && assetData) {
         setFormData({ ...assetData });
       } else {
@@ -22,6 +26,23 @@ export default function AssetFormModal({ isOpen, mode, assetData, onClose, onSav
           assignedTo: '', department: 'Engineering', issueDate: new Date().toLocaleDateString('en-GB'), returnDate: '', status: 'Active', condition: 'Excellent', assetValue: ''
         });
       }
+
+      // Fetch employees list for drop down assignment
+      const fetchEmployees = async () => {
+        try {
+          const token = window.localStorage.getItem('corehr_token');
+          const response = await fetch(`${API_BASE_URL}/api/employees`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setEmployees(data || []);
+          }
+        } catch (err) {
+          console.error("Failed to load employees for asset management dropdown:", err);
+        }
+      };
+      fetchEmployees();
     }
   }, [isOpen, mode, assetData]);
 
@@ -34,15 +55,33 @@ export default function AssetFormModal({ isOpen, mode, assetData, onClose, onSav
 
   const handleFormSubmission = async (e) => {
     e.preventDefault();
+    setErrorMsg('');
+    setLoading(true);
     try {
       const token = window.localStorage.getItem('corehr_token');
       const url = mode === 'edit' ? `${API_BASE_URL}/api/assets/${assetData._id}` : `${API_BASE_URL}/api/assets`;
       const method = mode === 'edit' ? 'PUT' : 'POST';
 
-      // Keep tracking local list simulation context stable if DB layer sync triggers fallbacks
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Operation failed on ledger states');
+      }
+
       setCurrentStep(2);
     } catch (err) {
       console.error(err);
+      setErrorMsg(err.message || 'An unexpected error occurred while saving the asset.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -59,6 +98,21 @@ export default function AssetFormModal({ isOpen, mode, assetData, onClose, onSav
             </div>
 
             <form onSubmit={handleFormSubmission} className={styles.modalScrollForm}>
+              {errorMsg && (
+                <div style={{
+                  backgroundColor: '#fee2e2',
+                  border: '1px solid #fca5a5',
+                  color: '#b91c1c',
+                  padding: '12px 16px',
+                  borderRadius: '6px',
+                  marginBottom: '16px',
+                  fontSize: '0.88rem',
+                  fontWeight: '500'
+                }}>
+                  {errorMsg}
+                </div>
+              )}
+
               <div className={styles.modalFormSection}>
                 <h4 className={styles.modalSectionSubTitle}>Asset Information</h4>
                 <div className={styles.modalFormGridThree}>
@@ -94,7 +148,31 @@ export default function AssetFormModal({ isOpen, mode, assetData, onClose, onSav
                 <div className={styles.modalFormGridThree}>
                   <div className={styles.modalFieldGroup}>
                     <label>Assign To Employee</label>
-                    <input type="text" name="assignedTo" value={formData.assignedTo} onChange={handleInputChange} placeholder="Prince Ghevariya" />
+                    <select 
+                      name="assignedTo" 
+                      value={formData.assignedTo} 
+                      onChange={handleInputChange}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '1.5px solid #cbd5e1',
+                        borderRadius: '6px',
+                        fontSize: '0.9rem',
+                        color: '#334155',
+                        backgroundColor: '#ffffff'
+                      }}
+                    >
+                      <option value="">Unassigned</option>
+                      {employees.map(emp => {
+                        const fullName = `${emp.firstName} ${emp.lastName}`;
+                        const valueStr = `${fullName} (${emp.employeeCode})`;
+                        return (
+                          <option key={emp._id} value={valueStr}>
+                            {fullName} ({emp.employeeCode})
+                          </option>
+                        );
+                      })}
+                    </select>
                   </div>
                   <div className={styles.modalFieldGroup}>
                     <label>Department</label>
@@ -142,9 +220,9 @@ export default function AssetFormModal({ isOpen, mode, assetData, onClose, onSav
               </div>
 
               <div className={styles.modalActionButtons} style={{ margin: 0, padding: 0, border: 'none' }}>
-                <button type="button" className={styles.btnCancel} onClick={onClose}>Cancel</button>
-                <button type="submit" className={styles.btnSubmit}>
-                  {mode === 'edit' ? 'Save Changes' : 'Create Asset'}
+                <button type="button" className={styles.btnCancel} onClick={onClose} disabled={loading}>Cancel</button>
+                <button type="submit" className={styles.btnSubmit} disabled={loading}>
+                  {loading ? 'Saving...' : (mode === 'edit' ? 'Save Changes' : 'Create Asset')}
                 </button>
               </div>
             </form>

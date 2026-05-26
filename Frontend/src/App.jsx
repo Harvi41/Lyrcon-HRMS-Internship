@@ -3,7 +3,7 @@ import LoginPage from "./components/Authform/LoginPage";
 import ResetPasswordPage from "./components/Authform/ResetPasswordPage";
 import HRDashboardLayout from "./components/HRDashboardLayout/HRDashboardLayout";
 import AdminDashboardLayout from "./components/AdminDashboardLayout/AdminDashboardLayout";
-//import EmployeeDashboardLayout from "./Pages/Employee/EmployeeDashboardLayout";
+import EmployeeDashboardLayout from "./components/EmployeeDashboardLayout/EmployeeDashboardLayout";
 
 // Standardized lookup set for allowed lower-cased role mappings
 const allowedRoles = new Set(['hr', 'admin', 'employee']);
@@ -109,7 +109,7 @@ export default function App() {
         return <HRDashboardLayout user={session.user} onLogout={handleLogout} />;
 
       case 'employee':
-        return <div>Employee Dashboard Not Implemented</div>;
+        return <EmployeeDashboardLayout user={session.user} onLogout={handleLogout} />;
 
       case 'admin':
         // This natively catches both 'admin' and parsed 'super admin' strings now!

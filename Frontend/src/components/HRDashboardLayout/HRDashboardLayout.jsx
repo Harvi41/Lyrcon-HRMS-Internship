@@ -10,6 +10,7 @@ import RecruitmentView from './MainContent/RecruitmentView';
 import AnnouncementsView from './MainContent/AnnouncementsView';
 import RolesPermissionsView from './MainContent/RolesPermissionsView';
 import AssetsPanel from './MainContent/AssetsPanel';
+import TasksPanel from './MainContent/TasksPanel';
 import styles from './HRDashboardLayout.module.css';
 
 const HRDashboardLayout = ({ user, onLogout }) => {
@@ -28,7 +29,7 @@ const HRDashboardLayout = ({ user, onLogout }) => {
     announcements: { title: "Announcements", component: <AnnouncementsView /> },
     'roles-permissions': { title: "RBAC Access Control Engine", component: <RolesPermissionsView /> }, // FIXED: Added missing trailing comma here
     assets: { title: "Asset Management", component: <AssetsPanel /> },
-    announcements: { title: "Announcements", component: <AnnouncementsView /> }
+    tasks: { title: "Task Assignment Board", component: <TasksPanel userRole="hr" /> }
   };
 
   const currentPage = pageMeta[activeTab] || pageMeta.dashboard;
