@@ -194,7 +194,7 @@ export default function EmployeeDashboardLayout({ user, onLogout }) {
                     color: '#fff',
                     display: 'flex',
                     alignItems: 'center',
-                    justify-content: 'center',
+                    justifyContent: 'center',
                     fontWeight: '700'
                   }}>!</div>
                   <div>
