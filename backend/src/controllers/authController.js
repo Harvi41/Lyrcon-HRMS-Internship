@@ -45,10 +45,10 @@ const authController = {
             }
 
             // 4. Update audit metrics
-        await User.updateOne(
-            { _id: user._id },
-            { $set: { lastLogin: new Date() } }
-        );
+            await User.updateOne(
+                { _id: user._id },
+                { $set: { lastLogin: new Date() } }
+            );
 
             // 5. Sign the token payload (Extended to 7d for smoother development testing!)
             const token = jwt.sign(
