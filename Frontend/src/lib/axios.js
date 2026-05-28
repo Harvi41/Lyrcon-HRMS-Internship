@@ -1,10 +1,8 @@
 import axios from 'axios';
 
 // Get API base URL from environment variables
-// Falls back to localhost:5000 if not defined during local development
 let BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-// Self-healing check: if production URL is passed without the /api suffix, append it automatically
 if (!BASE_URL.endsWith('/api') && !BASE_URL.endsWith('/api/')) {
     BASE_URL = `${BASE_URL.replace(/\/+$/, '')}/api`;
 }
@@ -15,7 +13,7 @@ const API = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
-    timeout: 10000, // 10 seconds timeout
+    timeout: 10000, 
 });
 
 // Interceptor: Automatically injects the JWT token from localStorage before any request flies out
@@ -52,23 +50,6 @@ export const forgotPassword = (email) => API.post('/auth/forgot-password', { ema
 export const resetPassword = (token, newPassword) => API.post('/auth/reset-password', { token, newPassword });
 
 // ==========================================
-// 👥 EMPLOYEE ENDPOINTS
-// ==========================================
-export const getAllEmployees = () => API.get('/employees');
-export const createEmployee = (employeeData) => API.post('/employees', employeeData);
-export const updateEmployee = (id, updatedData) => API.put(`/employees/${id}`, updatedData);
-
-// ==========================================
-// 💻 ASSET MANAGEMENT ENDPOINTS
-// ==========================================
-// FIXED: Cleaned up consistency across asset routes to match your backend expectations
-export const getAllAssets = () => API.get('/assets');
-export const getAssetSummary = () => API.get('/assets/summary');
-export const createAsset = (assetData) => API.post('/assets', assetData);
-export const addAssetComment = (id, commentText) => API.post(`/assets/${id}/comment`, { comment: commentText });
-export const markAssetDamaged = (id, userId) => API.put(`/assets/${id}/damage`, { damagedBy: userId });
-
-// ==========================================
 // 🔐 ROLE MANAGEMENT ENDPOINTS
 // ==========================================
 export const getRoles = () => API.get('/roles');
@@ -77,7 +58,57 @@ export const updateRolePermissions = (payload) => API.post('/roles/update', payl
 // ==========================================
 // 👤 USER PROVISIONING ENDPOINTS
 // ==========================================
-export const createDashboardUser = (payload) => API.post('/users', payload);
+export const createDashboardUser = (payload) => API.post('/auth/register-user', payload);
+
+// ==========================================
+// 👥 EMPLOYEE ENDPOINTS
+// ==========================================
+export const getAllEmployees = () => API.get('/employees');
+export const createEmployee = (employeeData) => API.post('/employees', employeeData);
+export const updateEmployee = (id, updatedData) => API.put(`/employees/${id}`, updatedData);
+
+// ==========================================
+// 📍 ATTENDANCE ENDPOINTS
+// ==========================================
+export const clockIn = (deviceFingerprint) => API.post('/attendance/clock-in', { deviceFingerprint });
+export const clockOut = () => API.post('/attendance/clock-out');
+export const getLiveRoster = () => API.get('/attendance/live-roster');
+export const getEmployeeAttendance = (employeeId, month) => {
+    const url = month ? `/attendance/employee/${employeeId}?month=${month}` : `/attendance/employee/${employeeId}`;
+    return API.get(url);
+};
+
+// ==========================================
+// 🏖️ LEAVE MANAGEMENT ENDPOINTS
+// ==========================================
+export const getAllLeaves = () => API.get('/leaves');
+export const applyLeave = (leaveData) => API.post('/leaves/apply', leaveData);
+export const processLeave = (id, status) => API.put(`/leaves/${id}/review`, { status });
+
+// ==========================================
+// 💳 PAYROLL ENDPOINTS
+// ==========================================
+export const getPayrollHistory = (employeeId) => API.get(`/payroll/history/${employeeId}`);
+export const processMonthlyPayroll = (payload) => API.post('/payroll/process', payload);
+export const downloadPayslipPDF = (payrollId) => API.get(`/payroll/payslip/${payrollId}`, { responseType: 'blob' });
+
+// ==========================================
+// 📝 TASK MANAGEMENT ENDPOINTS
+// ==========================================
+export const getAllTasks = () => API.get('/tasks');
+export const createTask = (taskData) => API.post('/tasks', taskData);
+export const updateTask = (id, updatedData) => API.put(`/tasks/${id}`, updatedData);
+export const updateTaskStatus = (id, status) => API.put(`/tasks/${id}/status`, { status });
+export const deleteTask = (id) => API.delete(`/tasks/${id}`);
+
+// ==========================================
+// 💻 ASSET MANAGEMENT ENDPOINTS
+// ==========================================
+export const getAllAssets = () => API.get('/assets');
+export const getAssetSummary = () => API.get('/assets/summary');
+export const createAsset = (assetData) => API.post('/assets', assetData);
+export const addAssetComment = (id, commentText) => API.post(`/assets/${id}/comment`, { comment: commentText });
+export const markAssetDamaged = (id, userId) => API.put(`/assets/${id}/damage`, { damagedBy: userId });
 
 // ==========================================
 // 📣 ANNOUNCEMENT & NOTIFICATION ENDPOINTS
@@ -86,12 +117,5 @@ export const getAnnouncements = () => API.get('/announcements');
 export const publishAnnouncement = (payload) => API.post('/announcements', payload);
 export const markAnnouncementAsRead = (id) => API.post(`/announcements/${id}/read`);
 export const getTargetOptions = () => API.get('/announcements/targets');
-
-
-// 🏖️ LEAVE MANAGEMENT ENDPOINTS
-// ==========================================
-export const getAllLeaves = () => API.get('/leaves');
-export const applyLeave = (leaveData) => API.post('/leaves/apply', leaveData);
-export const processLeave = (id, status) => API.put(`/leaves/${id}/review`, { status });
 
 export default API;
