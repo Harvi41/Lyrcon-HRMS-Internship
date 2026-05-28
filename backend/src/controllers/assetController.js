@@ -204,21 +204,27 @@ exports.getMyAssets = async (req, res) => {
         }
         
         const employee = await Employee.findOne({ userId: req.user.userId, isDeleted: false });
-        if (!employee) {
-            return res.status(404).json({ message: 'Employee profile not found' });
-        }
+        let queryOptions = [];
 
-        // The assignedTo field is a string, which could be 'firstName lastName (employeeCode)'
-        // or just the name or code. We'll search using a regex for their employeeCode.
-        const codeRegex = new RegExp(employee.employeeCode, 'i');
-        const nameRegex = new RegExp(`${employee.firstName} ${employee.lastName}`, 'i');
+        if (employee) {
+            const codeRegex = new RegExp(employee.employeeCode, 'i');
+            const nameRegex = new RegExp(`${employee.firstName} ${employee.lastName}`, 'i');
+            queryOptions.push({ assignedTo: { $regex: codeRegex } });
+            queryOptions.push({ assignedTo: { $regex: nameRegex } });
+            queryOptions.push({ assignedTo: employee.employeeCode });
+        } else {
+            // Fallback for Admin/System users who only have a User record
+            const user = await User.findById(req.user.userId);
+            if (user && user.name) {
+                const nameRegex = new RegExp(user.name, 'i');
+                queryOptions.push({ assignedTo: { $regex: nameRegex } });
+            } else {
+                return res.status(200).json([]);
+            }
+        }
         
         const assets = await Asset.find({
-            $or: [
-                { assignedTo: { $regex: codeRegex } },
-                { assignedTo: { $regex: nameRegex } },
-                { assignedTo: employee.employeeCode }
-            ]
+            $or: queryOptions
         });
         
         res.status(200).json(assets);

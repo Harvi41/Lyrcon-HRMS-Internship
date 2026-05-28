@@ -15,7 +15,8 @@ export default function AnnouncementsView() {
       setLoading(true);
       const { data } = await getAnnouncements();
       
-      const mapped = data.map(a => ({
+      const announcementsArray = Array.isArray(data) ? data : (data.announcements || []);
+      const mapped = announcementsArray.map(a => ({
         id: a._id,
         title: a.title,
         tag: a.category || "Info",

@@ -21,7 +21,7 @@ export default function TasksView() {
         id: t._id,
         title: t.title,
         desc: t.description,
-        done: t.status === "Completed"
+        done: t.status === "completed"
       }));
       setTasks(mappedTasks);
     } catch (error) {
@@ -37,7 +37,7 @@ export default function TasksView() {
     setTasks((p) => p.map((t) => t.id === id ? { ...t, done: !t.done } : t));
     
     try {
-      const newStatus = currentStatus ? "In Progress" : "Completed";
+      const newStatus = currentStatus ? "in-progress" : "completed";
       await updateTaskStatus(id, { status: newStatus });
     } catch (error) {
       console.error("Failed to update task status:", error);

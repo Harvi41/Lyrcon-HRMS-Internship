@@ -22,7 +22,7 @@ exports.createTask = async (req, res) => {
             title: clean(title),
             description: clean(description),
             assignedTo,
-            assignedBy: req.user._id, // Set creator as the logged-in user (HR/Admin)
+            assignedBy: req.user.userId, // Set creator as the logged-in user (HR/Admin)
             priority: ['urgent', 'important', 'normal'].includes(priority) ? priority : 'normal',
             deadline: new Date(deadline),
             status: 'pending'
@@ -31,6 +31,21 @@ exports.createTask = async (req, res) => {
         const populated = await Task.findById(task._id)
             .populate('assignedTo', 'firstName lastName employeeCode')
             .populate('assignedBy', 'name email');
+            
+        // Trigger notification bell by creating an Announcement for the assigned user
+        if (employee.userId) {
+            const Announcement = require('../models/Announcement');
+            await Announcement.create({
+                sender: req.user.userId,
+                title: `New Task Assigned: ${task.title}`,
+                description: `You have been assigned a new ${priority} priority task.\n\nDescription: ${task.description}\nDue Date: ${task.deadline.toDateString()}`,
+                category: 'Task',
+                priority: priority === 'urgent' ? 'High' : priority === 'important' ? 'Medium' : 'Low',
+                targetAudience: 'individual',
+                targetRecipient: employee.userId,
+                readBy: []
+            });
+        }
 
         res.status(201).json(populated);
     } catch (error) {
@@ -53,7 +68,7 @@ exports.listTasks = async (req, res) => {
         } else {
             // Employee only sees tasks assigned to their Employee profile
             // Find the Employee document corresponding to the logged in User record
-            const employee = await Employee.findOne({ userId: req.user._id, isDeleted: false });
+            const employee = await Employee.findOne({ userId: req.user.userId, isDeleted: false });
             if (!employee) {
                 return res.json([]); // No employee mapping means no tasks
             }
@@ -126,7 +141,7 @@ exports.updateTaskStatus = async (req, res) => {
         // Security check: Employee can only update their own assigned tasks
         const roleName = req.user.roleName;
         if (roleName !== 'Admin' && roleName !== 'HR') {
-            const employee = await Employee.findOne({ userId: req.user._id, isDeleted: false });
+            const employee = await Employee.findOne({ userId: req.user.userId, isDeleted: false });
             if (!employee || String(task.assignedTo) !== String(employee._id)) {
                 return res.status(403).json({ message: 'Access Denied: You can only update tasks assigned to yourself.' });
             }

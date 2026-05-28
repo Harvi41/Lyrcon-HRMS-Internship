@@ -188,7 +188,7 @@ const payrollController = {
             // First, isolate this user's corporate Profile ID
             const employeeProfile = await Employee.findOne({ userId: req.user.userId });
             if (!employeeProfile) {
-                return res.status(404).json({ message: "Employee company profile assignment missing." });
+                return res.status(200).json([]);
             }
 
             // Fetch only Approved or Paid records for security

@@ -194,11 +194,27 @@ exports.getMe = async (req, res) => {
             return res.status(401).json({ message: 'Unauthorized' });
         }
         
-        const employee = await Employee.findOne({ userId: req.user.userId, isDeleted: false })
+        let employee = await Employee.findOne({ userId: req.user.userId, isDeleted: false })
             .populate('managerId', 'firstName lastName employeeCode email');
             
         if (!employee) {
-            return res.status(404).json({ message: 'Employee profile not found' });
+            // Fallback for users (e.g. system admins) who don't have a linked Employee profile
+            const user = await User.findById(req.user.userId);
+            if (!user) {
+                return res.status(404).json({ message: 'User profile not found' });
+            }
+            
+            const nameParts = (user.name || '').split(' ');
+            employee = {
+                firstName: nameParts[0] || 'System',
+                lastName: nameParts.slice(1).join(' ') || 'User',
+                email: user.email,
+                employeeCode: 'SYS-001',
+                designation: req.user.roleName || 'Administrator',
+                department: 'System Management',
+                status: 'active',
+                joiningDate: user.createdAt || new Date(),
+            };
         }
         
         res.status(200).json(employee);
