@@ -13,6 +13,7 @@ import TeamMonitoringView from './MainContent/TeamMonitoringView';
 import AnnouncementsView from './MainContent/AnnouncementsView'; 
 import RolesPermissionsView from './MainContent/RolesPermissionsView';
 import AssetsPanel from './MainContent/AssetsPanel'; 
+import TasksPanel from '../HRDashboardLayout/MainContent/TasksPanel';
 import AdminSettingsView from './MainContent/AdminSettingsView'; 
 import styles from './AdminDashboardLayout.module.css';
 
@@ -34,6 +35,7 @@ const AdminDashboardLayout = ({ user, onLogout }) => {
     'Roles & Permissions': { title: "RBAC Access Control Engine", component: <RolesPermissionsView /> }, 
     'Team Monitoring': { title: "Task & Team Monitoring", component: <TeamMonitoringView /> },
     'assets': { title: "Asset Management", component: <AssetsPanel /> },
+    'tasks': { title: "Task Assignment Board", component: <TasksPanel userRole="admin" /> },
     'Announcements': { title: "Announcements", component: <AnnouncementsView /> },
     'Settings': { title: "System Settings", component: <AdminSettingsView user={user} onLogout={onLogout} /> }
   };
