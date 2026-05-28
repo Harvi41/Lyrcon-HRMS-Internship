@@ -48,6 +48,16 @@ API.interceptors.response.use(
 export const loginUser = (credentials) => API.post('/auth/login', credentials);
 export const forgotPassword = (email) => API.post('/auth/forgot-password', { email });
 export const resetPassword = (token, newPassword) => API.post('/auth/reset-password', { token, newPassword });
+export const createDashboardUser = (payload) => API.post('/auth/register-user', payload);
+
+// ==========================================
+// 👥 EMPLOYEE ENDPOINTS
+// ==========================================
+export const getAllEmployees = () => API.get('/employees');
+export const getMe = () => API.get('/employees/me');
+export const getDirectory = () => API.get('/employees/directory');
+export const createEmployee = (employeeData) => API.post('/employees', employeeData);
+export const updateEmployee = (id, updatedData) => API.put(`/employees/${id}`, updatedData);
 
 // ==========================================
 // 🔐 ROLE MANAGEMENT ENDPOINTS
@@ -56,16 +66,14 @@ export const getRoles = () => API.get('/roles');
 export const updateRolePermissions = (payload) => API.post('/roles/update', payload);
 
 // ==========================================
-// 👤 USER PROVISIONING ENDPOINTS
+// 💻 ASSET MANAGEMENT ENDPOINTS
 // ==========================================
-export const createDashboardUser = (payload) => API.post('/auth/register-user', payload);
-
-// ==========================================
-// 👥 EMPLOYEE ENDPOINTS
-// ==========================================
-export const getAllEmployees = () => API.get('/employees');
-export const createEmployee = (employeeData) => API.post('/employees', employeeData);
-export const updateEmployee = (id, updatedData) => API.put(`/employees/${id}`, updatedData);
+export const getAllAssets = () => API.get('/assets');
+export const getMyAssets = () => API.get('/assets/my-assets');
+export const getAssetSummary = () => API.get('/assets/summary');
+export const createAsset = (assetData) => API.post('/assets', assetData);
+export const addAssetComment = (id, commentText) => API.post(`/assets/${id}/comment`, { comment: commentText });
+export const markAssetDamaged = (id, userId) => API.put(`/assets/${id}/damage`, { damagedBy: userId });
 
 // ==========================================
 // 📍 ATTENDANCE ENDPOINTS
@@ -82,6 +90,7 @@ export const getEmployeeAttendance = (employeeId, month) => {
 // 🏖️ LEAVE MANAGEMENT ENDPOINTS
 // ==========================================
 export const getAllLeaves = () => API.get('/leaves');
+export const getMyLeaves = () => API.get('/leaves/my-requests');
 export const applyLeave = (leaveData) => API.post('/leaves/apply', leaveData);
 export const processLeave = (id, status) => API.put(`/leaves/${id}/review`, { status });
 
@@ -91,24 +100,17 @@ export const processLeave = (id, status) => API.put(`/leaves/${id}/review`, { st
 export const getPayrollHistory = (employeeId) => API.get(`/payroll/history/${employeeId}`);
 export const processMonthlyPayroll = (payload) => API.post('/payroll/process', payload);
 export const downloadPayslipPDF = (payrollId) => API.get(`/payroll/payslip/${payrollId}`, { responseType: 'blob' });
+export const getMyPayroll = () => API.get('/payroll/self-history');
 
 // ==========================================
 // 📝 TASK MANAGEMENT ENDPOINTS
 // ==========================================
 export const getAllTasks = () => API.get('/tasks');
+export const getTasks = () => API.get('/tasks');
 export const createTask = (taskData) => API.post('/tasks', taskData);
 export const updateTask = (id, updatedData) => API.put(`/tasks/${id}`, updatedData);
-export const updateTaskStatus = (id, status) => API.put(`/tasks/${id}/status`, { status });
+export const updateTaskStatus = (id, statusData) => API.put(`/tasks/${id}/status`, statusData);
 export const deleteTask = (id) => API.delete(`/tasks/${id}`);
-
-// ==========================================
-// 💻 ASSET MANAGEMENT ENDPOINTS
-// ==========================================
-export const getAllAssets = () => API.get('/assets');
-export const getAssetSummary = () => API.get('/assets/summary');
-export const createAsset = (assetData) => API.post('/assets', assetData);
-export const addAssetComment = (id, commentText) => API.post(`/assets/${id}/comment`, { comment: commentText });
-export const markAssetDamaged = (id, userId) => API.put(`/assets/${id}/damage`, { damagedBy: userId });
 
 // ==========================================
 // 📣 ANNOUNCEMENT & NOTIFICATION ENDPOINTS
@@ -117,5 +119,10 @@ export const getAnnouncements = () => API.get('/announcements');
 export const publishAnnouncement = (payload) => API.post('/announcements', payload);
 export const markAnnouncementAsRead = (id) => API.post(`/announcements/${id}/read`);
 export const getTargetOptions = () => API.get('/announcements/targets');
+
+// ==========================================
+// 📊 DASHBOARD METRICS ENDPOINTS
+// ==========================================
+export const getEmployeeSummary = () => API.get('/dashboard/employee/summary');
 
 export default API;

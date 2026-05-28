@@ -3,6 +3,9 @@ const router = express.Router();
 const assetController = require('../controllers/assetController');
 const { verifyToken, authorizeRoles } = require('../middlewares/auth');
 
+// 0. Get assets for the logged-in employee
+router.get('/my-assets', verifyToken, assetController.getMyAssets);
+
 // 1. Get full asset inventory list
 router.get('/', verifyToken, authorizeRoles('admin', 'hr'), assetController.listAssets);
 

@@ -1,41 +1,37 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "../EmployeeDashboardLayout.module.css";
+import { getEmployeeSummary } from "../../../lib/axios";
 
 export default function EmployeeDashboardHome({ onNavigate }) {
-  // 1. Managed dynamic states matching data patterns from your sub-views
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Still keeping attendance static for now since there's no attendance backend route specified
   const [attendanceData] = useState([
-    { day: "Mon", h: 90 },  // 9 hours worked / 10 max standard scale = 90%
-    { day: "Tue", h: 80 },  // 8 hours worked = 80%
-    { day: "Wed", h: 80 },  // 8 hours worked = 80%
-    { day: "Thu", h: 0 },   // Absent = 0%
-    { day: "Fri", h: 90 },  // 9 hours worked = 90%
-    { day: "Sat", h: 40 },  // 4 hours worked = 40%
-    { day: "Sun", h: 0 },   // Absent = 0%
+    { day: "Mon", h: 90 },
+    { day: "Tue", h: 80 },
+    { day: "Wed", h: 80 },
+    { day: "Thu", h: 0 },
+    { day: "Fri", h: 90 },
+    { day: "Sat", h: 40 },
+    { day: "Sun", h: 0 },
   ]);
 
-  const [tasks] = useState([
-    { id: 1, title: "Complete Performance Review",  done: false },
-    { id: 2, title: "Submit Expense Report",        done: false },
-    { id: 3, title: "Team Meeting Preparation",     done: true  },
-    { id: 4, title: "Update Project Documentation", done: false },
-  ]);
+  useEffect(() => {
+    fetchSummary();
+  }, []);
 
-  const [announcements] = useState([
-    { id: 1, title: "All-Hands Meeting",  body: "Join us for the quarterly all hands meeting this friday at 4 PM." },
-    { id: 2, title: "New Health Benefits", body: "We are excited to announce enhance health coverage starting next month" },
-  ]);
-
-  const [payroll] = useState({
-    basic: 25000,
-    bonus: 25000,
-    deductions: 1000,
-    get net() { return this.basic + this.bonus - this.deductions; }
-  });
-
-  // ─── RUNTIME RE-CALCULATION METRICS ───
-  const totalTasks = tasks.length;
-  const pendingTasksCount = tasks.filter((t) => !t.done).length;
-  const completedTasksCount = tasks.filter((t) => t.done).length;
+  const fetchSummary = async () => {
+    try {
+      setLoading(true);
+      const { data } = await getEmployeeSummary();
+      setSummary(data);
+    } catch (error) {
+      console.error("Failed to fetch employee dashboard summary", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Formatting currency helper utility
   const formatCurrency = (val) => {
@@ -43,8 +39,16 @@ export default function EmployeeDashboardHome({ onNavigate }) {
       style: "currency",
       currency: "INR",
       maximumFractionDigits: 0
-    }).format(val);
+    }).format(val || 0);
   };
+
+  if (loading) {
+    return <div className={styles.page}><p style={{ textAlign: "center", padding: "40px", color: "var(--gray-500)" }}>Loading dashboard data...</p></div>;
+  }
+
+  const tasks = summary?.tasks || { total: 0, pending: 0, completed: 0 };
+  const payroll = summary?.payroll || { basic: 0, bonus: 0, deductions: 0, net: 0 };
+  const announcements = summary?.announcements?.recent || [];
 
   return (
     <div className={styles.page}>
@@ -53,15 +57,15 @@ export default function EmployeeDashboardHome({ onNavigate }) {
       <div className={styles.statRow3}>
         <div className={styles.statCard} onClick={() => onNavigate("tasks")} style={{ cursor: "pointer" }}>
           <p className={styles.statLabel}>TOTAL ASSIGNED TASKS</p>
-          <p className={styles.statValue}>{totalTasks}</p>
+          <p className={styles.statValue}>{tasks.total}</p>
         </div>
         <div className={styles.statCard} onClick={() => onNavigate("tasks")} style={{ cursor: "pointer" }}>
           <p className={styles.statLabel}>PENDING TASKS</p>
-          <p className={`${styles.statValue} ${styles.orange}`}>{pendingTasksCount}</p>
+          <p className={`${styles.statValue} ${styles.orange}`}>{tasks.pending}</p>
         </div>
         <div className={styles.statCard} onClick={() => onNavigate("tasks")} style={{ cursor: "pointer" }}>
           <p className={styles.statLabel}>COMPLETED TASKS</p>
-          <p className={`${styles.statValue} ${styles.green}`}>{completedTasksCount}</p>
+          <p className={`${styles.statValue} ${styles.green}`}>{tasks.completed}</p>
         </div>
       </div>
 
@@ -79,12 +83,10 @@ export default function EmployeeDashboardHome({ onNavigate }) {
                     className={styles.bar} 
                     style={{ 
                       height: `${b.h}%`,
-                      // Set an alternative color gradient layout rule if an employee was absent
                       background: b.h === 0 ? "var(--gray-200)" : "linear-gradient(180deg, #6366f1 0%, #818cf8 100%)" 
                     }} 
                     title={`${(b.h / 10)} hours worked`}
                   />
-                  {/* Dynamic offset alignment based on weekend data expansion labels */}
                   <span className={styles.barLabel} style={{ left: `${(idx * 14) + 4}%` }}>{b.day}</span>
                 </div>
               ))}
@@ -130,7 +132,7 @@ export default function EmployeeDashboardHome({ onNavigate }) {
             <p style={{ color: "var(--gray-500)", fontSize: "0.875rem" }}>No announcement posts pinned yet.</p>
           ) : (
             announcements.map((a) => (
-              <div key={a.id || a.title} className={styles.announceCard}>
+              <div key={a.id} className={styles.announceCard}>
                 <p className={styles.announceTitle}>{a.title}</p>
                 <p className={styles.announceBody}>{a.body}</p>
               </div>

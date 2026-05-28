@@ -186,3 +186,37 @@ exports.deleteEmployee = async (req, res) => {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
+
+// 6. GET CURRENT EMPLOYEE PROFILE (Me)
+exports.getMe = async (req, res) => {
+    try {
+        if (!req.user || !req.user.userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+        
+        const employee = await Employee.findOne({ userId: req.user.userId, isDeleted: false })
+            .populate('managerId', 'firstName lastName employeeCode email');
+            
+        if (!employee) {
+            return res.status(404).json({ message: 'Employee profile not found' });
+        }
+        
+        res.status(200).json(employee);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// 7. GET COMPANY DIRECTORY (Lightweight employee list)
+exports.getDirectory = async (req, res) => {
+    try {
+        const employees = await Employee.find({ isDeleted: false, status: 'active' })
+            .select('firstName lastName email phoneNumber department designation workLocation roleType')
+            .populate('managerId', 'firstName lastName email')
+            .sort({ firstName: 1 });
+            
+        res.status(200).json(employees);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};

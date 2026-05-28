@@ -4,6 +4,9 @@ const employeeController = require('../controllers/employeeController');
 const rolesController = require('../controllers/rolesController'); 
 const { verifyToken, checkPermission, authorizeRoles } = require('../middlewares/auth'); 
 
+router.get('/me', verifyToken, employeeController.getMe);
+router.get('/directory', verifyToken, employeeController.getDirectory);
+
 router.get('/', verifyToken, checkPermission('employee.view'), employeeController.getAllEmployees);
 router.get('/:id', verifyToken, checkPermission('employee.view'), employeeController.getEmployeeById);
 router.post('/', verifyToken, checkPermission('employee.create'), employeeController.createEmployee);

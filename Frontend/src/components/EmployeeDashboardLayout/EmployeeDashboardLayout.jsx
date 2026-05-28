@@ -9,6 +9,9 @@ import AttendanceView       from "./MainContent/AttendanceView";
 import LeaveView            from "./MainContent/LeaveView";
 import PayrollView          from "./MainContent/PayrollView";
 import AnnouncementsView    from "./MainContent/AnnouncementsView";
+import MyProfileView        from "./MainContent/MyProfileView";
+import MyAssetsView         from "./MainContent/MyAssetsView";
+import DirectoryView        from "./MainContent/DirectoryView";
 
 // 1. Destructure BOTH onLogout and user from the incoming props here
 export default function EmployeeDashboardLayout({ onLogout, user }) {
@@ -22,6 +25,9 @@ export default function EmployeeDashboardLayout({ onLogout, user }) {
       case "leave":         return <LeaveView />;
       case "payroll":       return <PayrollView />;
       case "announcements": return <AnnouncementsView />;
+      case "profile":       return <MyProfileView />;
+      case "assets":        return <MyAssetsView />;
+      case "directory":     return <DirectoryView />;
       default:              return <EmployeeDashboardHome onNavigate={setPage} />;
     }
   };

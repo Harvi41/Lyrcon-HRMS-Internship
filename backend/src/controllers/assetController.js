@@ -195,3 +195,35 @@ exports.employeeDamages = async (req, res) => {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
+
+// 11. GET MY ASSETS (For the logged-in employee)
+exports.getMyAssets = async (req, res) => {
+    try {
+        if (!req.user || !req.user.userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+        
+        const employee = await Employee.findOne({ userId: req.user.userId, isDeleted: false });
+        if (!employee) {
+            return res.status(404).json({ message: 'Employee profile not found' });
+        }
+
+        // The assignedTo field is a string, which could be 'firstName lastName (employeeCode)'
+        // or just the name or code. We'll search using a regex for their employeeCode.
+        const codeRegex = new RegExp(employee.employeeCode, 'i');
+        const nameRegex = new RegExp(`${employee.firstName} ${employee.lastName}`, 'i');
+        
+        const assets = await Asset.find({
+            $or: [
+                { assignedTo: { $regex: codeRegex } },
+                { assignedTo: { $regex: nameRegex } },
+                { assignedTo: employee.employeeCode }
+            ]
+        });
+        
+        res.status(200).json(assets);
+    } catch (error) {
+        console.error('Get My Assets Error:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};

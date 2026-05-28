@@ -3,10 +3,13 @@ import styles from "../EmployeeDashboardLayout.module.css";
 
 const navItems = [
   { key: "dashboard",     label: "Dashboard" },
+  { key: "profile",       label: "My Profile" },
   { key: "tasks",         label: "Tasks" },
   { key: "attendance",    label: "Attendance" },
   { key: "leave",         label: "Leave" },
   { key: "payroll",       label: "Payroll" },
+  { key: "assets",        label: "My Assets" },
+  { key: "directory",     label: "Directory" },
   { key: "announcements", label: "Announcements" },
 ];
 
