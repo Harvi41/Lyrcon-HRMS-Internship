@@ -134,7 +134,12 @@ const employeeSchema = new mongoose.Schema(
       default: 5,
     },
     
-    baseCTC: { type: Number, required: true, default: 0 }
+    baseCTC: { type: Number, required: true, default: 0 },
+    
+    registeredDeviceFingerprint : {
+        type: String,
+        default: null ,
+    },  
   },
   {
     timestamps: true,

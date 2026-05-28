@@ -8,12 +8,11 @@ const authRoutes = require('./src/routes/authRoutes');
 const employeeRoutes = require('./src/routes/employeeRoutes');
 const assetRoutes = require('./src/routes/assetRoutes');
 const dashboardRoutes = require('./src/routes/dashboardRoutes');
-const rolesRoutes = require('./src/routes/rolesRoutes');
-const usersRoutes = require('./src/routes/usersRoutes');
 const announcementRoutes = require('./src/routes/announcementRoutes');
 const leaveRoutes = require('./src/routes/leaveRoutes'); 
 const payrollRoutes = require('./src/routes/payrollRoutes'); 
 const taskRoutes = require('./src/routes/taskRoutes'); 
+const attendanceRoutes = require('./src/routes/attendanceRoutes');
 
 const app = express();
 
@@ -67,6 +66,7 @@ app.use('/api/payroll', payrollRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/roles', rolesRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 // ⚙️ Server Initialization Loop 
 const startServer = async () => {
