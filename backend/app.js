@@ -64,8 +64,9 @@ app.use('/api/announcements', announcementRoutes);
 app.use('/api/leaves', leaveRoutes); 
 app.use('/api/payroll', payrollRoutes);   
 app.use('/api/tasks', taskRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/roles', rolesRoutes);
 app.use('/api/attendance', attendanceRoutes);
-
 
 // ⚙️ Server Initialization Loop 
 const startServer = async () => {

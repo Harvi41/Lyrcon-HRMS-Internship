@@ -1,6 +1,7 @@
 // AdminUsersView.jsx
 import React, { useState } from 'react';
 import styles from '../AdminDashboardLayout.module.css';
+import { createDashboardUser } from '../../../lib/axios';
 
 const AdminUsersView = () => {
   // 1. READ-ONLY ROLE PERMISSIONS OVERVIEW MATRIX (Left Side Panel)
@@ -27,6 +28,10 @@ const AdminUsersView = () => {
     role: 'Admin'
   });
 
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -37,19 +42,37 @@ const AdminUsersView = () => {
     (item) => item.role.toLowerCase() === formData.role.toLowerCase()
   )?.permissions.join(', ') || '';
 
-  const handleCreateAccountSubmit = (e) => {
+  const handleCreateAccountSubmit = async (e) => {
     e.preventDefault();
-    // HTML5 validation handles the empty checks automatically now.
-    // This block triggers ONLY if all elements pass browser verification constraints.
-    alert(`Account provisioned successfully for ${formData.fullName} as [${formData.role}]!`);
-    
-    // Reset fields after registration success
-    setFormData({
-      fullName: '',
-      email: '',
-      password: '',
-      role: 'Admin'
-    });
+    setLoading(true);
+    setMessage('');
+    setError('');
+
+    try {
+      const payload = {
+        name: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+        roleName: formData.role
+      };
+
+      await createDashboardUser(payload);
+      
+      setMessage(`Account provisioned successfully for ${formData.fullName} as [${formData.role}]!`);
+      
+      // Reset fields after registration success
+      setFormData({
+        fullName: '',
+        email: '',
+        password: '',
+        role: 'Admin'
+      });
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.message || 'Failed to create user. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -97,6 +120,9 @@ const AdminUsersView = () => {
           <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#0f172a', marginBottom: '20px' }}>
             Create Dashboard Account
           </h3>
+
+          {error && <div style={{ color: '#dc2626', marginBottom: '16px', fontSize: '0.85rem', fontWeight: '500' }}>{error}</div>}
+          {message && <div style={{ color: '#16a34a', marginBottom: '16px', fontSize: '0.85rem', fontWeight: '500' }}>{message}</div>}
 
           <form onSubmit={handleCreateAccountSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             

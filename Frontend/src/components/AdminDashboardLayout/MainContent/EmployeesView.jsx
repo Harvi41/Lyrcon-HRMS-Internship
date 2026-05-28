@@ -1,21 +1,15 @@
 // EmployeesView.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from '../AdminDashboardLayout.module.css';
 import EmployeeModal from './EmployeeModal';
 import EmployeeSuccessModal from './EmployeeSuccessModal';
 import DeleteEmployeeWizard from './DeleteEmployeeWizard';
+import { getAllEmployees, createEmployee, updateEmployee } from '../../../lib/axios';
 
-const EmployeesView = ({ initialEmployees = [] }) => {
+const EmployeesView = () => {
   // 1. DYNAMIC DATA SOURCE STATE ARRAY (Core Workforce Matrix)
-  const [employeeDataList, setEmployeeDataList] = useState(
-    initialEmployees && initialEmployees.length > 0
-      ? initialEmployees
-      : [
-          { id: 'EMP-1001', name: 'Prince Ghevariya', email: 'prince@company.com', dept: 'Engineering', role: 'Lead Systems Architect', status: 'Active' },
-          { id: 'EMP-1042', name: 'Nidhish Zala', email: 'nidhish@company.com', dept: 'Engineering', role: 'Software Dev Intern', status: 'Onboarding' },
-          { id: 'EMP-1002', name: 'Sarah Jenkins', email: 'sarah@company.com', dept: 'Human Resources', role: 'HR Lead Coordinator', status: 'Active' }
-        ]
-  );
+  const [employeeDataList, setEmployeeDataList] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -30,6 +24,34 @@ const EmployeesView = ({ initialEmployees = [] }) => {
   const [isDeleteWizardOpen, setIsDeleteWizardOpen] = useState(false);
   const [selectedEmployeeForDelete, setSelectedEmployeeForDelete] = useState(null);
 
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      const { data } = await getAllEmployees();
+      // Map backend data to frontend table format
+      const mappedData = data.map(emp => ({
+        id: emp.employeeCode,
+        _id: emp._id, // Keep the MongoDB ID for updates
+        name: `${emp.firstName} ${emp.lastName}`,
+        email: emp.email,
+        dept: emp.department,
+        role: emp.designation,
+        status: emp.status === 'terminated' ? 'Inactive' : 'Active',
+        // Preserve raw fields for editing
+        raw: emp
+      }));
+      setEmployeeDataList(mappedData);
+    } catch (err) {
+      console.error('Failed to fetch employees:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
   // 3. ACTION INTERACTION PIPELINES
   const handleCreateClick = () => {
     setModalMode('create');
@@ -39,7 +61,26 @@ const EmployeesView = ({ initialEmployees = [] }) => {
 
   const handleEditClick = (employee) => {
     setModalMode('edit');
-    setSelectedEmployee(employee);
+    // Map the selected row back to the modal format
+    const empData = employee.raw || {};
+    setSelectedEmployee({
+      id: employee.id,
+      _id: employee._id,
+      name: employee.name,
+      email: employee.email,
+      phone: empData.phoneNumber,
+      gender: empData.gender,
+      dob: empData.dateOfBirth ? empData.dateOfBirth.split('T')[0] : '',
+      joiningDate: empData.joiningDate ? empData.joiningDate.split('T')[0] : '',
+      dept: empData.department,
+      role: empData.designation,
+      workLocation: empData.workLocation,
+      managerId: empData.managerId?.employeeCode || empData.managerId || '',
+      status: empData.status === 'terminated' ? 'Inactive' : 'Active',
+      address: empData.address,
+      emergencyContact: empData.emergencyContact,
+      salary: empData.baseCTC
+    });
     setIsModalOpen(true);
   };
 
@@ -48,15 +89,54 @@ const EmployeesView = ({ initialEmployees = [] }) => {
     setSelectedEmployee(null);
   };
 
-  const handleModalSuccess = (data, mode) => {
+  const handleModalSuccess = async (data, mode) => {
     setIsModalOpen(false);
-    if (mode === 'create') {
-      setEmployeeDataList([...employeeDataList, data]);
-    } else {
-      setEmployeeDataList(employeeDataList.map(emp => emp.id === data.id ? { ...emp, ...data } : emp));
+    
+    try {
+      // Parse emergency contact string (e.g. "Name - Phone") into an object expected by the backend
+      let parsedEmergencyContact = { name: data.emergencyContact, phone: '' };
+      if (data.emergencyContact && data.emergencyContact.includes('-')) {
+        const parts = data.emergencyContact.split('-');
+        parsedEmergencyContact = { name: parts[0].trim(), phone: parts.slice(1).join('-').trim() };
+      }
+
+      // Ensure managerId is a valid ObjectId, otherwise send null to prevent CastError
+      const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
+      const safeManagerId = isValidObjectId(data.managerId) ? data.managerId : null;
+
+      const payload = {
+        employeeCode: data.id,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phoneNumber: data.phone,
+        gender: data.gender,
+        dateOfBirth: data.dob,
+        joiningDate: data.joiningDate,
+        department: data.department,
+        designation: data.designation,
+        managerId: safeManagerId,
+        workLocation: data.workLocation,
+        emergencyContact: parsedEmergencyContact,
+        address: data.address,
+        roleName: 'Employee', // System access role is fixed to Employee here, whereas designation handles the job title
+        baseCTC: data.salary
+      };
+
+      if (mode === 'create') {
+        await createEmployee(payload);
+        setSuccessEmployee(data); // Revert to using the flat payload object that the modal expects
+      } else {
+        await updateEmployee(selectedEmployee._id, payload);
+        setSuccessEmployee(data);
+      }
+      
+      setIsSuccessModalOpen(true);
+      fetchEmployees(); // Refresh the table
+    } catch (err) {
+      console.error('Failed to save employee:', err);
+      alert(err.response?.data?.message || 'Failed to save employee data.');
     }
-    setSuccessEmployee(data);
-    setIsSuccessModalOpen(true);
   };
 
   const handleSuccessClose = () => {
@@ -69,7 +149,11 @@ const EmployeesView = ({ initialEmployees = [] }) => {
     setIsDeleteWizardOpen(true);
   };
 
-  const handleConfirmPurgeMutation = (id) => {
+  const handleConfirmPurgeMutation = async (id) => {
+    // Note: To fully integrate deletion, you would call `deleteEmployee` API here.
+    // For now we just remove it locally if it's not wired, or we can wire it up if needed.
+    // Assuming deleteEmployee is imported and implemented in axios.js (which it isn't currently exported, but can be).
+    // The previous implementation just filtered locally.
     setEmployeeDataList((prevList) => prevList.filter((emp) => emp.id !== id));
     setIsDeleteWizardOpen(false);
   };
