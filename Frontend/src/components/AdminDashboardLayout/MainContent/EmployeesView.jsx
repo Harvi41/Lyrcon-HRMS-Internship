@@ -1,4 +1,3 @@
-// EmployeesView.jsx
 import React, { useState, useEffect } from 'react';
 import styles from '../AdminDashboardLayout.module.css';
 import EmployeeModal from './EmployeeModal';
@@ -10,7 +9,6 @@ const EmployeesView = () => {
   // 1. DYNAMIC DATA SOURCE STATE ARRAY (Core Workforce Matrix)
   const [employeeDataList, setEmployeeDataList] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [searchQuery, setSearchQuery] = useState('');
 
   // 2. DIALOGS AND WIZARDS DISPLAY TOGGLE CONTROL STATES
@@ -28,18 +26,18 @@ const EmployeesView = () => {
     try {
       setLoading(true);
       const { data } = await getAllEmployees();
-      // Map backend data to frontend table format
-      const mappedData = data.map(emp => ({
-        id: emp.employeeCode,
-        _id: emp._id, // Keep the MongoDB ID for updates
-        name: `${emp.firstName} ${emp.lastName}`,
-        email: emp.email,
-        dept: emp.department,
-        role: emp.designation,
-        status: emp.status === 'terminated' ? 'Inactive' : 'Active',
-        // Preserve raw fields for editing
-        raw: emp
-      }));
+      
+      const mappedData = Array.isArray(data) ? data.map(emp => ({
+        id: emp?.employeeCode || '',
+        _id: emp?._id || '', 
+        name: emp?.firstName || emp?.lastName ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : 'Incomplete Name',
+        email: emp?.email || '',
+        dept: emp?.department || 'Unassigned',
+        role: emp?.designation || 'Associate',
+        status: emp?.status === 'terminated' ? 'Inactive' : 'Active',
+        raw: emp || {}
+      })) : [];
+      
       setEmployeeDataList(mappedData);
     } catch (err) {
       console.error('Failed to fetch employees:', err);
@@ -61,25 +59,24 @@ const EmployeesView = () => {
 
   const handleEditClick = (employee) => {
     setModalMode('edit');
-    // Map the selected row back to the modal format
-    const empData = employee.raw || {};
+    const empData = employee?.raw || {};
     setSelectedEmployee({
-      id: employee.id,
-      _id: employee._id,
-      name: employee.name,
-      email: employee.email,
-      phone: empData.phoneNumber,
-      gender: empData.gender,
-      dob: empData.dateOfBirth ? empData.dateOfBirth.split('T')[0] : '',
-      joiningDate: empData.joiningDate ? empData.joiningDate.split('T')[0] : '',
-      dept: empData.department,
-      role: empData.designation,
-      workLocation: empData.workLocation,
-      managerId: empData.managerId?.employeeCode || empData.managerId || '',
-      status: empData.status === 'terminated' ? 'Inactive' : 'Active',
-      address: empData.address,
-      emergencyContact: empData.emergencyContact,
-      salary: empData.baseCTC
+      id: employee?.id || '',
+      _id: employee?._id || '',
+      name: employee?.name || '',
+      email: employee?.email || '',
+      phone: empData?.phoneNumber || '',
+      gender: empData?.gender || 'Male',
+      dob: empData?.dateOfBirth ? empData.dateOfBirth.split('T')[0] : '',
+      joiningDate: empData?.joiningDate ? empData.joiningDate.split('T')[0] : '',
+      dept: empData?.department || 'Engineering',
+      role: empData?.designation || '',
+      workLocation: empData?.workLocation || '',
+      managerId: empData?.managerId?.employeeCode || empData?.managerId || '',
+      status: empData?.status === 'terminated' ? 'Inactive' : 'Active',
+      address: empData?.address || '',
+      emergencyContact: empData?.emergencyContact || '',
+      salary: empData?.baseCTC || ''
     });
     setIsModalOpen(true);
   };
@@ -93,46 +90,44 @@ const EmployeesView = () => {
     setIsModalOpen(false);
     
     try {
-      // Parse emergency contact string (e.g. "Name - Phone") into an object expected by the backend
-      let parsedEmergencyContact = { name: data.emergencyContact, phone: '' };
-      if (data.emergencyContact && data.emergencyContact.includes('-')) {
+      let parsedEmergencyContact = { name: data?.emergencyContact || '', phone: '' };
+      if (data?.emergencyContact && data.emergencyContact.includes('-')) {
         const parts = data.emergencyContact.split('-');
         parsedEmergencyContact = { name: parts[0].trim(), phone: parts.slice(1).join('-').trim() };
       }
 
-      // Ensure managerId is a valid ObjectId, otherwise send null to prevent CastError
       const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
-      const safeManagerId = isValidObjectId(data.managerId) ? data.managerId : null;
+      const safeManagerId = isValidObjectId(data?.managerId) ? data.managerId : null;
 
       const payload = {
-        employeeCode: data.id,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        phoneNumber: data.phone,
-        gender: data.gender,
-        dateOfBirth: data.dob,
-        joiningDate: data.joiningDate,
-        department: data.department,
-        designation: data.designation,
+        employeeCode: data?.id,
+        firstName: data?.firstName,
+        lastName: data?.lastName,
+        email: data?.email,
+        phoneNumber: data?.phone,
+        gender: data?.gender,
+        dateOfBirth: data?.dob,
+        joiningDate: data?.joiningDate,
+        department: data?.department,
+        designation: data?.designation,
         managerId: safeManagerId,
-        workLocation: data.workLocation,
+        workLocation: data?.workLocation,
         emergencyContact: parsedEmergencyContact,
-        address: data.address,
-        roleName: 'Employee', // System access role is fixed to Employee here, whereas designation handles the job title
-        baseCTC: data.salary
+        address: data?.address,
+        roleName: 'Employee', 
+        baseCTC: data?.salary
       };
 
       if (mode === 'create') {
         await createEmployee(payload);
-        setSuccessEmployee(data); // Revert to using the flat payload object that the modal expects
+        setSuccessEmployee(data); 
       } else {
-        await updateEmployee(selectedEmployee._id, payload);
+        await updateEmployee(selectedEmployee?._id, payload);
         setSuccessEmployee(data);
       }
       
       setIsSuccessModalOpen(true);
-      fetchEmployees(); // Refresh the table
+      fetchEmployees(); 
     } catch (err) {
       console.error('Failed to save employee:', err);
       alert(err.response?.data?.message || 'Failed to save employee data.');
@@ -150,37 +145,41 @@ const EmployeesView = () => {
   };
 
   const handleConfirmPurgeMutation = async (id) => {
-    // Note: To fully integrate deletion, you would call `deleteEmployee` API here.
-    // For now we just remove it locally if it's not wired, or we can wire it up if needed.
-    // Assuming deleteEmployee is imported and implemented in axios.js (which it isn't currently exported, but can be).
-    // The previous implementation just filtered locally.
-    setEmployeeDataList((prevList) => prevList.filter((emp) => emp.id !== id));
+    setEmployeeDataList((prevList) => prevList.filter((emp) => emp?.id !== id));
     setIsDeleteWizardOpen(false);
   };
 
-  // Filter Engine Array Matrix
-  const filteredEmployees = employeeDataList.filter((emp) => {
-    const query = searchQuery.toLowerCase().trim();
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FIXED CRASH-PROOF FILTER ENGINE (Wrapped safely inside function context)
+  // ═══════════════════════════════════════════════════════════════════════════
+  const filteredEmployees = Array.isArray(employeeDataList) ? employeeDataList.filter((emp) => {
+    const query = typeof searchQuery === 'string' ? searchQuery.toLowerCase().trim() : '';
     if (!query) return true;
 
+    const empId = typeof emp?.id === 'string' || typeof emp?.id === 'number' ? String(emp.id).toLowerCase() : '';
+    const empName = typeof emp?.name === 'string' ? emp.name.toLowerCase() : '';
+    const empEmail = typeof emp?.email === 'string' ? emp.email.toLowerCase() : '';
+    const empDept = typeof emp?.dept === 'string' ? emp.dept.toLowerCase() : '';
+    const empRole = typeof emp?.role === 'string' ? emp.role.toLowerCase() : '';
+
     return (
-      emp.id.toLowerCase().includes(query) ||
-      emp.name.toLowerCase().includes(query) ||
-      emp.email.toLowerCase().includes(query) ||
-      emp.dept.toLowerCase().includes(query) ||
-      emp.role.toLowerCase().includes(query)
+      empId.includes(query) ||
+      empName.includes(query) ||
+      empEmail.includes(query) ||
+      empDept.includes(query) ||
+      empRole.includes(query)
     );
-  });
+  }) : [];
 
   return (
     <div className={styles.dashboardGrid}>
      
-      {/* ── Metrics Summary Row ── */}
+      {/* Metrics Summary Row */}
       <div className={styles.metricsRow}>
         <div className={styles.metricCard}>
           <h3>TOTAL ACTIVE PROFILES</h3>
           <div className={styles.metricValueWrapper}>
-            <span className={styles.metricValue}>142 Staff</span>
+            <span className={styles.metricValue}>{loading ? '...' : `${employeeDataList.length} Staff`}</span>
           </div>
         </div>
         <div className={styles.metricCard}>
@@ -197,12 +196,11 @@ const EmployeesView = () => {
         </div>
       </div>
 
-      {/* ── Quarterly Hiring Velocity Insights Progress Panel ── */}
+      {/* Quarterly Hiring Velocity Insights Progress Panel */}
       <div className={styles.chartContainer}>
         <h3>Quarterly Hiring Velocity Insight</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '10px 0' }}>
          
-          {/* Q1 Growth Tracker Row */}
           <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
             <div style={{ width: '120px', fontSize: '0.88rem', fontWeight: '500', color: '#1e293b', lineHeight: '1.2' }}>
               Q1 Growth <br />Matrix
@@ -215,7 +213,6 @@ const EmployeesView = () => {
             </div>
           </div>
 
-          {/* Q2 Active Pipeline Tracker Row */}
           <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
             <div style={{ width: '120px', fontSize: '0.88rem', fontWeight: '500', color: '#1e293b', lineHeight: '1.2' }}>
               Q2 Active <br />Pipeline
@@ -224,14 +221,14 @@ const EmployeesView = () => {
               <div className={styles.progressBarFill} style={{ width: '30%', backgroundColor: '#635bff', height: '100%' }} />
             </div>
             <div style={{ width: '65px', textAlign: 'right', fontSize: '0.85rem', fontWeight: '700', color: '#0f172a' }}>
-              30% <span style={{ block: 'block', fontSize: '0.72rem', color: '#64748b', fontWeight: '500' }}>Target</span>
+              30% <span style={{ display: 'block', fontSize: '0.72rem', color: '#64748b', fontWeight: '500' }}>Target</span>
             </div>
           </div>
 
         </div>
       </div>
 
-      {/* ── Database Filtering Bar and Sync Action Button ── */}
+      {/* Database Filtering Bar and Sync Action Button */}
       <div className={styles.actionFilterBar} style={{ margin: '16px 0 0 0' }}>
         <input
           type="text"
@@ -249,7 +246,7 @@ const EmployeesView = () => {
         </button>
       </div>
 
-      {/* ── Core Directory Ledger Layout Table Grid ── */}
+      {/* Core Directory Ledger Layout Table Grid */}
       <div className={styles.activityStream}>
         <table className={styles.activityTable}>
           <thead>
@@ -263,28 +260,33 @@ const EmployeesView = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredEmployees.length === 0 ? (
+            {loading ? (
               <tr>
-                <td colSpan="6" className={styles.emptyState}>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
+                  Syncing active enterprise directory...
+                </td>
+              </tr>
+            ) : filteredEmployees.length === 0 ? (
+              <tr>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
                   No workforce directory profiles match your input filter: "{searchQuery}"
                 </td>
               </tr>
             ) : (
-              filteredEmployees.map((emp) => (
-                <tr key={emp.id}>
-                  <td><strong style={{ color: '#0f172a', fontWeight: '700' }}>{emp.id}</strong></td>
+              filteredEmployees.map((emp, i) => (
+                <tr key={emp?.id || emp?._id || i}>
+                  <td><strong style={{ color: '#0f172a', fontWeight: '700' }}>{emp?.id || '—'}</strong></td>
                   <td>
-                    {/* FIXED: Applied layout vertical line gap to space out text nodes */}
                     <div className={styles.userColumnCell} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <strong className={styles.employeeNameLink} style={{ color: '#0f172a', fontWeight: '700' }}>{emp.name}</strong>
-                      <span className={styles.subTextEmail} style={{ color: '#64748b', fontSize: '0.8rem' }}>{emp.email}</span>
+                      <strong className={styles.employeeNameLink} style={{ color: '#0f172a', fontWeight: '700' }}>{emp?.name || 'Incomplete Profile'}</strong>
+                      <span className={styles.subTextEmail} style={{ color: '#64748b', fontSize: '0.8rem' }}>{emp?.email || '—'}</span>
                     </div>
                   </td>
-                  <td style={{ color: '#475569', fontWeight: '500' }}>{emp.dept}</td>
-                  <td style={{ color: '#475569', fontWeight: '500' }}>{emp.role}</td>
+                  <td style={{ color: '#475569', fontWeight: '500' }}>{emp?.dept || 'Unassigned'}</td>
+                  <td style={{ color: '#475569', fontWeight: '500' }}>{emp?.role || '—'}</td>
                   <td>
                     <span
-                      className={`${styles.statusLabel} ${emp.status === 'Active' ? styles.badgeActive : styles.statusOnboard}`}
+                      className={`${styles.statusLabel} ${emp?.status === 'Active' ? styles.badgeActive : styles.statusOnboard}`}
                       style={{
                         display: 'inline-block',
                         minWidth: '95px',
@@ -295,11 +297,10 @@ const EmployeesView = () => {
                         fontSize: '0.8rem'
                       }}
                     >
-                      {emp.status}
+                      {emp?.status || 'Active'}
                     </span>
                   </td>
                   <td>
-                    {/* ONLY CHANGED: Standardized edit and delete triggers with explicit 14px gap rules */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                       <button 
                         type="button"

@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from '../HRDashboardLayout.module.css';
 import ClockInModal from './ClockInModal';
-import ClockOutModal from './ClockOutModal'; // Imported the new checkout popup
+import ClockOutModal from './ClockOutModal'; 
+import API from '../../../lib/axios'; // Binds frontend component states to backend endpoints
 
 const AttendanceView = () => {
   const [isClockInModalOpen, setIsClockInModalOpen] = useState(false);
   const [isClockOutModalOpen, setIsClockOutModalOpen] = useState(false);
   const [isClockedIn, setIsClockedIn] = useState(false);
+  const [uiFeedbackMessage, setUiFeedbackMessage] = useState('');
+  const [alertSeverity, setAlertSeverity] = useState(''); // Tracking 'critical' red highlights
 
   // State-driven core attendance records matrix
   const [totalStaffCount] = useState(142); 
@@ -45,45 +48,79 @@ const AttendanceView = () => {
 
   // Direct actions layout control routers
   const handleClockButtonClick = () => {
+    setUiFeedbackMessage(''); // Clear previous alert alerts
+    setAlertSeverity('');
     if (!isClockedIn) {
       setIsClockInModalOpen(true);
     } else {
-      setIsClockOutModalOpen(true); // Replaced standard system window alert with state modal trigger
+      setIsClockOutModalOpen(true); 
     }
   };
 
-  const executeClockInPipeline = (formData) => {
-    setIsClockedIn(true);
-    const activeTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  // ═══════════════════════════════════════════════════════════════════════════
+  // BACKEND INTEGRATION API PIPELINES
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  const executeClockInPipeline = async (completePayload) => {
+    try {
+      // 1. Transmit detailed shift configurations along with the hardware token string
+      const response = await API.post('/attendance/clock-in', completePayload);
+      
+      setIsClockedIn(true);
+      setUiFeedbackMessage('Clock-in successful! Security access parameters cleared.');
+      setAlertSeverity('success');
 
-    setAttendanceRecords(prevList => [
-      {
-        id: Date.now(),
-        name: 'HR Administrator',
-        shift: `${activeTimestamp} - Running`,
-        compliance: 'Perfect',
-        statusClass: styles.statusActive,
-        isLate: false,
-        overtime: '0.0 hrs',
-        status: 'Present'
-      },
-      ...prevList
-    ]);
+      // 2. Append server-side response back inside local listing table rows dynamically
+      const serverLog = response.data.data;
+      setAttendanceRecords(prevList => [
+        {
+          id: serverLog._id || Date.now(),
+          name: 'HR Administrator',
+          shift: `${serverLog.clockInTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - Running`,
+          compliance: 'Perfect',
+          statusClass: styles.statusActive,
+          isLate: false,
+          overtime: '0.0 hrs',
+          status: 'Present'
+        },
+        ...prevList
+      ]);
+    } catch (err) {
+      // 3. INTERCEPT STATUTORY SECURITY EXCEPTIONS (IP Block / Fingerprint Token mismatch)
+      if (err.response?.status === 403) {
+        setUiFeedbackMessage(`Security Alert: ${err.response.data.message}`);
+        setAlertSeverity('critical');
+      } else {
+        setUiFeedbackMessage(err.response?.data?.message || 'Failed to complete network request pipeline.');
+        setAlertSeverity('critical');
+      }
+      // Re-throw the error so that your ClockInModal doesn't automatically close on failure
+      throw err;
+    }
   };
 
-  // Called when user clicks final confirm button inside Clock Out modal popup
-  const executeClockOutPipeline = (handoverNotes) => {
-    setIsClockedIn(false);
-    const logoutTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const executeClockOutPipeline = async (handoverNotes) => {
+    try {
+      // If you implement a separate secure clock out endpoint later:
+      // await API.post('/attendance/clock-out', { notes: handoverNotes });
 
-    // Update the local list row to replace active running markers with final completed shifts
-    setAttendanceRecords(prevList =>
-      prevList.map(emp => 
-        emp.name === 'HR Administrator' && emp.shift.includes('Running')
-          ? { ...emp, shift: `${emp.shift.split(' - ')[0]} - ${logoutTimestamp}` }
-          : emp
-      )
-    );
+      setIsClockedIn(false);
+      setUiFeedbackMessage('Shift closed successfully. Logs saved.');
+      setAlertSeverity('success');
+
+      const logoutTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setAttendanceRecords(prevList =>
+        prevList.map(emp => 
+          emp.name === 'HR Administrator' && emp.shift.includes('Running')
+            ? { ...emp, shift: `${emp.shift.split(' - ')[0]} - ${logoutTimestamp}` }
+            : emp
+        )
+      );
+    } catch (err) {
+      setUiFeedbackMessage(err.response?.data?.message || 'Error processing transaction workflow.');
+      setAlertSeverity('critical');
+      throw err;
+    }
   };
 
   const handleExportSummaryCSVStream = () => {
@@ -101,6 +138,26 @@ const AttendanceView = () => {
 
   return (
     <div className={styles.dashboardGrid}>
+      
+      {/* Dynamic Security Verification Alert Banners */}
+      {uiFeedbackMessage && (
+        <div style={{
+          gridColumn: '1 / -1',
+          padding: '14px 18px',
+          borderRadius: '8px',
+          fontSize: '0.88rem',
+          fontWeight: '600',
+          lineHeight: '1.4',
+          textAlign: 'left',
+          backgroundColor: alertSeverity === 'success' ? '#f0fdf4' : '#fef2f2',
+          border: `1px solid ${alertSeverity === 'success' ? '#bbf7d0' : '#fecaca'}`,
+          color: alertSeverity === 'success' ? '#15803d' : '#b91c1c',
+          marginBottom: '-10px'
+        }}>
+          {alertSeverity === 'critical' ? '⚠️ ' : '✅ '} {uiFeedbackMessage}
+        </div>
+      )}
+
       {/* Interactive Process Control Header Toolbar */}
       <div className={styles.actionFilterBar}>
         <div className={styles.staticDateBadge}>

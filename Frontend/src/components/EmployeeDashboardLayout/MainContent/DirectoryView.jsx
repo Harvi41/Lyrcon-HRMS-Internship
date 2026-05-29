@@ -11,7 +11,7 @@ export default function DirectoryView() {
     const fetchDirectory = async () => {
       try {
         const response = await getDirectory();
-        setEmployees(response.data);
+        setEmployees(Array.isArray(response?.data) ? response.data : []);
       } catch (error) {
         console.error("Error fetching directory:", error);
       } finally {
@@ -21,29 +21,41 @@ export default function DirectoryView() {
     fetchDirectory();
   }, []);
 
-  const filteredEmployees = employees.filter(emp => {
-    const term = searchQuery.toLowerCase();
-    const fullName = `${emp.firstName} ${emp.lastName}`.toLowerCase();
+  // ═══════════════════════════════════════════════════════════════════════════
+  // RE-ENGINEERED CRASH-PROOF FILTER ENGINE
+  // ═══════════════════════════════════════════════════════════════════════════
+  const filteredEmployees = Array.isArray(employees) ? employees.filter(emp => {
+    const term = typeof searchQuery === 'string' ? searchQuery.toLowerCase().trim() : '';
+    if (!term) return true;
+
+    // Strict type protection conversions to handle missing name properties gracefully
+    const first = typeof emp?.firstName === 'string' ? emp.firstName.toLowerCase() : '';
+    const last = typeof emp?.lastName === 'string' ? emp.lastName.toLowerCase() : '';
+    const fullName = `${first} ${last}`.trim();
+    
+    const dept = typeof emp?.department === 'string' ? emp.department.toLowerCase() : '';
+    const role = typeof emp?.designation === 'string' ? emp.designation.toLowerCase() : '';
+
     return (
       fullName.includes(term) ||
-      (emp.department && emp.department.toLowerCase().includes(term)) ||
-      (emp.designation && emp.designation.toLowerCase().includes(term))
+      dept.includes(term) ||
+      role.includes(term)
     );
-  });
+  }) : [];
 
-  // Helper to generate consistent colors based on employee name
   const getAvatarColors = (name) => {
     const colorPairs = [
-      { bg: "#fee2e2", text: "#ef4444" }, // Red
-      { bg: "#fef3c7", text: "#d97706" }, // Amber
-      { bg: "#e0e7ff", text: "#4f46e5" }, // Indigo
-      { bg: "#f0fdf4", text: "#16a34a" }, // Green
-      { bg: "#fce7f3", text: "#db2777" }, // Pink
-      { bg: "#e0f2fe", text: "#0284c7" }, // Sky
+      { bg: "#fee2e2", text: "#ef4444" }, 
+      { bg: "#fef3c7", text: "#d97706" }, 
+      { bg: "#e0e7ff", text: "#4f46e5" }, 
+      { bg: "#f0fdf4", text: "#16a34a" }, 
+      { bg: "#fce7f3", text: "#db2777" }, 
+      { bg: "#e0f2fe", text: "#0284c7" }, 
     ];
     let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    const cleanName = String(name || '');
+    for (let i = 0; i < cleanName.length; i++) {
+      hash = cleanName.charCodeAt(i) + ((hash << 5) - hash);
     }
     return colorPairs[Math.abs(hash) % colorPairs.length];
   };
@@ -53,16 +65,8 @@ export default function DirectoryView() {
   };
 
   return (
-    <div className={styles.contentSection} style={{ gap: "28px" }}>
-      {/* HEADER SECTION */}
-      <header style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        <h2 style={{ fontSize: "28px", fontWeight: "800", color: "#0f172a", letterSpacing: "-0.5px", margin: 0 }}>
-          Company Directory
-        </h2>
-        <p style={{ fontSize: "14px", color: "#64748b", fontWeight: "400", margin: 0 }}>
-          Find and connect with your colleagues instantly.
-        </p>
-      </header>
+    <div className={styles.contentSection} style={{ gap: "24px" }}>
+      {/* 💡 FIXED: Explicit local header tag block code stripped to avoid text duplication layout overlap bugs */}
 
       {/* SEARCH BAR */}
       <div 
@@ -75,10 +79,10 @@ export default function DirectoryView() {
           width: "400px",
           height: "44px",
           padding: "0 16px",
-          gap: "12px"
+          gap: "12px",
+          marginTop: "4px"
         }}
       >
-        {/* Search Icon */}
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="10" cy="10" r="7" />
           <line x1="21" y1="21" x2="15" y2="15" />
@@ -122,21 +126,21 @@ export default function DirectoryView() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="5" style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading directory...</td>
+                  <td colSpan="5" style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading company matrix layout directory...</td>
                 </tr>
               ) : filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan="5" style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No colleagues found matching your search.</td>
+                  <td colSpan="5" style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No colleagues found matching your search parameters.</td>
                 </tr>
               ) : (
-                filteredEmployees.map((emp) => {
-                  const fullName = `${emp.firstName} ${emp.lastName}`;
+                filteredEmployees.map((emp, i) => {
+                  const displayFirst = emp?.firstName || '';
+                  const displayLast = emp?.lastName || '';
+                  const fullName = `${displayFirst} ${displayLast}`.trim() || 'Incomplete Profile';
                   const colors = getAvatarColors(fullName);
                   
                   return (
-                    <tr key={emp._id} style={{ borderBottom: "1.5px solid #f1f5f9" }}>
-                      
-                      {/* EMPLOYEE */}
+                    <tr key={emp?._id || i} style={{ borderBottom: "1.5px solid #f1f5f9" }}>
                       <td style={{ padding: "18px 32px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                           <div 
@@ -154,7 +158,7 @@ export default function DirectoryView() {
                               flexShrink: 0
                             }}
                           >
-                            {getInitials(emp.firstName, emp.lastName)}
+                            {getInitials(emp?.firstName, emp?.lastName)}
                           </div>
                           <div style={{ fontSize: "15px", fontWeight: "600", color: "#0f172a" }}>
                             {fullName}
@@ -162,16 +166,14 @@ export default function DirectoryView() {
                         </div>
                       </td>
 
-                      {/* ROLE */}
                       <td style={{ padding: "18px 24px" }}>
-                        <span style={{ fontSize: "15px", fontWeight: "500", color: emp.designation ? "#334155" : "#94a3b8" }}>
-                          {emp.designation || "—"}
+                        <span style={{ fontSize: "15px", fontWeight: "500", color: emp?.designation ? "#334155" : "#94a3b8" }}>
+                          {emp?.designation || "—"}
                         </span>
                       </td>
 
-                      {/* DEPARTMENT */}
                       <td style={{ padding: "18px 24px" }}>
-                        {emp.department ? (
+                        {emp?.department ? (
                           <div style={{ display: "inline-flex", background: "#f0fdf4", color: "#16a34a", padding: "4px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: "600" }}>
                             {emp.department}
                           </div>
@@ -180,17 +182,15 @@ export default function DirectoryView() {
                         )}
                       </td>
 
-                      {/* CONTACT */}
                       <td style={{ padding: "18px 24px" }}>
                         <span style={{ fontSize: "15px", fontWeight: "500", color: "#334155" }}>
-                          {emp.email}
+                          {emp?.email || "—"}
                         </span>
                       </td>
 
-                      {/* LOCATION */}
                       <td style={{ padding: "18px 32px" }}>
                         <div style={{ display: "inline-flex", background: "#f1f5f9", color: "#475569", padding: "4px 14px", borderRadius: "12px", fontSize: "13px", fontWeight: "600" }}>
-                          {emp.workLocation || "Office"}
+                          {emp?.workLocation || "Office"}
                         </div>
                       </td>
                     </tr>

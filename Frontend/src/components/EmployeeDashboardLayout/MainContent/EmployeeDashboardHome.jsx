@@ -1,33 +1,67 @@
 import React, { useState, useEffect } from "react";
 import styles from "../EmployeeDashboardLayout.module.css";
-import { getEmployeeSummary } from "../../../lib/axios";
+import API, { getEmployeeSummary } from "../../../lib/axios"; // Imported core instance alongside handlers
 
 export default function EmployeeDashboardHome({ onNavigate }) {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Still keeping attendance static for now since there's no attendance backend route specified
-  const [attendanceData] = useState([
-    { day: "Mon", h: 90 },
-    { day: "Tue", h: 80 },
-    { day: "Wed", h: 80 },
+  
+  // FIXED: Converted static mock entries into a dynamic tracking matrix
+  const [attendanceData, setAttendanceData] = useState([
+    { day: "Mon", h: 0 },
+    { day: "Tue", h: 0 },
+    { day: "Wed", h: 0 },
     { day: "Thu", h: 0 },
-    { day: "Fri", h: 90 },
-    { day: "Sat", h: 40 },
+    { day: "Fri", h: 0 },
+    { day: "Sat", h: 0 },
     { day: "Sun", h: 0 },
   ]);
 
   useEffect(() => {
-    fetchSummary();
+    fetchDashboardCoreData();
   }, []);
 
-  const fetchSummary = async () => {
+  const fetchDashboardCoreData = async () => {
     try {
       setLoading(true);
+      
+      // 1. Fetch task summary, payroll totals, and system announcements
       const { data } = await getEmployeeSummary();
       setSummary(data);
+
+      // 2. Fetch secure log streams to draw the landing page bar chart elements dynamically
+      const attendanceRes = await API.get('/attendance/my-logs').catch(() => ({ data: [] }));
+      const userLogs = Array.isArray(attendanceRes.data) ? attendanceRes.data : [];
+
+      if (userLogs.length > 0) {
+        const dayAbbreviationMapping = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        
+        // Match weekday abbreviations with actual date records from MongoDB
+        const updatedHeights = [
+          { day: "Mon", h: 0 }, { day: "Tue", h: 0 }, { day: "Wed", h: 0 },
+          { day: "Thu", h: 0 }, { day: "Fri", h: 0 }, { day: "Sat", h: 0 }, { day: "Sun", h: 0 }
+        ].map(bar => {
+          const logMatch = userLogs.find(log => {
+            const dateObj = new Date(log.date);
+            return dayAbbreviationMapping[dateObj.getDay()] === bar.day;
+          });
+
+          if (logMatch) {
+            // Scale bar height: Present defaults to 90% (9 hours), running sessions to 60%
+            let computedHeight = 0;
+            if (logMatch.status === "Present") {
+              computedHeight = logMatch.clockOutTime ? 90 : 60;
+            }
+            return { ...bar, h: computedHeight };
+          }
+          return bar;
+        });
+
+        setAttendanceData(updatedHeights);
+      }
+
     } catch (error) {
-      console.error("Failed to fetch employee dashboard summary", error);
+      console.error("Failed to compile employee dashboard summary streams:", error);
     } finally {
       setLoading(false);
     }
@@ -83,7 +117,8 @@ export default function EmployeeDashboardHome({ onNavigate }) {
                     className={styles.bar} 
                     style={{ 
                       height: `${b.h}%`,
-                      background: b.h === 0 ? "var(--gray-200)" : "linear-gradient(180deg, #6366f1 0%, #818cf8 100%)" 
+                      background: b.h === 0 ? "var(--gray-200)" : "linear-gradient(180deg, #6366f1 0%, #818cf8 100%)",
+                      transition: "height 0.4s ease-out" // Added fluid transition interpolation animation
                     }} 
                     title={`${(b.h / 10)} hours worked`}
                   />

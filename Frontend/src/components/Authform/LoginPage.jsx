@@ -1,6 +1,7 @@
 import React, { useState } from "react";
+import { useGoogleLogin } from '@react-oauth/google'; // Modern custom interaction hook
 import styles from "./LoginPage.module.css";
-import { loginUser, forgotPassword } from '../../lib/axios';
+import API, { loginUser, forgotPassword } from '../../lib/axios'; 
 
 const GoogleIcon = () => (
   <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
@@ -12,20 +13,52 @@ const GoogleIcon = () => (
   </svg>
 );
 
-const PayrollIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="12" cy="12" r="12" fill="#22c55e" />
-    <path d="M7 12l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
 export default function LoginPage({ onLoginSuccess }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [view, setView] = useState('login'); // 'login' or 'forgot'
+  const [view, setView] = useState('login'); 
   const [successMessage, setSuccessMessage] = useState('');
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GOOGLE SSO TRIGGER LOGIC (FRONTEND ALIGNED KEY FIX)
+  // ═══════════════════════════════════════════════════════════════════════════
+  const triggerGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setLoading(true);
+      setError('');
+      setSuccessMessage('');
+      
+      try {
+        // FIXED: Pack the implicit token string into the 'token' key property directly
+        const response = await API.post('/api/auth/google-login', {
+          token: tokenResponse.access_token 
+        });
+
+        const { data } = response;
+        if (!data || !data.token) throw new Error('Authorization matrix invalid.');
+
+        // Persist session tokens identically to your standard login configurations
+        window.localStorage.setItem('corehr_token', data.token);
+        window.localStorage.setItem('corehr_user', JSON.stringify(data.user));
+        window.localStorage.setItem('corehr_role', data.user?.role || '');
+
+        if (onLoginSuccess) {
+          onLoginSuccess(data);
+        }
+      } catch (err) {
+        console.error('Google verification breakdown:', err);
+        setError(err?.response?.data?.message || 'Google account clearance verification rejected.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: (errorResponse) => {
+      console.error('Google OAuth window popup aborted:', errorResponse);
+      setError('Google Sign-In sequence aborted.');
+    }
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -79,19 +112,16 @@ export default function LoginPage({ onLoginSuccess }) {
     <div className={styles.wrapper}>
       {/* ── Left Branding Panel ── */}
       <aside className={styles.brandPanel}>
-        {/* Background decorative elements */}
         <div className={styles.circle1} />
         <div className={styles.circle2} />
         <div className={styles.circle3} />
 
         <div className={styles.brandContent}>
-          {/* Logo */}
           <div className={styles.logo}>
             <span className={styles.logoDot} />
             <span className={styles.logoText}>CoreHR</span>
           </div>
 
-          {/* Headline */}
           <h1 className={styles.headline}>
             Empower your<br />workforce.
           </h1>
@@ -112,10 +142,16 @@ export default function LoginPage({ onLoginSuccess }) {
 
             {error ? <div className={styles.authError}>{error}</div> : null}
 
-            {/* Google SSO Button */}
-            <button className={styles.googleBtn} type="button">
+            {/* Styled Google SSO Button Trigger */}
+            <button 
+              className={styles.googleBtn} 
+              type="button"
+              onClick={() => !loading && triggerGoogleLogin()}
+              disabled={loading}
+              style={{ opacity: loading ? 0.7 : 1 }}
+            >
               <GoogleIcon />
-              <span>Sign in with Google</span>
+              <span>{loading ? "Authorizing Security Node..." : "Sign in with Google"}</span>
             </button>
 
             {/* Divider Splitter */}
@@ -137,6 +173,7 @@ export default function LoginPage({ onLoginSuccess }) {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@company.com"
                   autoComplete="email"
+                  disabled={loading}
                   required
                 />
               </div>
@@ -146,7 +183,7 @@ export default function LoginPage({ onLoginSuccess }) {
                   <label className={styles.label} htmlFor="password">Password</label>
                   <a
                     href="#"
-                    onClick={(e) => { e.preventDefault(); setView('forgot'); setError(''); setSuccessMessage(''); }}
+                    onClick={(e) => { e.preventDefault(); !loading && setView('forgot'); setError(''); setSuccessMessage(''); }}
                     className={styles.forgotLink}
                   >
                     Forgot password?
@@ -160,21 +197,17 @@ export default function LoginPage({ onLoginSuccess }) {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
                   autoComplete="current-password"
+                  disabled={loading}
                   required
                 />
               </div>
 
-              {/* Loading / Action Processing Button State */}
               <button
                 type="submit"
                 className={`${styles.submitBtn} ${loading ? styles.submitBtnLoading : ""}`}
                 disabled={loading}
               >
-                {loading ? (
-                  <span className={styles.spinner} />
-                ) : (
-                  "Sign In to Dashboard"
-                )}
+                {loading ? <span className={styles.spinner} /> : "Sign In to Dashboard"}
               </button>
             </form>
           </div>
@@ -188,7 +221,6 @@ export default function LoginPage({ onLoginSuccess }) {
             {error ? <div className={styles.authError}>{error}</div> : null}
             {successMessage ? <div className={styles.authSuccess}>{successMessage}</div> : null}
 
-            {/* Credentials Entry Form */}
             <form className={styles.form} onSubmit={handleForgotSubmit}>
               <div className={styles.fieldGroup}>
                 <label className={styles.label} htmlFor="forgot-email">Work Email</label>
@@ -200,26 +232,22 @@ export default function LoginPage({ onLoginSuccess }) {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@company.com"
                   autoComplete="email"
+                  disabled={loading}
                   required
                 />
               </div>
 
-              {/* Loading / Action Processing Button State */}
               <button
                 type="submit"
                 className={`${styles.submitBtn} ${loading ? styles.submitBtnLoading : ""}`}
                 disabled={loading}
               >
-                {loading ? (
-                  <span className={styles.spinner} />
-                ) : (
-                  "Send Reset Link"
-                )}
+                {loading ? <span className={styles.spinner} /> : "Send Reset Link"}
               </button>
 
               <a
                 href="#"
-                onClick={(e) => { e.preventDefault(); setView('login'); setError(''); setSuccessMessage(''); }}
+                onClick={(e) => { e.preventDefault(); !loading && setView('login'); setError(''); setSuccessMessage(''); }}
                 className={styles.forgotLink}
                 style={{ display: 'block', textAlign: 'center', marginTop: '8px' }}
               >
