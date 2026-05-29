@@ -1,4 +1,3 @@
-// EmployeesView.jsx
 import React, { useState, useEffect } from 'react';
 import styles from '../HRDashboardLayout.module.css';
 import EmployeeModal from './EmployeeModal';
@@ -10,25 +9,9 @@ const EmployeesView = () => {
   // 1. DYNAMIC DATA SOURCE STATE ARRAY (Core Personnel Matrix)
   const [employeeDataList, setEmployeeDataList] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [searchQuery, setSearchQuery] = useState('');
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 2. STATE-BOUND ANALYTICAL METRICS CALCULATIONS ENGINE
-  // ═══════════════════════════════════════════════════════════════════════════
-  const baselineTotalStaff = 142;
-  const baselineInternsThisMonth = 6;
-  const standardNetCTC = 82400.00;
-
-  // Derives totals reactively relative to insertions or deletions against seed records
-  const dynamicTotalStaff = baselineTotalStaff + Math.max(0, employeeDataList.length - 3);
-  const totalActiveInterns = baselineInternsThisMonth + Math.max(0, employeeDataList.filter(e => e.role?.toLowerCase().includes('intern')).length - 1);
-
-  // Computes progress-bar analytics cleanly using live status fields
-  const q1VelocityRatio = Math.min(100, Math.round((dynamicTotalStaff / 185) * 100)); // Fixed targeting capacity at 185 profiles
-  const q2PipelineRatio = Math.min(100, Math.round((employeeDataList.filter(e => e.status === 'Onboarding').length / 1) * 30));
-
-  // 3. DIALOGS AND WIZARDS DISPLAY TOGGLE CONTROL STATES
+  // 2. DIALOGS AND WIZARDS DISPLAY TOGGLE CONTROL STATES
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -43,18 +26,19 @@ const EmployeesView = () => {
     try {
       setLoading(true);
       const { data } = await getAllEmployees();
-      // Map backend data to frontend table format
-      const mappedData = data.map(emp => ({
-        id: emp.employeeCode,
-        _id: emp._id, // Keep the MongoDB ID for updates
-        name: `${emp.firstName} ${emp.lastName}`,
-        email: emp.email,
-        dept: emp.department,
-        role: emp.designation,
-        status: emp.status === 'terminated' ? 'Inactive' : 'Active',
-        // Preserve raw fields for editing
-        raw: emp
-      }));
+      
+      // Defensively parse incoming array records from backend metrics streams
+      const mappedData = Array.isArray(data) ? data.map(emp => ({
+        id: emp?.employeeCode || '',
+        _id: emp?._id || '', 
+        name: emp?.firstName || emp?.lastName ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : 'Incomplete Name',
+        email: emp?.email || '',
+        dept: emp?.department || 'Unassigned',
+        role: emp?.designation || 'Associate',
+        status: emp?.status === 'terminated' ? 'Inactive' : 'Active',
+        raw: emp || {}
+      })) : [];
+      
       setEmployeeDataList(mappedData);
     } catch (err) {
       console.error('Failed to fetch employees:', err);
@@ -67,6 +51,24 @@ const EmployeesView = () => {
     fetchEmployees();
   }, []);
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // RE-ENGINEERED ANALYTICS CALCULATIONS ENGINE (CRASH-PROOFED)
+  // ═══════════════════════════════════════════════════════════════════════════
+  const baselineTotalStaff = 142;
+  const baselineInternsThisMonth = 6;
+  const standardNetCTC = 82400.00;
+
+  const dynamicTotalStaff = baselineTotalStaff + Math.max(0, employeeDataList.length - 3);
+  
+  // FIXED: Safe logic verification ensures e.role is treated as string type exclusively
+  const totalActiveInterns = baselineInternsThisMonth + Math.max(0, employeeDataList.filter(e => {
+    const roleString = typeof e?.role === 'string' ? e.role.toLowerCase() : '';
+    return roleString.includes('intern');
+  }).length - 1);
+
+  const q1VelocityRatio = Math.min(100, Math.round((dynamicTotalStaff / 185) * 100)); 
+  const q2PipelineRatio = Math.min(100, Math.round((employeeDataList.filter(e => e?.status === 'Onboarding').length / 1) * 30));
+
   // 4. ACTION INTERACTION PIPELINES
   const handleCreateClick = () => {
     setModalMode('create');
@@ -76,25 +78,24 @@ const EmployeesView = () => {
 
   const handleEditClick = (employee) => {
     setModalMode('edit');
-    // Map the selected row back to the modal format
-    const empData = employee.raw || {};
+    const empData = employee?.raw || {};
     setSelectedEmployee({
-      id: employee.id,
-      _id: employee._id,
-      name: employee.name,
-      email: employee.email,
-      phone: empData.phoneNumber,
-      gender: empData.gender,
-      dob: empData.dateOfBirth ? empData.dateOfBirth.split('T')[0] : '',
-      joiningDate: empData.joiningDate ? empData.joiningDate.split('T')[0] : '',
-      dept: empData.department,
-      role: empData.designation,
-      workLocation: empData.workLocation,
-      managerId: empData.managerId?.employeeCode || empData.managerId || '',
-      status: empData.status === 'terminated' ? 'Inactive' : 'Active',
-      address: empData.address,
-      emergencyContact: empData.emergencyContact,
-      salary: empData.baseCTC
+      id: employee?.id || '',
+      _id: employee?._id || '',
+      name: employee?.name || '',
+      email: employee?.email || '',
+      phone: empData?.phoneNumber || '',
+      gender: empData?.gender || 'Male',
+      dob: empData?.dateOfBirth ? empData.dateOfBirth.split('T')[0] : '',
+      joiningDate: empData?.joiningDate ? empData.joiningDate.split('T')[0] : '',
+      dept: empData?.department || 'Engineering',
+      role: empData?.designation || '',
+      workLocation: empData?.workLocation || '',
+      managerId: empData?.managerId?.employeeCode || empData?.managerId || '',
+      status: empData?.status === 'terminated' ? 'Inactive' : 'Active',
+      address: empData?.address || '',
+      emergencyContact: empData?.emergencyContact || '',
+      salary: empData?.baseCTC || ''
     });
     setIsModalOpen(true);
   };
@@ -108,46 +109,44 @@ const EmployeesView = () => {
     setIsModalOpen(false);
     
     try {
-      // Parse emergency contact string (e.g. "Name - Phone") into an object expected by the backend
-      let parsedEmergencyContact = { name: data.emergencyContact, phone: '' };
-      if (data.emergencyContact && data.emergencyContact.includes('-')) {
+      let parsedEmergencyContact = { name: data?.emergencyContact || '', phone: '' };
+      if (data?.emergencyContact && data.emergencyContact.includes('-')) {
         const parts = data.emergencyContact.split('-');
         parsedEmergencyContact = { name: parts[0].trim(), phone: parts.slice(1).join('-').trim() };
       }
 
-      // Ensure managerId is a valid ObjectId, otherwise send null to prevent CastError
       const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
-      const safeManagerId = isValidObjectId(data.managerId) ? data.managerId : null;
+      const safeManagerId = isValidObjectId(data?.managerId) ? data.managerId : null;
 
       const payload = {
-        employeeCode: data.id,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        phoneNumber: data.phone,
-        gender: data.gender,
-        dateOfBirth: data.dob,
-        joiningDate: data.joiningDate,
-        department: data.department,
-        designation: data.designation,
+        employeeCode: data?.id,
+        firstName: data?.firstName,
+        lastName: data?.lastName,
+        email: data?.email,
+        phoneNumber: data?.phone,
+        gender: data?.gender,
+        dateOfBirth: data?.dob,
+        joiningDate: data?.joiningDate,
+        department: data?.department,
+        designation: data?.designation,
         managerId: safeManagerId,
-        workLocation: data.workLocation,
+        workLocation: data?.workLocation,
         emergencyContact: parsedEmergencyContact,
-        address: data.address,
-        roleName: 'Employee', // System access role is fixed to Employee here, whereas designation handles the job title
-        baseCTC: data.salary
+        address: data?.address,
+        roleName: 'Employee', 
+        baseCTC: data?.salary
       };
 
       if (mode === 'create') {
         await createEmployee(payload);
-        setSuccessEmployee(data); // Revert to using the flat payload object that the modal expects
+        setSuccessEmployee(data); 
       } else {
-        await updateEmployee(selectedEmployee._id, payload);
+        await updateEmployee(selectedEmployee?._id, payload);
         setSuccessEmployee(data);
       }
       
       setIsSuccessModalOpen(true);
-      fetchEmployees(); // Refresh the table
+      fetchEmployees(); 
     } catch (err) {
       console.error('Failed to save employee:', err);
       alert(err.response?.data?.message || 'Failed to save employee data.');
@@ -165,27 +164,31 @@ const EmployeesView = () => {
   };
 
   const handleConfirmPurgeMutation = async (id) => {
-    setEmployeeDataList((prevList) => prevList.filter((emp) => emp.id !== id));
+    setEmployeeDataList((prevList) => prevList.filter((emp) => emp?.id !== id));
     setIsDeleteWizardOpen(false);
   };
 
-  const safeString = (val) => (val || '').toString().toLowerCase();
-
-  // Live Multi-Field Lookahead Filtering Engine Matrix
-  const filteredEmployees = employeeDataList.filter((emp) => {
-    const query = searchQuery.toLowerCase().trim();
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FIXED CRASH-PROOF FILTER PIPELINE
+  // ═══════════════════════════════════════════════════════════════════════════
+  const filteredEmployees = Array.isArray(employeeDataList) ? employeeDataList.filter((emp) => {
+    const query = typeof searchQuery === 'string' ? searchQuery.toLowerCase().trim() : '';
     if (!query) return true;
 
-    return (
-      safeString(emp.id).includes(query) ||
-      safeString(emp.name).includes(query) ||
-      safeString(emp.email).includes(query) ||
-      safeString(emp.dept).includes(query) ||
-      safeString(emp.role).includes(query)
-    );
-  });
+    const empId = typeof emp?.id === 'string' || typeof emp?.id === 'number' ? String(emp.id).toLowerCase() : '';
+    const empName = typeof emp?.name === 'string' ? emp.name.toLowerCase() : '';
+    const empEmail = typeof emp?.email === 'string' ? emp.email.toLowerCase() : '';
+    const empDept = typeof emp?.dept === 'string' ? emp.dept.toLowerCase() : '';
+    const empRole = typeof emp?.role === 'string' ? emp.role.toLowerCase() : '';
 
-  // Removed redundant React.useEffect that overwrote the employee list
+    return (
+      empId.includes(query) ||
+      empName.includes(query) ||
+      empEmail.includes(query) ||
+      empDept.includes(query) ||
+      empRole.includes(query)
+    );
+  }) : [];
 
   return (
     <div className={styles.dashboardGrid}>
@@ -194,7 +197,7 @@ const EmployeesView = () => {
         <div className={styles.metricCard}>
           <h3>TOTAL ACTIVE PROFILES</h3>
           <div className={styles.metricValueWrapper}>
-            <span className={styles.metricValue}>{dynamicTotalStaff} Staff</span>
+            <span className={styles.metricValue}>{loading ? '...' : `${dynamicTotalStaff} Staff`}</span>
           </div>
         </div>
         <div className={styles.metricCard}>
@@ -243,7 +246,7 @@ const EmployeesView = () => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
-        <button className={styles.primaryActionButton} onClick={handleCreateClick}>+ Create Employee</button>
+        <button type="button" className={styles.primaryActionButton} onClick={handleCreateClick}>+ Create Employee</button>
       </div>
 
       {/* Main Core Directory Ledger Layout Table Grid */}
@@ -260,53 +263,63 @@ const EmployeesView = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredEmployees.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
+                  Syncing active HR records directory...
+                </td>
+              </tr>
+            ) : filteredEmployees.length === 0 ? (
               <tr>
                 <td colSpan="6" className={styles.emptyState} style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>
                   No workforce directory profiles match your input filter: "{searchQuery}"
                 </td>
               </tr>
             ) : (
-              filteredEmployees.map((emp) => (
-                <tr key={emp.id}>
-                  <td><strong>{emp.id}</strong></td>
+              filteredEmployees.map((emp, i) => (
+                <tr key={emp?.id || emp?._id || i}>
+                  <td><strong style={{ color: '#0f172a', fontWeight: '700' }}>{emp?.id || '—'}</strong></td>
                   <td>
-                    <div className={styles.userColumnCell}>
-                      <strong>{emp.name}</strong>
-                      <span className={styles.subTextEmail}>{emp.email}</span>
+                    <div className={styles.userColumnCell} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <strong style={{ color: '#0f172a' }}>{emp?.name || 'Incomplete Profile'}</strong>
+                      <span className={styles.subTextEmail} style={{ color: '#64748b' }}>{emp?.email || '—'}</span>
                     </div>
                   </td>
-                  <td>{emp.dept}</td>
-                  <td>{emp.role}</td>
+                  <td>{emp?.dept || 'Unassigned'}</td>
+                  <td>{emp?.role || '—'}</td>
                   <td>
-                    <span className={`${styles.statusLabel} ${emp.status === 'Active' ? styles.statusActive : styles.statusOnboard}`}>
-                      {emp.status}
+                    <span className={`${styles.statusLabel} ${emp?.status === 'Active' ? styles.statusActive : styles.statusOnboard}`}>
+                      {emp?.status || 'Active'}
                     </span>
                   </td>
                   <td>
-                    <button 
-                      style={{ background: 'none', border: 'none', cursor: 'pointer' }} 
-                      onClick={() => handleEditClick(emp)}
-                      title="Edit Profile"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                      </svg>
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <button 
+                        type="button"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }} 
+                        onClick={() => handleEditClick(emp)}
+                        title="Edit Profile"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                      </button>
 
-                    <button 
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', marginLeft: '10px', color: '#e11d48' }}
-                      onClick={() => handleDeleteClick(emp)}
-                      title="Delete Profile"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        <line x1="10" y1="11" x2="10" y2="17"></line>
-                        <line x1="14" y1="11" x2="14" y2="17"></line>
-                      </svg>
-                    </button>
+                      <button 
+                        type="button"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#e11d48' }}
+                        onClick={() => handleDeleteClick(emp)}
+                        title="Delete Profile"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          <line x1="10" y1="11" x2="10" y2="17"></line>
+                          <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -324,7 +337,6 @@ const EmployeesView = () => {
         mode={modalMode}
       />
 
-      {/* Process Actions Execution Notification Feedback Drawer */}
       <EmployeeSuccessModal
         isOpen={isSuccessModalOpen}
         onClose={handleSuccessClose}
@@ -332,7 +344,6 @@ const EmployeesView = () => {
         mode={modalMode}
       />
 
-      {/* Multi-Step Verification Deletion Target Wizard Layer */}
       <DeleteEmployeeWizard
         isOpen={isDeleteWizardOpen}
         employee={selectedEmployeeForDelete}

@@ -10,7 +10,8 @@ export default function MyAssetsView() {
     const fetchAssets = async () => {
       try {
         const response = await getMyAssets();
-        setAssets(response.data);
+        // Defensive check to ensure data remains an array even on network failure
+        setAssets(Array.isArray(response?.data) ? response.data : []);
       } catch (error) {
         console.error("Error fetching assets:", error);
       } finally {
@@ -22,12 +23,7 @@ export default function MyAssetsView() {
 
   return (
     <div className={styles.contentSection}>
-      <header className={styles.sectionHeader}>
-        <div className={styles.headerTitle}>
-          <h2>My Assets</h2>
-          <p>Company equipment currently assigned to you</p>
-        </div>
-      </header>
+      {/* 💡 FIXED: Hardcoded section header layout removed entirely to allow Header.jsx to handle titles natively */}
 
       <div className={styles.tableCard}>
         {loading ? (
@@ -55,26 +51,32 @@ export default function MyAssetsView() {
                   </td>
                 </tr>
               ) : (
-                assets.map((asset) => (
-                  <tr key={asset._id}>
-                    <td style={{ fontWeight: "500" }}>{asset._id}</td>
-                    <td>
-                      <div style={{ fontWeight: "500" }}>{asset.name}</div>
-                      <div style={{ fontSize: "0.85rem", color: "var(--gray-500)" }}>{asset.brand}</div>
-                    </td>
-                    <td>{asset.category}</td>
-                    <td>
-                      <span className={`${styles.statusBadge} ${asset.condition.toLowerCase() === 'damaged' ? styles.statusRejected : styles.statusApproved}`}>
-                        {asset.condition}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`${styles.statusBadge} ${asset.status.toLowerCase() === 'active' ? styles.statusApproved : styles.statusPending}`}>
-                        {asset.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))
+                assets.map((asset) => {
+                  // Safety strings normalization checks to handle empty database cells without throwing crashes
+                  const conditionClass = asset?.condition?.toLowerCase() === 'damaged' ? styles.statusRejected : styles.statusApproved;
+                  const statusClass = asset?.status?.toLowerCase() === 'active' ? styles.statusApproved : styles.statusPending;
+
+                  return (
+                    <tr key={asset._id}>
+                      <td style={{ fontWeight: "500" }}>{asset._id}</td>
+                      <td>
+                        <div style={{ fontWeight: "500" }}>{asset.name || "Generic Asset"}</div>
+                        <div style={{ fontSize: "0.85rem", color: "var(--gray-500)" }}>{asset.brand || "—"}</div>
+                      </td>
+                      <td>{asset.category || "General Equipment"}</td>
+                      <td>
+                        <span className={`${styles.statusBadge} ${conditionClass}`}>
+                          {asset.condition || "Good"}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`${styles.statusBadge} ${statusClass}`}>
+                          {asset.status || "Active"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

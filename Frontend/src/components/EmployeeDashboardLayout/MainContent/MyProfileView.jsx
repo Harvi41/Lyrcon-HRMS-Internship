@@ -40,14 +40,7 @@ export default function MyProfileView() {
 
   return (
     <div className={styles.contentSection}>
-      <header className={styles.sectionHeader} style={{ borderBottom: "none", paddingBottom: 0 }}>
-        <div className={styles.headerTitle}>
-          <h2 style={{ fontSize: "26px", letterSpacing: "-0.5px" }}>My Profile</h2>
-          <p style={{ fontSize: "14px", color: "var(--gray-500)", fontWeight: "400", marginTop: "4px" }}>
-            View and manage your professional identity and employment details.
-          </p>
-        </div>
-      </header>
+      {/* 💡 FIXED: Hardcoded header element removed entirely to allow Header.jsx to handle page layout descriptions natively */}
 
       {/* TOP CARD: Identity Block */}
       <div 
@@ -60,7 +53,8 @@ export default function MyProfileView() {
           overflow: "hidden",
           boxShadow: "0 2px 8px rgba(15, 23, 42, 0.04), 0 10px 24px rgba(15, 23, 42, 0.03)",
           height: "140px",
-          padding: "0 32px 0 110px"
+          padding: "0 32px 0 110px",
+          marginBottom: "24px" // Added clearance space below top identity card block
         }}
       >
         {/* Left Gradient Edge */}
@@ -176,7 +170,6 @@ export default function MyProfileView() {
               color: "#16a34a"
             }}
           >
-            {/* SVG Icon matching the design */}
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
             </svg>
