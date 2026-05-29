@@ -52,7 +52,7 @@ const LeaveView = () => {
 
   const getCategoryPercentage = (classificationKeyword) => {
     if (totalApproved === 0) return 0;
-    const matches = approvedRecords.filter(r => r.classification.includes(classificationKeyword)).length;
+    const matches = approvedRecords.filter(r => r.classification?.includes(classificationKeyword)).length;
     return Math.round((matches / totalApproved) * 100);
   };
 

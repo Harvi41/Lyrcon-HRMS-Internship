@@ -169,17 +169,19 @@ const EmployeesView = () => {
     setIsDeleteWizardOpen(false);
   };
 
+  const safeString = (val) => (val || '').toString().toLowerCase();
+
   // Live Multi-Field Lookahead Filtering Engine Matrix
   const filteredEmployees = employeeDataList.filter((emp) => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
 
     return (
-      emp.id?.toLowerCase().includes(query) ||
-      emp.name?.toLowerCase().includes(query) ||
-      emp.email?.toLowerCase().includes(query) ||
-      emp.dept?.toLowerCase().includes(query) ||
-      emp.role?.toLowerCase().includes(query)
+      safeString(emp.id).includes(query) ||
+      safeString(emp.name).includes(query) ||
+      safeString(emp.email).includes(query) ||
+      safeString(emp.dept).includes(query) ||
+      safeString(emp.role).includes(query)
     );
   });
 
