@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { buildEmployeeTree } from '../../../utility/hierarchyUtils';
 import styles from '../AdminDashboardLayout.module.css'; 
 
-const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
+const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode, allEmployeesList }) => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -35,7 +36,9 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
         department: employeeData.dept || 'Engineering',
         designation: employeeData.role || '',
         workLocation: employeeData.workLocation || 'HQ - Mumbai',
-        managerId: employeeData.managerId || 'EMP-1002 (Sarah J.)',
+        managerId: employeeData._id === employeeData.managerId 
+          ? '' 
+          : (employeeData.raw?.managerId?._id || employeeData.raw?.managerId || ''),
         status: employeeData.status || 'Active',
         address: employeeData.address || '102 Sky Tower, Andheri East, MH, IN, 400069',
         emergencyContact: employeeData.emergencyContact || 'Ramesh Ghevariya - +91 98331 22211',
@@ -61,6 +64,33 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
       });
     }
   }, [employeeData, mode, isOpen]);
+  
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 🌿 RECURSIVE HIERARCHICAL TREE VIEW GENERATION ENGINE
+    // ═══════════════════════════════════════════════════════════════════════════
+    const managerTree = React.useMemo(() => {
+      if (!Array.isArray(allEmployeesList)) return [];
+      return buildEmployeeTree(allEmployeesList);
+    }, [allEmployeesList]);
+  
+    // Small internal recursive utility component
+    const TreeSelectOptions = ({ nodes, depth = 0, excludeId }) => (
+      <>
+        {nodes.map(node => {
+          if (node.id === excludeId) return null; // 🛡️ Loopback Block
+          return (
+            <React.Fragment key={node.id}>
+              <option value={node.id}>
+                {"\u00A0".repeat(depth * 4)} {depth > 0 ? "└── " : ""}{node.label}
+              </option>
+              {node.children.length > 0 && (
+                <TreeSelectOptions nodes={node.children} depth={depth + 1} excludeId={excludeId} />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </>
+    );
 
   if (!isOpen) return null;
 
@@ -173,8 +203,25 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
                 <input type="text" name="designation" value={formData.designation} onChange={handleChange} required />
               </div>
               <div className={styles.modalFieldGroup}>
-                <label>Manager ID</label>
-                <input type="text" name="managerId" value={formData.managerId} onChange={handleChange} />
+                <label>Reporting Manager</label>
+                <select
+                  name="managerId"
+                  value={formData.managerId}
+                  onChange={handleChange}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                    backgroundColor: '#fff'
+                  }}
+                >
+                  <option value="">— Independent / No Direct Manager (Top Level) —</option>
+                  <TreeSelectOptions 
+                    nodes={managerTree} 
+                    excludeId={employeeData?._id} // Stops an employee from managing themselves on edit loops
+                  />
+                </select>
               </div>
               <div className={styles.modalFieldGroup}>
                 <label>Work Location</label>
