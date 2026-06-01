@@ -75,7 +75,11 @@ const EmployeesView = () => {
       managerId: empData?.managerId?.employeeCode || empData?.managerId || '',
       status: empData?.status === 'terminated' ? 'Inactive' : 'Active',
       address: empData?.address || '',
-      emergencyContact: empData?.emergencyContact || '',
+    emergencyContact: empData?.emergencyContact 
+      ? typeof empData.emergencyContact === 'object'
+        ? `${empData.emergencyContact.name || ''} - ${empData.emergencyContact.phone || ''}`.replace(/^ - | - $/, '')
+        : empData.emergencyContact
+      : '',
       salary: empData?.baseCTC || ''
     });
     setIsModalOpen(true);
@@ -334,7 +338,7 @@ const EmployeesView = () => {
       </div>
 
       {/* Dialog Context Mount Hidden Hooks */}
-      <EmployeeModal isOpen={isModalOpen} onClose={handleModalClose} onSuccess={handleModalSuccess} employeeData={selectedEmployee} mode={modalMode} />
+      <EmployeeModal isOpen={isModalOpen} onClose={handleModalClose} onSuccess={handleModalSuccess} employeeData={selectedEmployee} mode={modalMode} allEmployeesList={employeeDataList}/>
       <EmployeeSuccessModal isOpen={isSuccessModalOpen} onClose={handleSuccessClose} employeeData={successEmployee} mode={modalMode} />
       <DeleteEmployeeWizard isOpen={isDeleteWizardOpen} employee={selectedEmployeeForDelete} onClose={() => setIsDeleteWizardOpen(false)} onConfirmPurge={handleConfirmPurgeMutation} />
     </div>
