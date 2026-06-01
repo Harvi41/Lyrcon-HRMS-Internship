@@ -12,7 +12,6 @@ exports.createEmployee = async (req, res) => {
             managerId, workLocation, emergencyContact, address, roleName, baseCTC
         } = req.body;
         
-        // Check if an employee with the same email or code already exists
         const existingEmail = await Employee.findOne({ email });
         if (existingEmail) {
             return res.status(400).json({ message: 'Employee with this email already exists' });
@@ -23,10 +22,8 @@ exports.createEmployee = async (req, res) => {
             return res.status(400).json({ message: 'Employee with this employee code already exists' });
         }
 
-        // 🛡️ HARDENED SECURITY GUARD: Validate Manager Identity & Active Status
         let verifiedManagerId = null;
         if (managerId) {
-            // Check if the provided string is a valid 24-character hex MongoDB ObjectId
             const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(managerId);
             if (!isValidObjectId) {
                 return res.status(400).json({ message: "Invalid Manager ID format string provided." });
@@ -41,7 +38,6 @@ exports.createEmployee = async (req, res) => {
             verifiedManagerId = activeManager._id;
         }
 
-        // Resolve the role from the database
         const selectedRole = roleName || 'Employee'; 
         const targetRole = await Role.findOne({ name: selectedRole, isActive: true });
         if (!targetRole) {
@@ -60,7 +56,6 @@ exports.createEmployee = async (req, res) => {
             role: targetRole._id
         });
 
-        // Select the correct Mongoose Model and extract role-specific fields
         let EmployeeModel;
         let roleSpecificFields = {};
 
@@ -96,7 +91,7 @@ exports.createEmployee = async (req, res) => {
             joiningDate,
             department,
             designation,
-            managerId: verifiedManagerId, // ◄ Uses safely validated reference ID!
+            managerId: verifiedManagerId, 
             workLocation,
             emergencyContact,
             address,
@@ -106,7 +101,6 @@ exports.createEmployee = async (req, res) => {
 
         const savedEmployee = await newEmployee.save();
 
-        // Complete the bridge link by referencing employeeId back on the User document
         await User.findByIdAndUpdate(newUser._id, {
             $set: { employeeId: savedEmployee._id }
         });
@@ -156,7 +150,6 @@ exports.getEmployeeById = async (req, res) => {
 // 4. UPDATE AN EMPLOYEE
 exports.updateEmployee = async (req, res) => {
     try {
-        // 🛡️ HARDENED SECURITY GUARD: Whitelist allowed fields to block payload injection exploits
         const allowedUpdates = [
             'firstName', 'lastName', 'phoneNumber', 'gender', 'dateOfBirth', 
             'department', 'designation', 'workLocation', 'emergencyContact', 'address'
@@ -169,7 +162,6 @@ exports.updateEmployee = async (req, res) => {
             }
         });
 
-        // 🛡️ MANAGER RELATIONAL CHECK UPON UPDATE
         if (req.body.managerId !== undefined) {
             if (req.body.managerId === null || req.body.managerId === '') {
                 updates.managerId = null;
@@ -179,7 +171,6 @@ exports.updateEmployee = async (req, res) => {
                     return res.status(400).json({ message: "Invalid Manager ID format string." });
                 }
                 
-                // Block an employee from setting themselves as their own manager
                 if (req.body.managerId === req.params.id) {
                     return res.status(400).json({ message: "An employee cannot be assigned as their own direct supervisor." });
                 }
@@ -192,15 +183,13 @@ exports.updateEmployee = async (req, res) => {
             }
         }
 
-        // Expose critical financial updates only to admin/hr users if needed, 
-        // or prevent them entirely from this standard directory route.
         if (req.body.baseCTC && req.user.roleName === 'admin') {
             updates.baseCTC = Number(req.body.baseCTC);
         }
 
         const updatedEmployee = await Employee.findOneAndUpdate(
             { _id: req.params.id, isDeleted: false },
-            { $set: updates }, // ◄ Only applies whitelisted update mutations!
+            { $set: updates },
             { new: true, runValidators: true }
         ).populate('managerId', 'firstName lastName employeeCode');
         

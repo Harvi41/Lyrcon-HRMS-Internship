@@ -73,11 +73,10 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode, allEmpl
       return buildEmployeeTree(allEmployeesList);
     }, [allEmployeesList]);
   
-    // Small internal recursive utility component
     const TreeSelectOptions = ({ nodes, depth = 0, excludeId }) => (
       <>
         {nodes.map(node => {
-          if (node.id === excludeId) return null; // 🛡️ Loopback Block
+          if (node.id === excludeId) return null;
           return (
             <React.Fragment key={node.id}>
               <option value={node.id}>
@@ -219,7 +218,7 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode, allEmpl
                   <option value="">— Independent / No Direct Manager (Top Level) —</option>
                   <TreeSelectOptions 
                     nodes={managerTree} 
-                    excludeId={employeeData?._id} // Stops an employee from managing themselves on edit loops
+                    excludeId={employeeData?._id} 
                   />
                 </select>
               </div>
