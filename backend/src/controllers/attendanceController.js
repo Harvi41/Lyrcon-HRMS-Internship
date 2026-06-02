@@ -1,7 +1,7 @@
 const Attendance = require('../models/Attendance');
 const Employee = require('../models/Employee');
 
-const OFFICE_STATIC_IP = process.env.OFFICE_PUBLIC_IP || '127.0.0.1'; 
+const OFFICE_STATIC_IP = process.env.OFFICE_PUBLIC_IP || '127.0.0.1';
 
 const attendanceController = {
     clockIn: async (req, res) => {
@@ -18,8 +18,8 @@ const attendanceController = {
             // 🛑 SECURITY GUARD: IP Network Whitelist Check
             const cleanIp = clientIp.includes('::1') ? '127.0.0.1' : clientIp.replace(/^.*:/, '');
             if (cleanIp !== OFFICE_STATIC_IP && process.env.NODE_ENV === 'production') {
-                return res.status(403).json({ 
-                    message: `Access Denied. Outbound network '${cleanIp}' does not match the corporate office network.` 
+                return res.status(403).json({
+                    message: `Access Denied. Outbound network '${cleanIp}' does not match the corporate office network.`
                 });
             }
 
@@ -30,16 +30,16 @@ const attendanceController = {
 
             // 🛑 SECURITY GUARD 2: Device Locking / Buddy-Punch Guard
             if (!employeeProfile.registeredDeviceFingerprint) {
-                
+
                 // 🛡️ NEW UNIQUE CHECK: Ensure NO OTHER employee has already registered this device!
-                const deviceExists = await Employee.findOne({ 
+                const deviceExists = await Employee.findOne({
                     registeredDeviceFingerprint: deviceFingerprint,
                     _id: { $ne: employeeProfile._id } // Not this employee
                 });
 
                 if (deviceExists) {
-                    return res.status(403).json({ 
-                        message: "Device Registration Denied. This computer is already linked to another employee's account." 
+                    return res.status(403).json({
+                        message: "Device Registration Denied. This computer is already linked to another employee's account."
                     });
                 }
 
@@ -48,14 +48,14 @@ const attendanceController = {
                 await employeeProfile.save();
 
             } else if (employeeProfile.registeredDeviceFingerprint !== deviceFingerprint) {
-                return res.status(403).json({ 
-                    message: "Identity Mismatch. Attendance can only be submitted from your primary registered work computer." 
+                return res.status(403).json({
+                    message: "Identity Mismatch. Attendance can only be submitted from your primary registered work computer."
                 });
             }
 
-            const todayStr = new Date().toISOString().split('T')[0]; 
+            const todayStr = new Date().toISOString().split('T')[0];
             const currentHour = new Date().getHours();
-            
+
             const recordStatus = currentHour >= 10 ? 'Late' : 'Present';
 
             const newLog = new Attendance({
@@ -107,7 +107,7 @@ const attendanceController = {
     getEmployeeAttendance: async (req, res) => {
         try {
             const { employeeId } = req.params;
-            const { month } = req.query; 
+            const { month } = req.query;
 
             let query = { employeeId };
             if (month) {
@@ -135,6 +135,19 @@ const attendanceController = {
             });
         } catch (error) {
             return res.status(500).json({ message: "Error compiling live roster.", error: error.message });
+        }
+    },
+
+    getMyLogs: async (req, res) => {
+        try {
+            const userId = req.user.userId;
+            const employeeProfile = await Employee.findOne({ userId });
+            if (!employeeProfile) return res.status(404).json({ message: "Employee profile not found." });
+
+            const logs = await Attendance.find({ employeeId: employeeProfile._id }).sort({ date: -1 }).limit(30);
+            return res.status(200).json(logs);
+        } catch (error) {
+            return res.status(500).json({ message: "Error fetching personal logs.", error: error.message });
         }
     }
 };

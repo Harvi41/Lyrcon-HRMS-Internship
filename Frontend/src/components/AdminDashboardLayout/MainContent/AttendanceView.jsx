@@ -5,14 +5,14 @@ import styles from '../AdminDashboardLayout.module.css';
 const AttendanceView = () => {
   // Core attendance records matrix matching the table row items in the picture
   const [attendanceRecords, setAttendanceRecords] = useState([
-    { 
-      id: 1, 
-      name: 'Prince Ghevariya', 
-      checkIn: '09:00 AM', 
-      checkOut: '06:00 PM', 
-      mode: 'Hybrid', 
+    {
+      id: 1,
+      name: 'Prince Ghevariya',
+      checkIn: '09:00 AM',
+      checkOut: '06:00 PM',
+      mode: 'Hybrid',
       status: 'Present',
-      statusClass: styles.badgeActive 
+      statusClass: styles.badgeActive
     }
   ]);
 
@@ -25,24 +25,24 @@ const AttendanceView = () => {
     const height = 100;
     const paddingY = 10; // Maximizes visual spacing bounds
     const chartHeight = height - paddingY * 2;
-    
+
     const points = dataArray.map((val, index) => {
       const x = (index / (dataArray.length - 1)) * width;
       // Inverts Y-axis because SVG (0,0) is top-left
       const y = height - paddingY - (val / 100) * chartHeight;
       return { x, y };
     });
-    
-    return points.reduce((str, pt, idx) => 
-      idx === 0 ? `M ${pt.x.toFixed(1)},${pt.y.toFixed(1)}` : `${str} L ${pt.x.toFixed(1)},${pt.y.toFixed(1)}`, 
+
+    return points.reduce((str, pt, idx) =>
+      idx === 0 ? `M ${pt.x.toFixed(1)},${pt.y.toFixed(1)}` : `${str} L ${pt.x.toFixed(1)},${pt.y.toFixed(1)}`,
       ''
     );
   };
 
   return (
     <div className={styles.dashboardGrid}>
-      
-      
+
+
 
       {/* Synchronized Metrics Summary Cards */}
       <div className={styles.metricsRow}>
@@ -70,34 +70,34 @@ const AttendanceView = () => {
       <div className={styles.chartContainer}>
         <h3>Attendance Overview (30-Day Trend View)</h3>
         <div className={styles.trendGraphContainer} style={{ width: '100%', marginTop: '16px' }}>
-          
-          <svg 
-            className={styles.svgTrendLine} 
-            viewBox="0 0 600 100" 
-            preserveAspectRatio="none" 
+
+          <svg
+            className={styles.svgTrendLine}
+            viewBox="0 0 600 100"
+            preserveAspectRatio="none"
             style={{ width: '100%', height: '140px', overflow: 'visible', display: 'block' }}
           >
             {/* Base Guideline underneath the plot path */}
             <line x1="0" y1="98" x2="600" y2="98" stroke="#e2e8f0" strokeWidth="1" />
-            
+
             {/* Clean dynamic trend path vector curve matching image color profiling */}
-            <path 
-              d={buildSvgPathFromData(historicalTurnoutData)} 
-              fill="none" 
-              stroke="#635bff" 
-              strokeWidth="2.5" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
+            <path
+              d={buildSvgPathFromData(historicalTurnoutData)}
+              fill="none"
+              stroke="#635bff"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
           </svg>
-          
+
           {/* FIXED: Balanced timeline labels leveraging explicit grid spacing tracking matrix */}
-          <div 
-            className={styles.graphTimelineLabels} 
-            style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(4, 1fr)', 
-              width: '100%', 
+          <div
+            className={styles.graphTimelineLabels}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              width: '100%',
               marginTop: '16px',
               fontSize: '0.85rem',
               color: '#94a3b8',
@@ -142,7 +142,7 @@ const AttendanceView = () => {
           </tbody>
         </table>
       </div>
-      
+
     </div>
   );
 };

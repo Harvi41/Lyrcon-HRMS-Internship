@@ -21,6 +21,7 @@ export default function TasksView() {
         id: t._id,
         title: t.title,
         desc: t.description,
+        priority: t.priority || "normal",
         done: t.status === "completed"
       }));
       setTasks(mappedTasks);
@@ -98,7 +99,12 @@ export default function TasksView() {
                   )}
                 </button>
                 <div className={styles.taskText}>
-                  <p className={`${styles.taskTitle} ${task.done ? styles.strikethrough : ""}`}>{task.title}</p>
+                  <p className={`${styles.taskTitle} ${task.done ? styles.strikethrough : ""}`}>
+                    {task.title}
+                    <span className={`${styles.priorityBadge} ${styles['priority' + task.priority.charAt(0).toUpperCase() + task.priority.slice(1)]}`} style={{ marginLeft: '10px' }}>
+                      {task.priority.toUpperCase()}
+                    </span>
+                  </p>
                   <p className={styles.taskDesc}>{task.desc}</p>
                 </div>
               </div>
