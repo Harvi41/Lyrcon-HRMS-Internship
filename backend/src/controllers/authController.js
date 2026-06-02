@@ -1,4 +1,4 @@
-﻿const bcrypt = require('bcrypt');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
@@ -205,6 +205,79 @@ const authController = {
         } catch (error) {
             console.error('Reset password error:', error);
             res.status(500).json({ message: 'Server error resetting password', error: error.message });
+        }
+    },
+
+    googleLogin: async (req, res) => {
+        try {
+            const { token } = req.body;
+            if (!token) {
+                return res.status(400).json({ message: 'Google access token is required.' });
+            }
+
+            // Fetch user profile from Google using the access token
+            const googleResponse = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${token}`);
+            if (!googleResponse.ok) {
+                console.error('[GOOGLE LOGIN FAILED] Invalid token response from Google');
+                return res.status(401).json({ message: 'Invalid Google token. Please try again.' });
+            }
+
+            const googleProfile = await googleResponse.json();
+            const email = String(googleProfile.email || '').trim().toLowerCase();
+
+            if (!email) {
+                return res.status(400).json({ message: 'Could not retrieve email from your Google account.' });
+            }
+
+            // Check if the user exists in the HRMS database
+            const user = await User.findOne({ email }).populate('role');
+            if (!user || !user.isActive) {
+                console.log(`[GOOGLE LOGIN FAILED] Unregistered or inactive email: ${email}`);
+                return res.status(403).json({ 
+                    message: 'Your Google account is not registered in the HRMS. Please contact HR to set up an account.' 
+                });
+            }
+
+            // Extract and verify roles
+            const roleName = String(user.role?.name || '').toLowerCase();
+            const allowedRoles = new Set(['hr', 'admin', 'employee', 'super admin']);
+            const normalized = roleName === 'super admin' ? 'admin' : roleName;
+
+            if (!allowedRoles.has(roleName) && normalized !== 'admin') {
+                console.log(`[GOOGLE LOGIN FAILED] Role not allowed: ${roleName}`);
+                return res.status(403).json({ message: 'Unauthorized role. Access denied.' });
+            }
+
+            // Update last login
+            await User.updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } });
+
+            // Generate JWT
+            const jwtToken = jwt.sign(
+                {
+                    userId: user._id,
+                    name: user.name,
+                    roleName: user.role?.name || 'Employee',
+                    permissions: user.role?.permissions || [],
+                },
+                JWT_SECRET,
+                { expiresIn: '7d' } 
+            );
+
+            // Return response
+            res.status(200).json({
+                message: 'Google Login successful',
+                token: jwtToken,
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role?.name || 'Employee',
+                    permissions: user.role?.permissions || [],
+                },
+            });
+        } catch (error) {
+            console.error('Google Login error:', error);
+            res.status(500).json({ message: 'Server error during Google login', error: error.message });
         }
     },
 };

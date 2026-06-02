@@ -27,6 +27,46 @@ export default function LoginPage({ onLoginSuccess }) {
   const [view, setView] = useState('login'); // 'login' or 'forgot'
   const [successMessage, setSuccessMessage] = useState('');
 
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GOOGLE SSO TRIGGER LOGIC (FRONTEND ALIGNED KEY FIX)
+  // ═══════════════════════════════════════════════════════════════════════════
+  const triggerGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setLoading(true);
+      setError('');
+      setSuccessMessage('');
+      
+      try {
+        // FIXED: Pack the implicit token string into the 'token' key property directly
+        const response = await API.post('/auth/google-login', {
+          token: tokenResponse.access_token 
+        });
+
+        const { data } = response;
+        if (!data || !data.token) throw new Error('Authorization matrix invalid.');
+
+        // Persist session tokens identically to your standard login configurations
+        window.localStorage.setItem('corehr_token', data.token);
+        window.localStorage.setItem('corehr_user', JSON.stringify(data.user));
+        window.localStorage.setItem('corehr_role', data.user?.role || '');
+
+        if (onLoginSuccess) {
+          onLoginSuccess(data);
+        }
+      } catch (err) {
+        console.error('Google verification breakdown:', err);
+        setError(err?.response?.data?.message || 'Google account clearance verification rejected.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: (errorResponse) => {
+      console.error('Google OAuth window popup aborted:', errorResponse);
+      setError('Google Sign-In sequence aborted.');
+    }
+  });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
