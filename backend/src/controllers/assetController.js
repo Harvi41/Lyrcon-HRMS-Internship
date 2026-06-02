@@ -195,3 +195,41 @@ exports.employeeDamages = async (req, res) => {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
+
+// 11. GET MY ASSETS (For the logged-in employee)
+exports.getMyAssets = async (req, res) => {
+    try {
+        if (!req.user || !req.user.userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+        
+        const employee = await Employee.findOne({ userId: req.user.userId, isDeleted: false });
+        let queryOptions = [];
+
+        if (employee) {
+            const codeRegex = new RegExp(employee.employeeCode, 'i');
+            const nameRegex = new RegExp(`${employee.firstName} ${employee.lastName}`, 'i');
+            queryOptions.push({ assignedTo: { $regex: codeRegex } });
+            queryOptions.push({ assignedTo: { $regex: nameRegex } });
+            queryOptions.push({ assignedTo: employee.employeeCode });
+        } else {
+            // Fallback for Admin/System users who only have a User record
+            const user = await User.findById(req.user.userId);
+            if (user && user.name) {
+                const nameRegex = new RegExp(user.name, 'i');
+                queryOptions.push({ assignedTo: { $regex: nameRegex } });
+            } else {
+                return res.status(200).json([]);
+            }
+        }
+        
+        const assets = await Asset.find({
+            $or: queryOptions
+        });
+        
+        res.status(200).json(assets);
+    } catch (error) {
+        console.error('Get My Assets Error:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};

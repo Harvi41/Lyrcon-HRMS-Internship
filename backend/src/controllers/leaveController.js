@@ -2,6 +2,7 @@ const Leave = require('../models/Leave');
 const Employee = require('../models/Employee');
 const User = require('../models/User');
 const Role = require('../models/Role');
+const Announcement = require('../models/Announcement');
 const nodemailer = require('nodemailer');
 
 // 📧 Core Mailer Utility Engine
@@ -232,6 +233,24 @@ const leaveController = {
                         );
                     }
                 }
+
+                // Alert C: Create In-App System Notification for the Employee
+                try {
+                    const newNotification = new Announcement({
+                        sender: reviewerId,
+                        title: `Leave Request ${status}`,
+                        description: `Your leave request for ${updatedLeave.leaveType} from ${new Date(updatedLeave.startDate).toLocaleDateString()} to ${new Date(updatedLeave.endDate).toLocaleDateString()} has been ${status}. Comments: ${comments || 'None'}`,
+                        category: 'Leave',
+                        priority: 'Medium',
+                        targetAudience: 'individual',
+                        targetRecipient: targetEmployee._id,
+                        readBy: [reviewerId]
+                    });
+                    await newNotification.save();
+                } catch (notifErr) {
+                    console.error('In-app notification creation error:', notifErr.message);
+                }
+
             } catch (mailErr) {
                 console.error('Leave response email chain dispatch error:', mailErr.message);
             }

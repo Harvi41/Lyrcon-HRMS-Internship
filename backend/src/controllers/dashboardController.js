@@ -56,6 +56,50 @@ const dashboardController = {
             res.status(500).json({ message: 'Failed to load dashboard summary', error: error.message });
         }
     },
+    employeeSummary: async (req, res) => {
+        try {
+            const userId = req.user.userId;
+            const Task = require('../models/Task');
+            const Announcement = require('../models/Announcement');
+            const Payroll = require('../models/Payroll');
+            
+            // Tasks metrics
+            const totalTasks = await Task.countDocuments({ assigneeId: userId });
+            const pendingTasksCount = await Task.countDocuments({ assigneeId: userId, status: { $ne: 'Completed' } });
+            const completedTasksCount = await Task.countDocuments({ assigneeId: userId, status: 'Completed' });
+
+            // Announcements metrics
+            const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            const announcementsThisWeek = await Announcement.countDocuments({ createdAt: { $gte: oneWeekAgo } });
+            const recentAnnouncements = await Announcement.find().sort({ createdAt: -1 }).limit(3);
+
+            // Latest Payroll
+            const latestPayroll = await Payroll.findOne({ employeeId: userId }).sort({ createdAt: -1 });
+
+            res.json({
+                tasks: {
+                    total: totalTasks,
+                    pending: pendingTasksCount,
+                    completed: completedTasksCount
+                },
+                announcements: {
+                    thisWeek: announcementsThisWeek,
+                    recent: recentAnnouncements.map(a => ({ id: a._id, title: a.title, body: a.description }))
+                },
+                payroll: latestPayroll ? {
+                    basic: latestPayroll.basicSalary,
+                    bonus: latestPayroll.bonus,
+                    deductions: latestPayroll.deductions,
+                    net: latestPayroll.netSalary
+                } : {
+                    basic: 0, bonus: 0, deductions: 0, net: 0
+                }
+            });
+        } catch (error) {
+            console.error('Employee dashboard summary error:', error);
+            res.status(500).json({ message: 'Failed to load employee dashboard summary', error: error.message });
+        }
+    }
 };
 
 module.exports = dashboardController;

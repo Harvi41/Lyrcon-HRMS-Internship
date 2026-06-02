@@ -1,26 +1,68 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "../EmployeeDashboardLayout.module.css";
-
-// 1. Expanded structural list mock baseline data
-const INITIAL_PAYROLL_ROWS = [
-  { id: 1, month: "April 2026", basic: "1,38,400", bonus: "25,000", deductions: "1,000", net: "₹1,62,400.00", rawNetNum: 162400, status: "Paid", date: "April 30, 2026" },
-  { id: 2, month: "March 2026", basic: "1,38,400", bonus: "10,000", deductions: "1,000", net: "₹1,47,400.00", rawNetNum: 147400, status: "Paid", date: "March 31, 2026" },
-  { id: 3, month: "February 2026", basic: "1,38,400", bonus: "0", deductions: "4,000", net: "₹1,34,400.00", rawNetNum: 134400, status: "Paid", date: "February 28, 2026" },
-];
+import { getMyPayroll } from "../../../lib/axios";
 
 export default function PayrollView() {
-  // 2. Wrap dataset in component state to make it modular and dynamic
-  const [payrollHistory] = useState(INITIAL_PAYROLL_ROWS);
+  const [payrollHistory, setPayrollHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // 3. Dynamic Calculation Engine - grabs metrics safely from the latest chronological row
+  useEffect(() => {
+    fetchPayroll();
+  }, []);
+
+  const fetchPayroll = async () => {
+    try {
+      setLoading(true);
+      const { data } = await getMyPayroll();
+      // Assume data is an array of payroll records
+      const mapped = data.map(r => ({
+        id: r._id,
+        month: r.month, // Assumes backend has month field
+        basic: formatCurrency(r.basicSalary),
+        bonus: formatCurrency(r.bonus),
+        deductions: formatCurrency(r.deductions),
+        net: formatCurrency(r.netSalary),
+        rawNetNum: r.netSalary,
+        status: r.status,
+        date: formatDateDisplay(r.paymentDate || r.createdAt)
+      }));
+      setPayrollHistory(mapped);
+    } catch (error) {
+      console.error("Failed to fetch payroll history:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (val) => {
+    if (!val && val !== 0) return "₹0.00";
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 2
+    }).format(val);
+  };
+
+  const formatDateDisplay = (dateString) => {
+    if (!dateString) return "";
+    const options = { month: 'long', day: 'numeric', year: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+  };
+
+  // 3. Dynamic Calculation Engine
   const latestPayslip = payrollHistory[0] || { net: "₹0.00" };
   const currentSalaryDisplay = latestPayslip.net;
 
   // Static target indicator flag for upcoming pay schedules
-  const nextScheduledPaymentDate = "May 30, 2026";
+  const nextScheduledPaymentDate = "End of Current Month";
 
-  const handleDownloadSlip = (record) => {
+  const handleDownloadSlip = async (record) => {
     try {
+      // In a fully integrated system, you'd fetch the PDF blob from the backend here:
+      // const response = await API.get(`/payroll/download/${record.id}`, { responseType: 'blob' });
+      // const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      // For now, fallback to CSV export
       const csvRows = [
         ["Month", "Basic Salary", "Bonus", "Deductions", "Net Salary", "Status"],
         [
@@ -40,7 +82,7 @@ export default function PayrollView() {
       const downloadLink = document.createElement("a");
       downloadLink.setAttribute("href", encodedUri);
       
-      const cleanMonth = record.month.replace(/\s+/g, "_");
+      const cleanMonth = (record.month || "Payslip").replace(/\s+/g, "_");
       downloadLink.setAttribute("download", `Payslip_${cleanMonth}.csv`);
       
       document.body.appendChild(downloadLink);
@@ -68,50 +110,54 @@ export default function PayrollView() {
 
       {/* Dynamic Main Table Grid */}
       <div className={styles.tableCard}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Month</th><th>Basic Salary</th><th>Bonus</th><th>Deductions</th><th>NET SALARY (₹)</th><th>STATUS</th><th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payrollHistory.length === 0 ? (
+        {loading ? (
+          <p style={{ padding: "20px", textAlign: "center", color: "var(--gray-500)" }}>Loading payroll records...</p>
+        ) : (
+          <table className={styles.table}>
+            <thead>
               <tr>
-                <td colSpan="7" style={{ textAlign: "center", color: "var(--gray-500)", padding: "20px" }}>
-                  No payslip history log objects found.
-                </td>
+                <th>Month</th><th>Basic Salary</th><th>Bonus</th><th>Deductions</th><th>NET SALARY (₹)</th><th>STATUS</th><th>Actions</th>
               </tr>
-            ) : (
-              payrollHistory.map((r) => (
-                <tr key={r.id}>
-                  <td className={styles.bold}>{r.month}</td>
-                  <td>{r.basic}</td>
-                  <td>{r.bonus}</td>
-                  <td>{r.deductions}</td>
-                  <td className={styles.netPay}>{r.net}</td>
-                  <td>
-                    <span className={r.status === "Paid" ? styles.badgeGreen : styles.badgeYellow}>
-                      {r.status}
-                    </span>
-                  </td>
-                  <td>
-                    <button 
-                      className={styles.iconBtn} 
-                      title={`Download Payslip for ${r.month}`}
-                      onClick={() => handleDownloadSlip(r)}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                        <polyline points="7 10 12 15 17 10"/>
-                        <line x1="12" y1="15" x2="12" y2="3"/>
-                      </svg>
-                    </button>
+            </thead>
+            <tbody>
+              {payrollHistory.length === 0 ? (
+                <tr>
+                  <td colSpan="7" style={{ textAlign: "center", color: "var(--gray-500)", padding: "20px" }}>
+                    No payslip history log objects found.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                payrollHistory.map((r) => (
+                  <tr key={r.id}>
+                    <td className={styles.bold}>{r.month}</td>
+                    <td>{r.basic}</td>
+                    <td>{r.bonus}</td>
+                    <td>{r.deductions}</td>
+                    <td className={styles.netPay}>{r.net}</td>
+                    <td>
+                      <span className={r.status === "Paid" ? styles.badgeGreen : styles.badgeYellow}>
+                        {r.status}
+                      </span>
+                    </td>
+                    <td>
+                      <button 
+                        className={styles.iconBtn} 
+                        title={`Download Payslip for ${r.month}`}
+                        onClick={() => handleDownloadSlip(r)}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                          <polyline points="7 10 12 15 17 10"/>
+                          <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

@@ -1,18 +1,36 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "../EmployeeDashboardLayout.module.css";
-
-// 1. Expanded structural baseline dataset
-const INITIAL_ANNOUNCEMENTS = [
-  { id: 1, title: "All-Hands Meeting",   tag: "Event",  type: "event",  body: "Join us for the quarterly all hands meeting this Friday at 4 PM.", isRecentThisWeek: true },
-  { id: 2, title: "New Health Benefits", tag: "Info",   type: "info",   body: "We are excited to announce enhanced health coverage starting next month.", isRecentThisWeek: true },
-  { id: 3, title: "System Maintenance",  tag: "Urgent", type: "urgent", body: "The internal system will be down for scheduled maintenance from 10 PM to 2 AM.", isRecentThisWeek: true },
-  { id: 4, title: "Office Renovation Sync", tag: "Info", type: "info",  body: "The 3rd-floor conference wing will be closed for repaint schedules until next week.", isRecentThisWeek: false },
-  { id: 5, title: "Tech Stack Migration Guide", tag: "Event", type: "event", body: "Join the engineering channel stream on Tuesday for the new framework repository walkthrough.", isRecentThisWeek: false },
-];
+import { getAnnouncements } from "../../../lib/axios";
 
 export default function AnnouncementsView() {
-  // 2. Wrap mock data into local React State
-  const [announcements] = useState(INITIAL_ANNOUNCEMENTS);
+  const [announcements, setAnnouncements] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAnnouncements();
+  }, []);
+
+  const fetchAnnouncements = async () => {
+    try {
+      setLoading(true);
+      const { data } = await getAnnouncements();
+      
+      const announcementsArray = Array.isArray(data) ? data : (data.announcements || []);
+      const mapped = announcementsArray.map(a => ({
+        id: a._id,
+        title: a.title,
+        tag: a.category || "Info",
+        type: a.priority === "High" ? "urgent" : a.priority === "Medium" ? "event" : "info",
+        body: a.description,
+        isRecentThisWeek: new Date(a.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      }));
+      setAnnouncements(mapped);
+    } catch (error) {
+      console.error("Failed to fetch announcements:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ─── RUNTIME CALCULATED COUNTERS ───
   const totalAnnouncements = announcements.length;
@@ -38,7 +56,9 @@ export default function AnnouncementsView() {
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Recent Announcements</h2>
         <div className={styles.announceList}>
-          {announcements.length === 0 ? (
+          {loading ? (
+             <p style={{ padding: "20px", color: "var(--gray-500)", fontSize: "0.9rem" }}>Loading announcements...</p>
+          ) : announcements.length === 0 ? (
             <p style={{ padding: "20px", color: "var(--gray-500)", fontSize: "0.9rem" }}>
               No official board announcements pinned.
             </p>

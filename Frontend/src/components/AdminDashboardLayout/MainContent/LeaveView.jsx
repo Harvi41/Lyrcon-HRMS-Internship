@@ -5,21 +5,28 @@ import { getAllLeaves, processLeave } from '../../../lib/axios';
 const LeaveView = () => {
   // 1. DATA SOURCE STATE ARRAY
   const [leaveRequests, setLeaveRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchLeaves = async () => {
       try {
+        setLoading(true);
         const { data } = await getAllLeaves();
-        const mappedData = data.map(leave => ({
-          id: leave._id,
-          employee: leave.userId?.name || leave.userId?.email || 'Unknown',
-          classification: leave.leaveType,
-          chronoRange: `${new Date(leave.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric'})} - ${new Date(leave.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric'})}`,
-          status: leave.status
-        }));
+        
+        // Defensive mapping validation setup
+        const mappedData = Array.isArray(data) ? data.map(leave => ({
+          id: leave?._id || '',
+          employee: leave?.userId?.name || leave?.userId?.email || 'Unknown Staff',
+          classification: leave?.leaveType || 'General Leave', // Safeguards missing string classifications
+          chronoRange: `${leave?.startDate ? new Date(leave.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric'}) : '—'} - ${leave?.endDate ? new Date(leave.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric'}) : '—'}`,
+          status: leave?.status || 'Pending'
+        })) : [];
+        
         setLeaveRequests(mappedData);
       } catch (error) {
         console.error('Failed to fetch leaves:', error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchLeaves();
@@ -41,18 +48,26 @@ const LeaveView = () => {
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 2. DYNAMIC ANALYTICS CALCULATIONS ENGINE
+  // 2. CRASH-PROOF DYNAMIC ANALYTICS CALCULATIONS ENGINE
   // ═══════════════════════════════════════════════════════════════════════════
-  const approvedAbsencesCount = leaveRequests.filter(r => r.status === 'Approved').length;
+  const approvedAbsencesCount = Array.isArray(leaveRequests) ? leaveRequests.filter(r => r?.status === 'Approved').length : 0;
   const totalStaffCount = 142; 
   const computedAvailability = ((totalStaffCount - approvedAbsencesCount) / totalStaffCount * 100).toFixed(1);
 
-  const approvedRecords = leaveRequests.filter(r => r.status === 'Approved');
+  const approvedRecords = Array.isArray(leaveRequests) ? leaveRequests.filter(r => r?.status === 'Approved') : [];
   const totalApproved = approvedRecords.length;
 
+  // FIXED: Added defensive fallback checks to ensure `.includes` handles valid strings exclusively
   const getCategoryPercentage = (classificationKeyword) => {
     if (totalApproved === 0) return 0;
-    const matches = approvedRecords.filter(r => r.classification?.includes(classificationKeyword)).length;
+    
+    const searchKeyword = typeof classificationKeyword === 'string' ? classificationKeyword.toLowerCase() : '';
+    
+    const matches = approvedRecords.filter(r => {
+      const targetClass = typeof r?.classification === 'string' ? r.classification.toLowerCase() : '';
+      return targetClass.includes(searchKeyword);
+    }).length;
+    
     return Math.round((matches / totalApproved) * 100);
   };
 
@@ -80,8 +95,6 @@ const LeaveView = () => {
   return (
     <div className={styles.dashboardGrid}>
       
-      
-
       <div className={styles.chartsRow}>
         
         {/* LEFT COMPONENT: Dynamic Monthly Leave Proportions Progress Bars */}
@@ -144,51 +157,64 @@ const LeaveView = () => {
             </tr>
           </thead>
           <tbody>
-            {leaveRequests.map((request) => {
-              const isFinalized = request.status === 'Approved' || request.status === 'Rejected';
-              
-              return (
-                <tr key={request.id}>
-                  <td><strong>{request.employee}</strong></td>
-                  <td>{request.classification}</td>
-                  <td>{request.chronoRange}</td>
-                  <td>
-                    {/* FIXED: Swapped statusPillBadge class for your stylesheet's native statusLabel descriptor */}
-                    <span className={`${styles.statusLabel} ${getValidationStyle(request.status)}`} style={{ display: 'inline-block', minWidth: '95px', textAlign: 'center', padding: '5px 12px', borderRadius: '12px' }}>
-                      {request.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
-                      {isFinalized ? (
-                        <button className={styles.inlineTableButtonDisabled} style={{ padding: '6px 16px', borderRadius: '6px', fontSize: '0.85rem' }} disabled>
-                          Actioned
-                        </button>
-                      ) : (
-                        <>
-                          <button 
-                            className={styles.primaryActionButton} 
-                            style={{ padding: '6px 16px', borderRadius: '6px', fontSize: '0.85rem', background: '#4f46e5', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: '600' }}
-                            onClick={() => handleStatusUpdate(request.id, 'Approved')}
-                            type="button"
-                          >
-                            Approve
+            {loading ? (
+              <tr>
+                <td colSpan="5" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
+                  Processing balance ledger metrics matrix...
+                </td>
+              </tr>
+            ) : leaveRequests.length === 0 ? (
+              <tr>
+                <td colSpan="5" style={{ textAlign: 'center', padding: '24px', color: '#64748b', fontStyle: 'italic' }}>
+                  No leave requests logged in this directory file.
+                </td>
+              </tr>
+            ) : (
+              leaveRequests.map((request, i) => {
+                const isFinalized = request?.status === 'Approved' || request?.status === 'Rejected';
+                
+                return (
+                  <tr key={request?.id || i}>
+                    <td><strong>{request?.employee || 'Unknown Staff'}</strong></td>
+                    <td>{request?.classification || 'General Leave'}</td>
+                    <td>{request?.chronoRange || '—'}</td>
+                    <td>
+                      <span className={`${styles.statusLabel} ${getValidationStyle(request?.status)}`} style={{ display: 'inline-block', minWidth: '95px', textAlign: 'center', padding: '5px 12px', borderRadius: '12px' }}>
+                        {request?.status || 'Pending'}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
+                        {isFinalized ? (
+                          <button className={styles.inlineTableButtonDisabled} style={{ padding: '6px 16px', borderRadius: '6px', fontSize: '0.85rem' }} disabled>
+                            Actioned
                           </button>
-                          <button 
-                            className={styles.dangerInlineActionButton} 
-                            style={{ padding: '6px 16px', borderRadius: '6px', fontSize: '0.85rem', background: '#ef4444', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: '600' }}
-                            onClick={() => handleStatusUpdate(request.id, 'Rejected')}
-                            type="button"
-                          >
-                            Reject
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                        ) : (
+                          <>
+                            <button 
+                              className={styles.primaryActionButton} 
+                              style={{ padding: '6px 16px', borderRadius: '6px', fontSize: '0.85rem', background: '#4f46e5', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: '600' }}
+                              onClick={() => handleStatusUpdate(request.id, 'Approved')}
+                              type="button"
+                            >
+                              Approve
+                            </button>
+                            <button 
+                              className={styles.dangerInlineActionButton} 
+                              style={{ padding: '6px 16px', borderRadius: '6px', fontSize: '0.85rem', background: '#ef4444', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: '600' }}
+                              onClick={() => handleStatusUpdate(request.id, 'Rejected')}
+                              type="button"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>

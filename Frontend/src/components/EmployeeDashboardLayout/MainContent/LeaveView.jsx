@@ -1,31 +1,44 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "../EmployeeDashboardLayout.module.css";
+import { getMyLeaves, applyLeave } from "../../../lib/axios";
 
 export default function LeaveView() {
-  // 1. Initial leave applications dataset state
-  const [records, setRecords] = useState([
-    { id: 1, employee: "Sarah Jenkins", type: "Sick Leave (SL)", dates: "May 10 - May 12", rawStart: "2026-05-10", rawEnd: "2026-05-12", status: "Pending" },
-  ]);
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Main Form Inputs States (For applying a new leave)
-  const [formType, setFormType] = useState("Vacation Leave");
+  // Main Form Inputs States
+  const [formType, setFormType] = useState("Casual Leave (CL)");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [reason, setReason] = useState("");
 
-  // Modal Control States - tracking explicit data points rather than objects to prevent desync
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [deleteTargetId, setDeleteTargetId] = useState(null);
-
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [editTargetId, setEditTargetId] = useState(null);
-  const [editType, setEditType] = useState("Vacation Leave");
-  const [editStart, setEditStart] = useState("");
-  const [editEnd, setEditEnd] = useState("");
-
-  // Constant rule boundaries
   const TOTAL_ALLOWED_LEAVES = 20;
 
-  // Helper utility to calculate day count ranges
+  useEffect(() => {
+    fetchLeaves();
+  }, []);
+
+  const fetchLeaves = async () => {
+    try {
+      setLoading(true);
+      const { data } = await getMyLeaves();
+      const mapped = data.map(r => ({
+        id: r._id,
+        type: r.leaveType,
+        rawStart: r.startDate,
+        rawEnd: r.endDate,
+        dates: `${formatDateDisplay(r.startDate)} - ${formatDateDisplay(r.endDate)}`,
+        status: r.status,
+        reason: r.reason
+      }));
+      setRecords(mapped);
+    } catch (error) {
+      console.error("Failed to fetch leaves:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const calculateDaysCount = (start, end) => {
     if (!start || !end) return 0;
     const sDate = new Date(start);
@@ -35,24 +48,23 @@ export default function LeaveView() {
     return days > 0 ? days : 0;
   };
 
-  // ─── DYNAMIC STATISTICS RECIPES ───
   const usedLeaves = records.reduce((total, rec) => total + calculateDaysCount(rec.rawStart, rec.rawEnd), 0);
   const availableLeaves = TOTAL_ALLOWED_LEAVES - usedLeaves;
 
   const getDaysByType = (typeLabel) => {
     return records
-      .filter(rec => rec.type.toLowerCase().includes(typeLabel.toLowerCase().split(" ")[0]))
+      .filter(rec => rec.type.toLowerCase().includes(typeLabel.toLowerCase()))
       .reduce((total, rec) => total + calculateDaysCount(rec.rawStart, rec.rawEnd), 0);
   };
 
-  const vacationDays = getDaysByType("Vacation");
-  const sickDays = getDaysByType("Sick");
-  const personalDays = getDaysByType("Personal");
+  const casualDays = getDaysByType("casual");
+  const sickDays = getDaysByType("sick");
+  const earnedDays = getDaysByType("earned") || getDaysByType("vacation");
 
   const leaveTypes = [
-    { label: "Vacation Leave", days: vacationDays, pct: usedLeaves > 0 ? Math.min(100, Math.round((vacationDays / TOTAL_ALLOWED_LEAVES) * 100)) : 0, color: "#6366f1" },
+    { label: "Casual Leave", days: casualDays, pct: usedLeaves > 0 ? Math.min(100, Math.round((casualDays / TOTAL_ALLOWED_LEAVES) * 100)) : 0, color: "#6366f1" },
     { label: "Sick Leave",     days: sickDays,     pct: usedLeaves > 0 ? Math.min(100, Math.round((sickDays / TOTAL_ALLOWED_LEAVES) * 100)) : 0, color: "#22c55e" },
-    { label: "Personal Leave", days: personalDays, pct: usedLeaves > 0 ? Math.min(100, Math.round((personalDays / TOTAL_ALLOWED_LEAVES) * 100)) : 0, color: "#eab308" },
+    { label: "Earned Leave", days: earnedDays, pct: usedLeaves > 0 ? Math.min(100, Math.round((earnedDays / TOTAL_ALLOWED_LEAVES) * 100)) : 0, color: "#eab308" },
   ];
 
   const formatDateDisplay = (dateString) => {
@@ -61,73 +73,32 @@ export default function LeaveView() {
     return new Date(dateString).toLocaleDateString('en-US', options);
   };
 
-  // ─── ACTION HANDLERS ───
-
-  // A. Create a new request
-  const handleApplyLeave = (e) => {
+  const handleApplyLeave = async (e) => {
     e.preventDefault();
     if (new Date(startDate) > new Date(endDate)) return alert("Start date cannot be after the End date!");
+    if (!reason.trim()) return alert("Reason is required.");
 
-    const formattedRangeText = `${formatDateDisplay(startDate)} - ${formatDateDisplay(endDate)}`;
-    const newRequest = {
-      id: Date.now(),
-      employee: "Prince Ghevariya",
-      type: formType,
-      dates: formattedRangeText,
-      rawStart: startDate,
-      rawEnd: endDate,
-      status: "Pending"
-    };
-
-    setRecords(prev => [...prev, newRequest]);
-    setStartDate("");
-    setEndDate("");
-    setFormType("Vacation Leave");
-  };
-
-  // B. Initialize the Edit Modal with values from the selected record row
-  const openEditModal = (record) => {
-    setEditTargetId(record.id);
-    setEditType(record.type);
-    setEditStart(record.rawStart);
-    setEditEnd(record.rawEnd);
-    setIsEditOpen(true);
-  };
-
-  // C. Save edited alterations back into the core records state array
-  const handleSaveEdit = (e) => {
-    e.preventDefault();
-    if (new Date(editStart) > new Date(editEnd)) return alert("Start date cannot be after the End date!");
-
-    const formattedRangeText = `${formatDateDisplay(editStart)} - ${formatDateDisplay(editEnd)}`;
-
-    setRecords(prev => prev.map(rec => 
-      rec.id === editTargetId 
-        ? { ...rec, type: editType, dates: formattedRangeText, rawStart: editStart, rawEnd: editEnd } 
-        : rec
-    ));
-
-    // Clear and close edit modal cleanly
-    setIsEditOpen(false);
-    setEditTargetId(null);
-  };
-
-  // D. Initialize the Delete Confirmation Modal
-  const openDeleteModal = (id) => {
-    setDeleteTargetId(id);
-    setIsDeleteOpen(true);
-  };
-
-  // E. Execute the final record removal
-  const handleConfirmDelete = () => {
-    setRecords(prev => prev.filter(rec => rec.id !== deleteTargetId));
-    setIsDeleteOpen(false);
-    setDeleteTargetId(null);
+    try {
+      await applyLeave({
+        leaveType: formType,
+        startDate,
+        endDate,
+        reason
+      });
+      alert("Leave application submitted successfully!");
+      setStartDate("");
+      setEndDate("");
+      setReason("");
+      setFormType("Casual Leave (CL)");
+      fetchLeaves();
+    } catch (error) {
+      console.error("Failed to apply leave:", error);
+      alert(error?.response?.data?.message || "Failed to submit leave application.");
+    }
   };
 
   return (
     <div className={styles.page}>
-      {/* Metrics Header Summary Blocks */}
       <div className={styles.statRow3}>
         <div className={styles.statCard}>
           <p className={styles.statLabel}>TOTAL LEAVE</p>
@@ -143,10 +114,8 @@ export default function LeaveView() {
         </div>
       </div>
 
-      {/* Main Grid View section */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
         
-        {/* Left Card View: Breakdown bars */}
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>Leave Breakdown By Type</h3>
           <div className={styles.leaveBreakdownGrid}>
@@ -166,16 +135,16 @@ export default function LeaveView() {
           </div>
         </div>
 
-        {/* Right Card View: Application Submission Form Container */}
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>Apply For Leave</h3>
           <form onSubmit={handleApplyLeave} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
               <label style={{ fontSize: "0.75rem", fontWeight: "600", color: "var(--gray-500)" }}>LEAVE TYPE</label>
               <select className={styles.addInput} value={formType} onChange={(e) => setFormType(e.target.value)}>
-                <option value="Vacation Leave">Vacation Leave</option>
+                <option value="Casual Leave (CL)">Casual Leave (CL)</option>
                 <option value="Sick Leave (SL)">Sick Leave (SL)</option>
-                <option value="Personal Leave">Personal Leave</option>
+                <option value="Earned Leave (EL)">Earned Leave (EL)</option>
+                <option value="Unpaid">Unpaid Leave</option>
               </select>
             </div>
 
@@ -190,6 +159,11 @@ export default function LeaveView() {
               </div>
             </div>
 
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <label style={{ fontSize: "0.75rem", fontWeight: "600", color: "var(--gray-500)" }}>REASON</label>
+              <input type="text" className={styles.addInput} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason for leave" required />
+            </div>
+
             <button type="submit" className={styles.addBtn} style={{ padding: "10px 16px", marginTop: "8px" }}>
               Submit Leave Application
             </button>
@@ -197,140 +171,39 @@ export default function LeaveView() {
         </div>
       </div>
 
-      {/* Main Leave Logs Table */}
       <div className={styles.tableCard}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>EMPLOYEE</th><th>LEAVE TYPE</th><th>LEAVE DATA</th><th>STATUS VALIDATION</th><th>ACTIONS</th>
-            </tr>
-          </thead>
-          <tbody>
-            {records.map((r) => (
-              <tr key={r.id}>
-                <td className={styles.bold}>{r.employee}</td>
-                <td>{r.type}</td>
-                <td>{r.dates}</td>
-                <td><span className={styles.badgeYellow}>{r.status}</span></td>
-                <td>
-                  <div className={styles.actionBtns}>
-                    <button className={styles.iconBtn} title="Edit Entry" onClick={() => openEditModal(r)}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                      </svg>
-                    </button>
-                    <button className={`${styles.iconBtn} ${styles.iconBtnRed}`} title="Delete Entry" onClick={() => openDeleteModal(r.id)}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
-                      </svg>
-                    </button>
-                  </div>
-                </td>
+        {loading ? (
+          <p style={{ padding: "20px", textAlign: "center", color: "var(--gray-500)" }}>Loading leave history...</p>
+        ) : (
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>LEAVE TYPE</th><th>LEAVE DATA</th><th>REASON</th><th>STATUS VALIDATION</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {records.length === 0 ? (
+                <tr>
+                  <td colSpan="4" style={{ textAlign: "center", color: "var(--gray-500)", padding: "20px" }}>No leave records found.</td>
+                </tr>
+              ) : (
+                records.map((r) => (
+                  <tr key={r.id}>
+                    <td className={styles.bold}>{r.type}</td>
+                    <td>{r.dates}</td>
+                    <td>{r.reason}</td>
+                    <td>
+                      <span className={r.status === 'Approved' ? styles.badgeGreen : r.status === 'Rejected' ? styles.badgeRed : styles.badgeYellow}>
+                        {r.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
-
-      {/* ═════════════════════════════════════════════════════════════════════════
-          FIXED POPUP MODAL: DELETE CONFIRMATION
-          ═════════════════════════════════════════════════════════════════════════ */}
-      {isDeleteOpen && (
-        <div style={modalOverlayStyle}>
-          <div style={modalContentStyle}>
-            <h3 style={{ fontFamily: "Sora, sans-serif", marginBottom: "12px", color: "var(--gray-900)" }}>Confirm Deletion</h3>
-            <p style={{ fontSize: "0.9rem", color: "var(--gray-600)", marginBottom: "20px" }}>
-              Are you sure you want to retract and permanently delete this leave application record?
-            </p>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-              <button type="button" className={styles.cancelBtn} style={{ padding: "8px 16px" }} onClick={() => { setIsDeleteOpen(false); setDeleteTargetId(null); }}>
-                Cancel
-              </button>
-              <button type="button" className={styles.addBtn} style={{ padding: "8px 16px", backgroundColor: "var(--accent-red)", boxShadow: "none" }} onClick={handleConfirmDelete}>
-                Yes, Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ═════════════════════════════════════════════════════════════════════════
-          FIXED POPUP MODAL: EDIT REQUEST FORM
-          ═════════════════════════════════════════════════════════════════════════ */}
-      {isEditOpen && (
-        <div style={modalOverlayStyle}>
-          <div style={{ ...modalContentStyle, maxWidth: "450px" }}>
-            <h3 style={{ fontFamily: "Sora, sans-serif", marginBottom: "16px", color: "var(--gray-900)" }}>Edit Leave Details</h3>
-            <form onSubmit={handleSaveEdit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px", textAlign: "left" }}>
-                <label style={{ fontSize: "0.75rem", fontWeight: "600", color: "var(--gray-500)" }}>LEAVE TYPE</label>
-                <select 
-                  className={styles.addInput}
-                  value={editType}
-                  onChange={(e) => setEditType(e.target.value)}
-                >
-                  <option value="Vacation Leave">Vacation Leave</option>
-                  <option value="Sick Leave (SL)">Sick Leave (SL)</option>
-                  <option value="Personal Leave">Personal Leave</option>
-                </select>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", textAlign: "left" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <label style={{ fontSize: "0.75rem", fontWeight: "600", color: "var(--gray-500)" }}>START DATE</label>
-                  <input 
-                    type="date" 
-                    className={styles.addInput}
-                    value={editStart} 
-                    onChange={(e) => setEditStart(e.target.value)}
-                    required
-                  />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <label style={{ fontSize: "0.75rem", fontWeight: "600", color: "var(--gray-500)" }}>END DATE</label>
-                  <input 
-                    type="date" 
-                    className={styles.addInput}
-                    value={editEnd} 
-                    min={editStart}
-                    onChange={(e) => setEditEnd(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
-                <button type="button" className={styles.cancelBtn} style={{ padding: "8px 16px" }} onClick={() => { setIsEditOpen(false); setEditTargetId(null); }}>
-                  Cancel
-                </button>
-                <button type="submit" className={styles.addBtn} style={{ padding: "8px 16px" }}>
-                  Save Changes
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
-
-// Layout styles
-const modalOverlayStyle = {
-  position: "fixed",
-  top: 0, left: 0,
-  width: "100vw", height: "100vh",
-  backgroundColor: "rgba(15, 21, 53, 0.6)", 
-  display: "flex", alignItems: "center", justifyContent: "center",
-  zIndex: 9999,
-};
-
-const modalContentStyle = {
-  backgroundColor: "#ffffff",
-  padding: "24px",
-  borderRadius: "10px",
-  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-  width: "90%", maxWidth: "400px",
-  textAlign: "center",
-};

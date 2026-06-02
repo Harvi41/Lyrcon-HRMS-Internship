@@ -7,25 +7,11 @@ const crypto = require('crypto');
 exports.createEmployee = async (req, res) => {
     try {
         const { 
-            employeeCode, 
-            firstName, 
-            lastName, 
-            email, 
-            phoneNumber, 
-            gender, 
-            dateOfBirth, 
-            joiningDate, 
-            department, 
-            designation, 
-            managerId, 
-            workLocation, 
-            emergencyContact, 
-            address,
-            roleName,
-            baseCTC
+            employeeCode, firstName, lastName, email, phoneNumber, 
+            gender, dateOfBirth, joiningDate, department, designation, 
+            managerId, workLocation, emergencyContact, address, roleName, baseCTC
         } = req.body;
         
-        // 1. Check if an employee with the same email or code already exists
         const existingEmail = await Employee.findOne({ email });
         if (existingEmail) {
             return res.status(400).json({ message: 'Employee with this email already exists' });
@@ -36,18 +22,33 @@ exports.createEmployee = async (req, res) => {
             return res.status(400).json({ message: 'Employee with this employee code already exists' });
         }
 
-        // 2. Resolve the role from the database
+        let verifiedManagerId = null;
+        if (managerId) {
+            const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(managerId);
+            if (!isValidObjectId) {
+                return res.status(400).json({ message: "Invalid Manager ID format string provided." });
+            }
+
+            const activeManager = await Employee.findOne({ _id: managerId, isDeleted: false });
+            if (!activeManager) {
+                return res.status(422).json({ 
+                    message: "Validation Error: The assigned supervisor does not exist or has been terminated." 
+                });
+            }
+            verifiedManagerId = activeManager._id;
+        }
+
         const selectedRole = roleName || 'Employee'; 
         const targetRole = await Role.findOne({ name: selectedRole, isActive: true });
         if (!targetRole) {
             return res.status(404).json({ message: `Role '${selectedRole}' not found or is currently inactive.` });
         }
 
-        // 3. Generate a secure temporary password for the new hire
+        // Generate a secure temporary password for the new hire
         const temporaryPassword = `Lyrcon2026!${crypto.randomBytes(8).toString('hex')}`;
         const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
 
-        // 4. STEP 1: Create the Auth Account inside the User collection
+        // Create the Auth Account inside the User collection
         const newUser = await User.create({
             name: `${firstName} ${lastName}`.trim(),
             email: email.toLowerCase(),
@@ -55,7 +56,6 @@ exports.createEmployee = async (req, res) => {
             role: targetRole._id
         });
 
-        // 5. Select the correct Mongoose Model and extract role-specific fields
         let EmployeeModel;
         let roleSpecificFields = {};
 
@@ -72,7 +72,7 @@ exports.createEmployee = async (req, res) => {
                 assignedDepartments: req.body.assignedDepartments
             };
         } else {
-            EmployeeModel = Employee; // Base model representing standard employees
+            EmployeeModel = Employee; 
             roleSpecificFields = {
                 probationStatus: req.body.probationStatus,
                 performanceRating: req.body.performanceRating
@@ -91,7 +91,7 @@ exports.createEmployee = async (req, res) => {
             joiningDate,
             department,
             designation,
-            managerId: managerId || null,
+            managerId: verifiedManagerId, 
             workLocation,
             emergencyContact,
             address,
@@ -101,12 +101,10 @@ exports.createEmployee = async (req, res) => {
 
         const savedEmployee = await newEmployee.save();
 
-        // 6. STEP 2: Complete the bridge link by referencing employeeId back on the User document
         await User.findByIdAndUpdate(newUser._id, {
             $set: { employeeId: savedEmployee._id }
         });
 
-        // 7. Send confirmation back to HR along with the temporary credentials
         res.status(201).json({
             message: 'Employee onboarded successfully!',
             employee: savedEmployee,
@@ -152,11 +150,48 @@ exports.getEmployeeById = async (req, res) => {
 // 4. UPDATE AN EMPLOYEE
 exports.updateEmployee = async (req, res) => {
     try {
+        const allowedUpdates = [
+            'firstName', 'lastName', 'phoneNumber', 'gender', 'dateOfBirth', 
+            'department', 'designation', 'workLocation', 'emergencyContact', 'address'
+        ];
+
+        const updates = {};
+        Object.keys(req.body).forEach((key) => {
+            if (allowedUpdates.includes(key)) {
+                updates[key] = req.body[key];
+            }
+        });
+
+        if (req.body.managerId !== undefined) {
+            if (req.body.managerId === null || req.body.managerId === '') {
+                updates.managerId = null;
+            } else {
+                const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(req.body.managerId);
+                if (!isValidObjectId) {
+                    return res.status(400).json({ message: "Invalid Manager ID format string." });
+                }
+                
+                if (req.body.managerId === req.params.id) {
+                    return res.status(400).json({ message: "An employee cannot be assigned as their own direct supervisor." });
+                }
+
+                const activeManager = await Employee.findOne({ _id: req.body.managerId, isDeleted: false });
+                if (!activeManager) {
+                    return res.status(422).json({ message: "Provided Manager ID does not point to an active corporate record." });
+                }
+                updates.managerId = activeManager._id;
+            }
+        }
+
+        if (req.body.baseCTC && req.user.roleName === 'admin') {
+            updates.baseCTC = Number(req.body.baseCTC);
+        }
+
         const updatedEmployee = await Employee.findOneAndUpdate(
             { _id: req.params.id, isDeleted: false },
-            { $set: req.body },
+            { $set: updates },
             { new: true, runValidators: true }
-        );
+        ).populate('managerId', 'firstName lastName employeeCode');
         
         if (!updatedEmployee) {
             return res.status(404).json({ message: 'Employee not found' });
@@ -182,6 +217,56 @@ exports.deleteEmployee = async (req, res) => {
         }
         
         res.status(200).json({ message: 'Employee profile deleted successfully (Soft Delete)' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// 6. GET CURRENT EMPLOYEE PROFILE (Me)
+exports.getMe = async (req, res) => {
+    try {
+        if (!req.user || !req.user.userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+        
+        let employee = await Employee.findOne({ userId: req.user.userId, isDeleted: false })
+            .populate('managerId', 'firstName lastName employeeCode email');
+            
+        if (!employee) {
+            // Fallback for users (e.g. system admins) who don't have a linked Employee profile
+            const user = await User.findById(req.user.userId);
+            if (!user) {
+                return res.status(404).json({ message: 'User profile not found' });
+            }
+            
+            const nameParts = (user.name || '').split(' ');
+            employee = {
+                firstName: nameParts[0] || 'System',
+                lastName: nameParts.slice(1).join(' ') || 'User',
+                email: user.email,
+                employeeCode: 'SYS-001',
+                designation: req.user.roleName || 'Administrator',
+                department: 'System Management',
+                status: 'active',
+                joiningDate: user.createdAt || new Date(),
+            };
+        }
+        
+        res.status(200).json(employee);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// 7. GET COMPANY DIRECTORY (Lightweight employee list)
+exports.getDirectory = async (req, res) => {
+    try {
+        const employees = await Employee.find({ isDeleted: false, status: 'active' })
+            .select('firstName lastName email phoneNumber department designation workLocation roleType')
+            .populate('managerId', 'firstName lastName email')
+            .sort({ firstName: 1 });
+            
+        res.status(200).json(employees);
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }

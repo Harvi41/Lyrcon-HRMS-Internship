@@ -9,11 +9,10 @@ const employeeRoutes = require('./src/routes/employeeRoutes');
 const assetRoutes = require('./src/routes/assetRoutes');
 const dashboardRoutes = require('./src/routes/dashboardRoutes');
 const announcementRoutes = require('./src/routes/announcementRoutes');
-const leaveRoutes = require('./src/routes/leaveRoutes'); 
-const payrollRoutes = require('./src/routes/payrollRoutes'); 
-const taskRoutes = require('./src/routes/taskRoutes'); 
+const leaveRoutes = require('./src/routes/leaveRoutes');
+const payrollRoutes = require('./src/routes/payrollRoutes');
+const taskRoutes = require('./src/routes/taskRoutes');
 const attendanceRoutes = require('./src/routes/attendanceRoutes');
-
 const app = express();
 
 // 🌐 CORS Security Whitelist Mapping
@@ -56,13 +55,13 @@ app.use(cors({
 app.use(express.json());
 
 // 🚪 Mount Protected Core Business Routing Surfaces
-app.use('/api/auth', authRoutes);         
+app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/assets', assetRoutes);
 app.use('/api/announcements', announcementRoutes);
-app.use('/api/leaves', leaveRoutes); 
-app.use('/api/payroll', payrollRoutes);   
+app.use('/api/leaves', leaveRoutes);
+app.use('/api/payroll', payrollRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/attendance', attendanceRoutes);
 
