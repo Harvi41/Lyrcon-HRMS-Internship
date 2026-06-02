@@ -21,6 +21,7 @@ export default function LoginPage({ onLoginSuccess }) {
   const [view, setView] = useState('login'); 
   const [successMessage, setSuccessMessage] = useState('');
 
+
   // ═══════════════════════════════════════════════════════════════════════════
   // GOOGLE SSO TRIGGER LOGIC (FRONTEND ALIGNED KEY FIX)
   // ═══════════════════════════════════════════════════════════════════════════
@@ -32,7 +33,7 @@ export default function LoginPage({ onLoginSuccess }) {
       
       try {
         // FIXED: Pack the implicit token string into the 'token' key property directly
-        const response = await API.post('/api/auth/google-login', {
+        const response = await API.post('/auth/google-login', {
           token: tokenResponse.access_token 
         });
 
