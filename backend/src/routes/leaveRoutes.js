@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const leaveController = require('../controllers/leaveController');
-const { verifyToken, checkPermission } = require('../middlewares/auth');
+const { verifyToken, checkPermission, authorizeRoles } = require('../middlewares/auth');
 
 // Enforce global login token verification across all leave operational paths
 router.use(verifyToken);
@@ -15,8 +15,8 @@ router.get('/my-requests', leaveController.getMyLeaves);
 // ==========================================
 // 👔 ADMINISTRATIVE & MANAGEMENT PANEL RESTRICTIONS
 // ==========================================
-router.get('/', checkPermission('leave.review'), leaveController.getAllLeaves);
-router.get('/pending', checkPermission('leave.review'), leaveController.getPendingLeaves);
-router.put('/:id/review', checkPermission('leave.review'), leaveController.reviewLeave);
+router.get('/', authorizeRoles('admin', 'hr'), leaveController.getAllLeaves);
+router.get('/pending', authorizeRoles('admin', 'hr'), leaveController.getPendingLeaves);
+router.put('/:id/review', authorizeRoles('admin', 'hr'), leaveController.reviewLeave);
 
 module.exports = router;

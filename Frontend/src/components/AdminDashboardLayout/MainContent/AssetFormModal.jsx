@@ -260,7 +260,7 @@ export default function AssetFormModal({ isOpen, mode, assetData, onClose, onSav
             </div>
 
             <button type="button" className={styles.returnDirectoryButton} onClick={onSaved}>
-              Back to Directory
+              Back to Assets
             </button>
           </div>
         )}

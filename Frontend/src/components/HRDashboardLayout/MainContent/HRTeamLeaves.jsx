@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styles from '../AdminDashboardLayout.module.css';
+import styles from '../HRDashboardLayout.module.css';
 import { getAllLeaves, processLeave } from '../../../lib/axios';
 
 const LeaveView = () => {

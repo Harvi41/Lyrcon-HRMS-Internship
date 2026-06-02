@@ -260,13 +260,7 @@ export default function TasksPanel({ userRole = 'hr' }) {
                   </td>
                   <td>
                     <span 
-                      className={styles.statusPillBadge}
-                      style={{
-                        backgroundColor: task.priority === 'urgent' ? '#fee2e2' : task.priority === 'important' ? '#ffedd5' : '#f1f5f9',
-                        color: task.priority === 'urgent' ? '#dc2626' : task.priority === 'important' ? '#ea580c' : '#475569',
-                        border: '1px solid',
-                        borderColor: task.priority === 'urgent' ? '#fca5a5' : task.priority === 'important' ? '#fed7aa' : '#cbd5e1'
-                      }}
+                      className={`${styles.priorityBadge} ${styles['priority' + (task.priority?.charAt(0).toUpperCase() + task.priority?.slice(1)) || 'Normal']}`}
                     >
                       {task.priority?.toUpperCase()}
                     </span>

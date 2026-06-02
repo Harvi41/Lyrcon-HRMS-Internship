@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../HRDashboardLayout.module.css';
 import ClockInModal from './ClockInModal';
-import ClockOutModal from './ClockOutModal'; 
+import ClockOutModal from './ClockOutModal';
 import API from '../../../lib/axios'; // Binds frontend component states to backend endpoints
 
 const AttendanceView = () => {
@@ -12,7 +12,7 @@ const AttendanceView = () => {
   const [alertSeverity, setAlertSeverity] = useState(''); // Tracking 'critical' red highlights
 
   // State-driven core attendance records matrix
-  const [totalStaffCount] = useState(142); 
+  const [totalStaffCount] = useState(142);
   const [attendanceRecords, setAttendanceRecords] = useState([
     { id: 1, name: 'Prince Ghevariya', shift: '09:00 AM - 06:00 PM', compliance: 'Perfect', statusClass: styles.statusActive, isLate: false, overtime: '0.0 hrs', status: 'Present' },
     { id: 2, name: 'Michael Ross', shift: '09:45 AM', compliance: 'Late', statusClass: styles.statusOnboard, isLate: true, overtime: '0.0 hrs', status: 'Present' },
@@ -53,19 +53,19 @@ const AttendanceView = () => {
     if (!isClockedIn) {
       setIsClockInModalOpen(true);
     } else {
-      setIsClockOutModalOpen(true); 
+      setIsClockOutModalOpen(true);
     }
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
   // BACKEND INTEGRATION API PIPELINES
   // ═══════════════════════════════════════════════════════════════════════════
-  
+
   const executeClockInPipeline = async (completePayload) => {
     try {
       // 1. Transmit detailed shift configurations along with the hardware token string
       const response = await API.post('/attendance/clock-in', completePayload);
-      
+
       setIsClockedIn(true);
       setUiFeedbackMessage('Clock-in successful! Security access parameters cleared.');
       setAlertSeverity('success');
@@ -110,7 +110,7 @@ const AttendanceView = () => {
 
       const logoutTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       setAttendanceRecords(prevList =>
-        prevList.map(emp => 
+        prevList.map(emp =>
           emp.name === 'HR Administrator' && emp.shift.includes('Running')
             ? { ...emp, shift: `${emp.shift.split(' - ')[0]} - ${logoutTimestamp}` }
             : emp
@@ -138,7 +138,7 @@ const AttendanceView = () => {
 
   return (
     <div className={styles.dashboardGrid}>
-      
+
       {/* Dynamic Security Verification Alert Banners */}
       {uiFeedbackMessage && (
         <div style={{
@@ -164,7 +164,7 @@ const AttendanceView = () => {
           {getTodayFormattedDate()}
         </div>
         <div className={styles.rightActionButtonGroup}>
-          <button 
+          <button
             className={isClockedIn ? styles.dangerActionButton : styles.successActionButton}
             onClick={handleClockButtonClick}
             type="button"
@@ -172,7 +172,7 @@ const AttendanceView = () => {
             {isClockedIn ? 'Clock Out Now' : 'Clock In Now'}
           </button>
 
-          <button 
+          <button
             className={styles.secondaryActionButton}
             onClick={handleExportSummaryCSVStream}
             type="button"
@@ -242,14 +242,14 @@ const AttendanceView = () => {
       </div>
 
       {/* Dynamic Pop-Up Form Overlay Element: Clock In */}
-      <ClockInModal 
+      <ClockInModal
         isOpen={isClockInModalOpen}
         onClose={() => setIsClockInModalOpen(false)}
         onConfirmClockIn={executeClockInPipeline}
       />
 
       {/* Dynamic Pop-Up Form Overlay Element: Clock Out */}
-      <ClockOutModal 
+      <ClockOutModal
         isOpen={isClockOutModalOpen}
         onClose={() => setIsClockOutModalOpen(false)}
         onConfirmClockOut={executeClockOutPipeline}

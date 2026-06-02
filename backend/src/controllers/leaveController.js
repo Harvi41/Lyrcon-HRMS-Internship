@@ -48,13 +48,16 @@ const leaveController = {
 
             const start = new Date(startDate);
             const end = new Date(endDate);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); 
+            
+            // Compare YYYY-MM-DD strings directly to prevent timezone shift bugs
+            const startStr = start.toISOString().split('T')[0];
+            const endStr = end.toISOString().split('T')[0];
+            const todayStr = new Date().toISOString().split('T')[0];
 
-            if (start > end) {
+            if (startStr > endStr) {
                 return res.status(400).json({ message: "Start date cannot be after end date." });
             }
-            if (start < today) {
+            if (startStr < todayStr) {
                 return res.status(400).json({ message: "Cannot apply for leave dates in the past." });
             }
 
@@ -163,22 +166,25 @@ const leaveController = {
     reviewLeave: async (req, res) => {
         try {
             const { id } = req.params;
-            const { status, comments } = req.body;
+            const { status, comments, startDate, endDate } = req.body;
             const reviewerId = req.user.userId; 
 
             if (!['Approved', 'Rejected'].includes(status)) {
                 return res.status(400).json({ message: "Invalid status update. Choose 'Approved' or 'Rejected'." });
             }
 
+            const updateFields = { 
+                status, 
+                comments: comments || '', 
+                reviewedBy: reviewerId 
+            };
+
+            if (startDate) updateFields.startDate = new Date(startDate);
+            if (endDate) updateFields.endDate = new Date(endDate);
+
             const updatedLeave = await Leave.findByIdAndUpdate(
                 id,
-                { 
-                    $set: { 
-                        status, 
-                        comments: comments || '', 
-                        reviewedBy: reviewerId 
-                    } 
-                },
+                { $set: updateFields },
                 { returnDocument: 'after', runValidators: true } // 🧼 Clean Mongoose warning fix
             ).populate('userId', 'name email'); 
 

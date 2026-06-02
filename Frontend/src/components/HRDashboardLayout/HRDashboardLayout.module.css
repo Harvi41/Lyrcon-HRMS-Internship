@@ -1309,18 +1309,37 @@
 .returnDirectoryButton {
   width: 100%;
   padding: 14px;
-  background-color: #0f172a;
+  background-color: #4F46E5;
   color: #ffffff;
   font-size: 0.95rem;
   font-weight: 600;
   border: none;
-  border-radius: 10px;
+  border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 .returnDirectoryButton:hover {
-  background-color: #1e293b;
+  background-color: #4338ca;
+}
+
+.monthPickerInput {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background-color: #f8fafc;
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 600;
+  outline: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.monthPickerInput:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+  background-color: #ffffff;
 }
 
 .tableActionFlexContainerIconicRow {
@@ -2191,3 +2210,169 @@
   font-weight: 800;
   color: #15803d;
 }
+/* ==========================================================================
+   WIZARD SUCCESS NOTIFICATION STYLES (ASSET CREATION)
+   ========================================================================== */
+
+.wizardStepBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  animation: scaleInModal 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.successIcon {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  box-shadow: 0 12px 32px -8px rgba(16, 185, 129, 0.4);
+  animation: successPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
+  animation-delay: 0.1s;
+}
+
+.successIcon span {
+  color: #ffffff;
+  font-size: 2.5rem;
+  font-weight: 800;
+}
+
+.successTitle {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 10px 0;
+  letter-spacing: -0.02em;
+}
+
+.successSubtitle {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0 0 32px 0;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+.successDetailsCard {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05);
+  text-align: left;
+}
+
+.successDetailsHeader {
+  display: flex;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.successDetailsColumn {
+  flex: 1;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  border-right: 1px solid #e2e8f0;
+}
+
+.successDetailsColumn:last-child {
+  border-right: none;
+}
+
+.successLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.successValue {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.successDetailsBody {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-color: #ffffff;
+}
+
+.successDetailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #334155;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.successDetailRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.successDetailRow strong {
+  font-weight: 600;
+  color: #475569;
+}
+
+.successDetailRow span {
+  font-weight: 700;
+  color: #0f172a;
+  background-color: #f1f5f9;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+@keyframes successPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+
+/* Priority Badges */
+.priorityBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 6px;
+  border: 1px solid transparent;
+}
+
+.priorityNormal {
+  background-color: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+.priorityImportant {
+  background-color: #ffedd5;
+  color: #ea580c;
+  border-color: #fed7aa;
+}
+
+.priorityUrgent {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+

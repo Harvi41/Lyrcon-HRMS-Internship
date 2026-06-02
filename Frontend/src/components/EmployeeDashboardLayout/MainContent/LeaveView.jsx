@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from "react";
 import styles from "../EmployeeDashboardLayout.module.css";
 import { getMyLeaves, applyLeave } from "../../../lib/axios";
+import LeaveSuccessModal from "./LeaveSuccessModal";
 
 export default function LeaveView() {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Modal States
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [modalData, setModalData] = useState({});
 
   // Main Form Inputs States
   const [formType, setFormType] = useState("Casual Leave (CL)");
@@ -79,18 +84,44 @@ export default function LeaveView() {
     if (!reason.trim()) return alert("Reason is required.");
 
     try {
-      await applyLeave({
+      const response = await applyLeave({
         leaveType: formType,
         startDate,
         endDate,
         reason
       });
-      alert("Leave application submitted successfully!");
+      const newLeave = response.data.leave;
+      
+      const newRecord = {
+        id: newLeave._id,
+        type: newLeave.leaveType,
+        rawStart: newLeave.startDate,
+        rawEnd: newLeave.endDate,
+        dates: `${formatDateDisplay(newLeave.startDate)} - ${formatDateDisplay(newLeave.endDate)}`,
+        status: newLeave.status,
+        reason: newLeave.reason
+      };
+
+      // Push state instantly instead of relying purely on fetch roundtrip
+      setRecords((prev) => [newRecord, ...prev]);
+
+      // Pop the beautiful success modal
+      const daysCount = calculateDaysCount(newLeave.startDate, newLeave.endDate);
+      const user = JSON.parse(window.localStorage.getItem('corehr_user') || '{}');
+      setModalData({
+        empId: user.employeeId || `EMP-${newLeave.userId?.slice(-4)?.toUpperCase() || "1001"}`,
+        leaveType: newLeave.leaveType,
+        reason: newLeave.reason,
+        startDate: new Date(newLeave.startDate).toLocaleDateString('en-GB'),
+        endDate: new Date(newLeave.endDate).toLocaleDateString('en-GB'),
+        days: daysCount
+      });
+      setShowSuccessModal(true);
+
       setStartDate("");
       setEndDate("");
       setReason("");
       setFormType("Casual Leave (CL)");
-      fetchLeaves();
     } catch (error) {
       console.error("Failed to apply leave:", error);
       alert(error?.response?.data?.message || "Failed to submit leave application.");
@@ -204,6 +235,12 @@ export default function LeaveView() {
           </table>
         )}
       </div>
+
+      <LeaveSuccessModal 
+        isOpen={showSuccessModal} 
+        onClose={() => setShowSuccessModal(false)} 
+        data={modalData} 
+      />
     </div>
   );
 }
