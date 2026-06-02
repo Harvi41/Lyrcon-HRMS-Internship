@@ -162,7 +162,14 @@ const announcementController = {
 
       criteria.push({ targetAudience: "individual", targetRecipient: req.user.userId });
 
-      const announcements = await Announcement.find({ $or: criteria })
+      const userCreationDate = loggedInUser?.createdAt || new Date(0);
+
+      const announcements = await Announcement.find({ 
+        $and: [
+          { $or: criteria },
+          { createdAt: { $gte: userCreationDate } }
+        ]
+      })
         .populate("sender", "name email")
         .populate("targetRecipient", "name email")
         .sort({ createdAt: -1 });

@@ -3,7 +3,7 @@ import styles from '../HRDashboardLayout.module.css';
 import EmployeeModal from './EmployeeModal';
 import EmployeeSuccessModal from './EmployeeSuccessModal';
 import DeleteEmployeeWizard from './DeleteEmployeeWizard';
-import { getAllEmployees, createEmployee, updateEmployee } from '../../../lib/axios';
+import { getAllEmployees, createEmployee, updateEmployee, deleteEmployee } from '../../../lib/axios';
 
 const EmployeesView = () => {
   // 1. DYNAMIC DATA SOURCE STATE ARRAY (Core Personnel Matrix)
@@ -164,8 +164,17 @@ const EmployeesView = () => {
   };
 
   const handleConfirmPurgeMutation = async (id) => {
-    setEmployeeDataList((prevList) => prevList.filter((emp) => emp?.id !== id));
-    setIsDeleteWizardOpen(false);
+    try {
+      const empToDelete = employeeDataList.find(emp => emp?.id === id);
+      if (empToDelete && empToDelete._id) {
+        await deleteEmployee(empToDelete._id);
+      }
+      setEmployeeDataList((prevList) => prevList.filter((emp) => emp?.id !== id));
+      setIsDeleteWizardOpen(false);
+    } catch (err) {
+      console.error('Failed to delete employee:', err);
+      alert(err.response?.data?.message || 'Failed to delete employee.');
+    }
   };
 
   // ═══════════════════════════════════════════════════════════════════════════

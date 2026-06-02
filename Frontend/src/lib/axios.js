@@ -58,6 +58,7 @@ export const getMe = () => API.get('/employees/me');
 export const getDirectory = () => API.get('/employees/directory');
 export const createEmployee = (employeeData) => API.post('/employees', employeeData);
 export const updateEmployee = (id, updatedData) => API.put(`/employees/${id}`, updatedData);
+export const deleteEmployee = (id) => API.delete(`/employees/${id}`);
 
 // ==========================================
 // 🔐 ROLE MANAGEMENT ENDPOINTS
@@ -92,15 +93,16 @@ export const getEmployeeAttendance = (employeeId, month) => {
 export const getAllLeaves = () => API.get('/leaves');
 export const getMyLeaves = () => API.get('/leaves/my-requests');
 export const applyLeave = (leaveData) => API.post('/leaves/apply', leaveData);
-export const processLeave = (id, status) => API.put(`/leaves/${id}/review`, { status });
+export const processLeave = (id, payload) => API.put(`/leaves/${id}/review`, payload);
 
 // ==========================================
 // 💳 PAYROLL ENDPOINTS
 // ==========================================
 export const getPayrollHistory = (employeeId) => API.get(`/payroll/history/${employeeId}`);
-export const processMonthlyPayroll = (payload) => API.post('/payroll/process', payload);
-export const downloadPayslipPDF = (payrollId) => API.get(`/payroll/payslip/${payrollId}`, { responseType: 'blob' });
+export const processMonthlyPayroll = (payload) => API.post('/payroll/calculate', payload);
+export const downloadPayslipPDF = (payrollId) => API.get(`/payroll/download/${payrollId}`, { responseType: 'blob' });
 export const getMyPayroll = () => API.get('/payroll/self-history');
+export const getMonthlyPayrollDashboard = (month) => API.get(`/payroll/dashboard?month=${month}`);
 
 // ==========================================
 // 📝 TASK MANAGEMENT ENDPOINTS

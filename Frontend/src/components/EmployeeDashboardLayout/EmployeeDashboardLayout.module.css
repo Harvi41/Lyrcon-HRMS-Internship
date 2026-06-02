@@ -962,3 +962,35 @@ body {
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
+
+/* Priority Badges */
+.priorityBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 6px;
+  border: 1px solid transparent;
+}
+
+.priorityNormal {
+  background-color: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+.priorityImportant {
+  background-color: #ffedd5;
+  color: #ea580c;
+  border-color: #fed7aa;
+}
+
+.priorityUrgent {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+

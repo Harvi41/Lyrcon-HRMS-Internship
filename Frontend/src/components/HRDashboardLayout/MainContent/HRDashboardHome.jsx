@@ -56,7 +56,7 @@ const HRDashboardHome = () => {
 
         // 2. PARSE STATUTORY SECURITY LOG METRICS (ANTI-FRAUD COUNTERS)
         // Fetches all attendance records to count device token profile mismatches
-        const attendanceResponse = await API.get('/attendance').catch(() => ({ data: [] }));
+        const attendanceResponse = await API.get('/attendance/live-roster').catch(() => ({ data: [] }));
         const rawAttendanceLogs = Array.isArray(attendanceResponse.data) ? attendanceResponse.data : [];
         
         const validPunches = rawAttendanceLogs.filter(log => log.status === 'Present');
