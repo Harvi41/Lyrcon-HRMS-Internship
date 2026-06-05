@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import styles from "../EmployeeDashboardLayout.module.css";
+// ✅ Points cleanly to the correct relative paths for your updated face-recognition components
 import ClockInModal from "../../HRDashboardLayout/MainContent/ClockInModal"; 
 import ClockOutModal from "../../HRDashboardLayout/MainContent/ClockOutModal";
-import API from "../../../lib/axios"; // Targets your custom core Axios instance
+import API from "../../../lib/axios"; 
 
 // 1. LineChart accepts live, scaled component data arrays dynamically
 function DynamicLineChart({ records }) {
@@ -11,15 +12,12 @@ function DynamicLineChart({ records }) {
   const PAD_X = 50;
   const PAD_Y = 20;
 
-  // Extract hours worked into an ordered coordinate array
   const dataPoints = records.map(r => r.hours || 0);
-  const maxHours = 10; // Scaled relative to standard max shifts
+  const maxHours = 10; 
 
-  // Coordinate scaling math formulas
   const getX = (index) => records.length > 1 ? PAD_X + (index / (records.length - 1)) * (W - PAD_X * 2) : PAD_X;
   const getY = (val) => H - PAD_Y - (val / maxHours) * (H - PAD_Y * 2);
 
-  // Generate SVG path blueprints
   const pathCoordinates = dataPoints.length > 0 ? dataPoints.map((val, i) => `${i === 0 ? "M" : "L"}${getX(i)},${getY(val)}`).join(" ") : "";
   const areaFillPath = pathCoordinates ? `${pathCoordinates} L${getX(records.length - 1)},${H - PAD_Y} L${getX(0)},${H - PAD_Y} Z` : "";
 
@@ -33,7 +31,7 @@ function DynamicLineChart({ records }) {
           </linearGradient>
         </defs>
 
-        {/* Horizontal Background Grid Reference Helper Lines */}
+        {/* Horizontal Background Grid Lines */}
         {[0, 2, 4, 6, 8, 10].map((hour) => (
           <g key={hour}>
             <line x1={PAD_X} y1={getY(hour)} x2={W - PAD_X} y2={getY(hour)} stroke="#f1f5f9" strokeWidth="1" strokeDasharray="4 4" />
@@ -77,16 +75,35 @@ export default function AttendanceView() {
   const [alertSeverity, setAlertSeverity] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Core structured attendance records matrix array
+  // Core structured attendance records matrix array placeholders
   const [attendanceRecords, setAttendanceRecords] = useState([
-    { day: "Monday", checkIn: "09:00 AM", checkOut: "06:00 PM", hours: 9, status: "Present" },
-    { day: "Tuesday", checkIn: "10:00 AM", checkOut: "06:00 PM", hours: 8, status: "Present" },
-    { day: "Wednesday", checkIn: "09:30 AM", checkOut: "05:30 PM", hours: 8, status: "Present" },
+    { day: "Monday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" },
+    { day: "Tuesday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" },
+    { day: "Wednesday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" },
     { day: "Thursday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" },
-    { day: "Friday", checkIn: "09:00 AM", checkOut: "06:00 PM", hours: 9, status: "Present" },
-    { day: "Saturday", checkIn: "10:00 AM", checkOut: "02:00 PM", hours: 4, status: "Present" }, 
-    { day: "Sunday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" }              
+    { day: "Friday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" },
+    { day: "Saturday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" }, 
+    { day: "Sunday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" }             
   ]);
+
+  // Utility Helper: Formats ISO Date string objects clean into localized 12h user visual cards
+  const formatTime = (isoString) => {
+    if (!isoString || isoString === "--") return "--";
+    try {
+      return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      return "--";
+    }
+  };
+
+  // Utility Helper: Calculates structural hours delta gap values completely on frontend client
+  const calculateHours = (inTime, outTime) => {
+    if (!inTime) return 0;
+    const end = outTime ? new Date(outTime) : new Date();
+    const diffMs = end - new Date(inTime);
+    const hours = diffMs / (1000 * 60 * 60);
+    return Math.max(0, parseFloat(hours.toFixed(1)));
+  };
 
   // ═══════════════════════════════════════════════════════════════════════════
   // RE-ENGINEERED SERVER SYNC LAYER
@@ -95,36 +112,45 @@ export default function AttendanceView() {
     const fetchPersonalLogs = async () => {
       try {
         setLoading(true);
-        const response = await API.get('/attendance/my-logs'); // Targets specific personal profile logs endpoint
+        // Target endpoint configuration map
+        const response = await API.get('/attendance/my-logs'); 
         const logs = Array.isArray(response.data) ? response.data : [];
 
-        if (logs.length > 0) {
-          // Check if user has an unfinished working session running for today
-          const todayStr = new Date().toISOString().split('T')[0];
-          const modernActiveShift = logs.find(log => log.date === todayStr && !log.clockOutTime);
-          if (modernActiveShift) setIsClockedIn(true);
+        // Check active check-in loops
+        const todayStr = new Date().toISOString().split('T')[0];
+        const ongoingSession = logs.find(log => log.date === todayStr && !log.clockOutTime);
+        setIsClockedIn(!!ongoingSession);
 
-          // Map API data structure back cleanly onto your local visual 7-day structure
-          const dayMapping = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-          const updatedWeek = attendanceRecords.map(item => {
-            const serverMatch = logs.find(log => {
-              const logDay = dayMapping[new Date(log.date).getDay()];
-              return logDay === item.day;
-            });
-
-            if (serverMatch) {
-              return {
-                ...item,
-                checkIn: serverMatch.clockInTime || "--",
-                checkOut: serverMatch.clockOutTime || (serverMatch.status === "Present" ? "Running" : "--"),
-                hours: serverMatch.status === "Present" ? (serverMatch.clockOutTime ? 9 : 8) : 0, // Fallback approximations
-                status: serverMatch.status === "Flagged-Mismatch" ? "Flagged" : serverMatch.status
-              };
-            }
-            return item;
+        const dayMapping = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        
+        // Build fresh 7-day view state map from scratch based on true values
+        const freshWeek = [
+          { day: "Monday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" },
+          { day: "Tuesday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" },
+          { day: "Wednesday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" },
+          { day: "Thursday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" },
+          { day: "Friday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" },
+          { day: "Saturday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" }, 
+          { day: "Sunday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" }
+        ].map(item => {
+          const serverMatch = logs.find(log => {
+            const logDay = dayMapping[new Date(log.date).getDay()];
+            return logDay === item.day;
           });
-          setAttendanceRecords(updatedWeek);
-        }
+
+          if (serverMatch) {
+            return {
+              ...item,
+              checkIn: formatTime(serverMatch.clockInTime),
+              checkOut: serverMatch.clockOutTime ? formatTime(serverMatch.clockOutTime) : (serverMatch.status === "Present" ? "Running" : "--"),
+              hours: calculateHours(serverMatch.clockInTime, serverMatch.clockOutTime),
+              status: serverMatch.status
+            };
+          }
+          return item;
+        });
+
+        setAttendanceRecords(freshWeek);
       } catch (err) {
         console.error("Error reading backend synchronization streams:", err);
       } finally {
@@ -134,7 +160,6 @@ export default function AttendanceView() {
     fetchPersonalLogs();
   }, [isClockedIn]);
 
-  // Direct actions layout control routers
   const handleClockButtonClick = () => {
     setUiFeedbackMessage('');
     setAlertSeverity('');
@@ -145,57 +170,53 @@ export default function AttendanceView() {
     }
   };
 
+  // Triggered automatically by the automated live-loop webcam scanning hook payload
   const executeClockInPipeline = async (completePayload) => {
     try {
-      // Transmit detailed shift selections and browser fingerprint parameters
-      await API.post('/attendance/clock-in', completePayload);
-      
+      await API.post('/attendance/biometric/clock-in', completePayload);
       setIsClockedIn(true);
-      setUiFeedbackMessage('Clock-in recorded successfully. Security checks cleared.');
+      setUiFeedbackMessage('Biometric Identity Profile Mapped! Shift session initialized.');
       setAlertSeverity('success');
     } catch (err) {
-      if (err.response?.status === 403) {
-        setUiFeedbackMessage(`Security Hold: ${err.response.data.message}`);
-        setAlertSeverity('critical');
-      } else {
-        setUiFeedbackMessage(err.response?.data?.message || 'Transaction submission failed.');
-        setAlertSeverity('critical');
-      }
-      throw err; // Halts modal close sequences to maintain error view box visibility
+      setUiFeedbackMessage(err.response?.data?.message || 'Access Denied: Scan transaction dropped.');
+      setAlertSeverity('critical');
+      throw err; 
     }
   };
 
   const executeClockOutPipeline = async (handoverPayload) => {
     try {
-      // Slot for future endpoint integration if needed:
-      // await API.post('/attendance/clock-out', handoverPayload);
-      
+      await API.post('/attendance/biometric/clock-out', handoverPayload);
       setIsClockedIn(false);
-      setUiFeedbackMessage('Shift closed successfully. Logs committed.');
+      setUiFeedbackMessage('Biometric identity confirmed. Duty session successfully terminated.');
       setAlertSeverity('success');
     } catch (err) {
-      setUiFeedbackMessage('Error processing checkout configuration.');
+      setUiFeedbackMessage(err.response?.data?.message || 'Biometric validation rejected on exit.');
       setAlertSeverity('critical');
       throw err;
     }
   };
 
-  // ─── RUNTIME AGGREGATION ANALYTICS ENGINE ───
-  const todayRecord = attendanceRecords[attendanceRecords.length - 3] || {}; 
+  // ─── RUNTIME ANALYTICS CORE AGGREGATIONS ───
+  const currentDayIndex = new Date().getDay();
+  const dayMapping = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const todayName = dayMapping[currentDayIndex];
+  
+  const todayRecord = attendanceRecords.find(r => r.day === todayName) || {};
   const todayStatus = todayRecord.status ? todayRecord.status.toUpperCase() : "ABSENT";
   const todayCheckIn = todayRecord.checkIn || "--";
   const todayExpectedCheckOut = todayRecord.checkOut || "--";
 
-  const totalHoursThisWeek = attendanceRecords.reduce((acc, curr) => acc + (curr.hours || 0), 0);
+  const totalHoursThisWeek = attendanceRecords.reduce((acc, curr) => acc + (curr.hours || 0), 0).toFixed(1);
   const daysPresentThisLog = attendanceRecords.filter(r => r.status === "Present").length;
-  const standardMonthBaseline = 13; 
+  const standardMonthBaseline = 14; 
   const finalPresentDays = standardMonthBaseline + daysPresentThisLog;
   const totalWorkingDays = 24; 
 
   return (
     <div className={styles.page}>
       
-      {/* Interactive Process Control Notification Flash Bar */}
+      {/* Dynamic Flash Notifications Message Ribbon Component */}
       {uiFeedbackMessage && (
         <div style={{
           padding: '14px 18px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '600',
@@ -208,9 +229,9 @@ export default function AttendanceView() {
         </div>
       )}
 
-      {/* Top Controls Action Toolbar Header */}
+      {/* Action Header Ribbon Control Toolbar */}
       <div className={styles.actionFilterBar} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <div className={styles.staticDateBadge} style={{ fontWeight: '600', color: '#475569' }}>Terminal Node Interface</div>
+        <div className={styles.staticDateBadge} style={{ fontWeight: '600', color: '#475569' }}>Terminal Biometric Node</div>
         <button 
           className={isClockedIn ? styles.dangerActionButton : styles.successActionButton}
           onClick={handleClockButtonClick}
@@ -221,14 +242,14 @@ export default function AttendanceView() {
         </button>
       </div>
 
-      {/* Top Metrics Row Block View */}
+      {/* Primary Analytics Summary Cards Section */}
       <div className={styles.statRow3}>
         <div className={styles.statCard}>
           <div className={styles.statTopRow}>
             <p className={styles.statLabel}>TODAY'S STATUS</p>
             <span 
               className={styles.presentText} 
-              style={{ color: todayStatus === "PRESENT" ? "#16a34a" : "#dc2626", fontWeight: '700' }}
+              style={{ color: todayStatus === "PRESENT" ? "#16a34a" : (todayStatus === "ABSENT" ? "#dc2626" : "#eab308"), fontWeight: '700' }}
             >
               {todayStatus}
             </span>
@@ -239,7 +260,7 @@ export default function AttendanceView() {
               <p className={styles.checkVal}>{todayCheckIn}</p>
             </div>
             <div>
-              <p className={styles.checkLabel}>EXPECTED CHECK-OUT</p>
+              <p className={styles.checkLabel}>CURRENT SESSION</p>
               <p className={styles.checkVal}>{todayExpectedCheckOut}</p>
             </div>
           </div>
@@ -256,7 +277,7 @@ export default function AttendanceView() {
         </div>
       </div>
 
-      {/* Dynamic Graph Section */}
+      {/* Dynamic Graph Tracking Component */}
       <div className={styles.card}>
         <h3 className={styles.cardTitle}>Weekly Attendance Performance Graph (Hours Worked)</h3>
         <DynamicLineChart records={attendanceRecords} />
@@ -278,7 +299,7 @@ export default function AttendanceView() {
                 <td style={{ color: r.checkOut === 'Running' ? '#eab308' : 'inherit', fontWeight: r.checkOut === 'Running' ? '700' : 'normal' }}>{r.checkOut}</td>
                 <td>{r.hours > 0 ? `${r.hours} hr` : "--"}</td>
                 <td>
-                  <span className={r.status === "Present" ? styles.badgeGreen : r.status === "Flagged" ? styles.badgeRed : styles.badgeYellow}>
+                  <span className={r.status === "Present" ? styles.badgeGreen : r.status === "Absent" ? styles.badgeRed : styles.badgeYellow}>
                     {r.status}
                   </span>
                 </td>
@@ -288,7 +309,7 @@ export default function AttendanceView() {
         </table>
       </div>
 
-      {/* Pop-Up Forms Overlays Overlay Elements */}
+      {/* Pop-Up Modal Overlays */}
       <ClockInModal 
         isOpen={isClockInModalOpen}
         onClose={() => setIsClockInModalOpen(false)}
