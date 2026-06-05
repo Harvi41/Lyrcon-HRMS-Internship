@@ -18,27 +18,54 @@ const PayrollView = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // Fetch all employees
+      
+      // 1. Fetch all employees
       const empRes = await getAllEmployees();
       const emps = empRes.data?.data || empRes.data || [];
       const activeEmps = emps.filter(e => !e.isDeleted);
-      setEmployees(activeEmps);
 
-      // Fetch payrolls for the current month
+      // 2. Fetch payrolls for the current month
       const payRes = await getMonthlyPayrollDashboard(currentMonth);
       const records = payRes.data || [];
+      
+      setEmployees(activeEmps);
       setPayrollRecords(records);
 
-      // Calculate summaries
+      // 3. ═══════════════════════════════════════════════════════════════════════════
+      //    FAIL-SAFE HYBRID DYNAMIC SUMMARY ENGINE (FIXED PENDING PF)
+      //    ═══════════════════════════════════════════════════════════════════════════
       let totalDisbursed = 0;
       let totalPF = 0;
-      records.forEach(r => {
-         if (r.paymentStatus === 'Paid' || r.paymentStatus === 'Processed') {
-            totalDisbursed += (r.netSalary || 0);
-         } else {
-            totalPF += (r.providentFund?.employeeContribution || 0);
-         }
+
+      activeEmps.forEach(emp => {
+        // Cross-reference records matching the exact working table row lookup pattern
+        const pRecord = records.find(p => p?.employeeId?._id === emp?._id || p?.employeeId === emp?._id);
+        
+        let isPaid = false;
+        if (pRecord && pRecord?.paymentStatus) {
+          const recordStatusClean = pRecord.paymentStatus.toLowerCase().trim();
+          if (['paid', 'processed', 'draft'].includes(recordStatusClean)) {
+            isPaid = true;
+          }
+        }
+
+        if (isPaid && pRecord) {
+          // Add directly to disbursed card metrics
+          totalDisbursed += Number(pRecord.netSalary || 0);
+        } else {
+          // 🛠️ FAIL-SAFE: If the record is unpaid or doesn't exist yet on the backend,
+          // compute an estimated 12% regulatory PF contribution from their contract base wages
+          if (pRecord?.providentFund?.employeeContribution) {
+            totalPF += Number(pRecord.providentFund.employeeContribution);
+          } else {
+            const monthlyBase = Math.round((Number(emp?.baseCTC) || 0) / 12);
+            // If the employee basic salary isn't distinct, approximate it via a 50% split base
+            const estimatedBasicSalary = monthlyBase > 0 ? (monthlyBase * 0.50) : 15000; 
+            totalPF += Math.round(estimatedBasicSalary * 0.12); // Standard 12% statutory PF rate
+          }
+        }
       });
+
       setDisbursementTotal(totalDisbursed);
       setPendingPFValue(totalPF);
 
@@ -53,15 +80,16 @@ const PayrollView = () => {
     fetchData();
   }, [currentMonth]);
 
-  // Combine employees and payroll records for the UI
+  // Combine employees and payroll records for the UI table grid safely
   const mergedData = employees.map(emp => {
-     const pRecord = payrollRecords.find(p => p.employeeId?._id === emp._id || p.employeeId === emp._id);
-     const monthlyBase = Math.round((emp.baseCTC || 0) / 12);
+     const pRecord = payrollRecords.find(p => p?.employeeId?._id === emp?._id || p?.employeeId === emp?._id);
+     const monthlyBase = Math.round((emp?.baseCTC || 0) / 12);
      
-     // Evaluate Status
+     // Evaluate Status using case-insensitive normalization rules
      let status = 'Unpaid';
-     if (pRecord && pRecord.paymentStatus) {
-         if (['Paid', 'Processed', 'Draft'].includes(pRecord.paymentStatus)) {
+     if (pRecord && pRecord?.paymentStatus) {
+         const recordStatusClean = pRecord.paymentStatus.toLowerCase().trim();
+         if (['paid', 'processed', 'draft'].includes(recordStatusClean)) {
              status = 'Paid';
          }
      }
@@ -70,19 +98,19 @@ const PayrollView = () => {
         ...emp,
         monthlyBase,
         payrollId: pRecord ? pRecord._id : null,
-        netPayout: pRecord ? pRecord.netSalary : 0,
+        netPayout: pRecord ? (Number(pRecord.netSalary) || 0) : 0,
         status
      };
   });
 
   const handleDownloadPayslipAsset = async (emp) => {
-    if (emp.status !== 'Paid') return;
+    if (emp?.status !== 'Paid' || !emp?.payrollId) return;
     try {
       const response = await downloadPayslipPDF(emp.payrollId);
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `Payslip_${emp.firstName}_${emp.lastName}_${currentMonth}.pdf`);
+      link.setAttribute('download', `Payslip_${emp.firstName || 'Employee'}_${currentMonth}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
@@ -92,13 +120,22 @@ const PayrollView = () => {
     }
   };
 
+  const getDisplayPeriodLabel = () => {
+    const parts = currentMonth.split('-');
+    if (parts.length === 2) {
+      const date = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+      return date.toLocaleString('en-US', { month: 'short', year: 'numeric' }).toUpperCase();
+    }
+    return currentMonth;
+  };
+
   return (
     <div className={styles.dashboardGrid}>
       
       {/* Dynamic Summary Cards Layout Row */}
       <div className={styles.metricsRow} style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
         <div className={styles.metricCard}>
-          <h3>TOTAL DISBURSED ({new Date(currentMonth + '-01').toLocaleString('en-US', { month: 'short', year: 'numeric' }).toUpperCase()})</h3>
+          <h3>TOTAL DISBURSED ({getDisplayPeriodLabel()})</h3>
           <div className={styles.metricValueWrapper}>
             <span className={styles.metricValue}>
               ₹{disbursementTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -140,9 +177,9 @@ const PayrollView = () => {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="5" style={{ textAlign: 'center', padding: '24px' }}>Loading real-time payroll data...</td></tr>
+              <tr><td colSpan="5" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>Loading real-time payroll data...</td></tr>
             ) : mergedData.length === 0 ? (
-              <tr><td colSpan="5" style={{ textAlign: 'center', padding: '24px' }}>No active employees found.</td></tr>
+              <tr><td colSpan="5" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>No active employees found.</td></tr>
             ) : (
               mergedData.map((emp) => {
                 const currentPillIsPaid = emp.status === 'Paid';
@@ -168,6 +205,7 @@ const PayrollView = () => {
                         onClick={() => handleDownloadPayslipAsset(emp)}
                         type="button"
                         disabled={!currentPillIsPaid}
+                        style={{ cursor: currentPillIsPaid ? 'pointer' : 'not-allowed' }}
                       >
                         Download
                       </button>

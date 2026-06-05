@@ -11,6 +11,12 @@ const EmployeesView = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Live Metrics States
+  const [liveTotalStaff, setLiveTotalStaff] = useState(0);
+  const [liveNewJoinees, setLiveNewJoinees] = useState(0);
+  const [liveAverageCTC, setLiveAverageCTC] = useState(0);
+  const [onboardingCount, setOnboardingCount] = useState(0);
+
   // 2. DIALOGS AND WIZARDS DISPLAY TOGGLE CONTROL STATES
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
@@ -26,18 +32,59 @@ const EmployeesView = () => {
     try {
       setLoading(true);
       const { data } = await getAllEmployees();
+      const rawEmployees = Array.isArray(data) ? data : [];
       
+      // ═══════════════════════════════════════════════════════════════════════════
+      // DYNAMIC CALCULATIONS ENGINE (100% LIVE DATA)
+      // ═══════════════════════════════════════════════════════════════════════════
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      let joineesCount = 0;
+      let salarySum = 0;
+      let validSalariesCount = 0;
+      let onboardCount = 0;
+
+      rawEmployees.forEach(emp => {
+        // Count New Joinees for the current month/year dynamically
+        if (emp?.joiningDate) {
+          const joinDate = new Date(emp.joiningDate);
+          if (joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear) {
+            joineesCount++;
+          }
+        }
+
+        // Aggregate Base CTC metrics safely avoiding string interpolation errors
+        const baseSalary = Number(emp?.baseCTC);
+        if (!isNaN(baseSalary) && baseSalary > 0) {
+          salarySum += baseSalary;
+          validSalariesCount++;
+        }
+
+        // Count employees currently in onboarding state
+        if (emp?.status === 'Onboarding' || emp?.status === 'onboarding') {
+          onboardCount++;
+        }
+      });
+
+      // Commit dynamically calculated numbers to state hooks
+      setLiveTotalStaff(rawEmployees.length);
+      setLiveNewJoinees(joineesCount);
+      setOnboardingCount(onboardCount);
+      setLiveAverageCTC(validSalariesCount > 0 ? Math.round(salarySum / validSalariesCount) : 0);
+
       // Defensively parse incoming array records from backend metrics streams
-      const mappedData = Array.isArray(data) ? data.map(emp => ({
+      const mappedData = rawEmployees.map(emp => ({
         id: emp?.employeeCode || '',
         _id: emp?._id || '', 
         name: emp?.firstName || emp?.lastName ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : 'Incomplete Name',
         email: emp?.email || '',
         dept: emp?.department || 'Unassigned',
         role: emp?.designation || 'Associate',
-        status: emp?.status === 'terminated' ? 'Inactive' : 'Active',
+        status: emp?.status === 'terminated' ? 'Inactive' : (emp?.status || 'Active'),
         raw: emp || {}
-      })) : [];
+      }));
       
       setEmployeeDataList(mappedData);
     } catch (err) {
@@ -51,23 +98,9 @@ const EmployeesView = () => {
     fetchEmployees();
   }, []);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // RE-ENGINEERED ANALYTICS CALCULATIONS ENGINE (CRASH-PROOFED)
-  // ═══════════════════════════════════════════════════════════════════════════
-  const baselineTotalStaff = 142;
-  const baselineInternsThisMonth = 6;
-  const standardNetCTC = 82400.00;
-
-  const dynamicTotalStaff = baselineTotalStaff + Math.max(0, employeeDataList.length - 3);
-  
-  // FIXED: Safe logic verification ensures e.role is treated as string type exclusively
-  const totalActiveInterns = baselineInternsThisMonth + Math.max(0, employeeDataList.filter(e => {
-    const roleString = typeof e?.role === 'string' ? e.role.toLowerCase() : '';
-    return roleString.includes('intern');
-  }).length - 1);
-
-  const q1VelocityRatio = Math.min(100, Math.round((dynamicTotalStaff / 185) * 100)); 
-  const q2PipelineRatio = Math.min(100, Math.round((employeeDataList.filter(e => e?.status === 'Onboarding').length / 1) * 30));
+  // Compute progress bar scales dynamically from active data allocations
+  const q1VelocityRatio = liveTotalStaff > 0 ? Math.min(100, Math.round((liveTotalStaff / 200) * 100)) : 0; 
+  const q2PipelineRatio = liveTotalStaff > 0 ? Math.min(100, Math.round((onboardingCount / liveTotalStaff) * 100)) : 0;
 
   // 4. ACTION INTERACTION PIPELINES
   const handleCreateClick = () => {
@@ -171,15 +204,13 @@ const EmployeesView = () => {
       }
       setEmployeeDataList((prevList) => prevList.filter((emp) => emp?.id !== id));
       setIsDeleteWizardOpen(false);
+      fetchEmployees();
     } catch (err) {
       console.error('Failed to delete employee:', err);
       alert(err.response?.data?.message || 'Failed to delete employee.');
     }
   };
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // FIXED CRASH-PROOF FILTER PIPELINE
-  // ═══════════════════════════════════════════════════════════════════════════
   const filteredEmployees = Array.isArray(employeeDataList) ? employeeDataList.filter((emp) => {
     const query = typeof searchQuery === 'string' ? searchQuery.toLowerCase().trim() : '';
     if (!query) return true;
@@ -206,20 +237,20 @@ const EmployeesView = () => {
         <div className={styles.metricCard}>
           <h3>TOTAL ACTIVE PROFILES</h3>
           <div className={styles.metricValueWrapper}>
-            <span className={styles.metricValue}>{loading ? '...' : `${dynamicTotalStaff} Staff`}</span>
+            <span className={styles.metricValue}>{loading ? '...' : `${liveTotalStaff} Staff`}</span>
           </div>
         </div>
         <div className={styles.metricCard}>
           <h3>NEW JOINEES (THIS MONTH)</h3>
           <div className={styles.metricValueWrapper}>
-            <span className={`${styles.metricValue} ${styles.statusCommitted}`}>+{totalActiveInterns} Interns</span>
+            <span className={`${styles.metricValue} ${styles.statusCommitted}`}>{loading ? '...' : `+${liveNewJoinees} Staff`}</span>
           </div>
         </div>
         <div className={styles.metricCard}>
           <h3>AVG NET CTC (MONTHLY)</h3>
           <div className={styles.metricValueWrapper}>
             <span className={`${styles.metricValue} ${styles.timeLink}`}>
-              ₹{standardNetCTC.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              {loading ? '...' : `₹${liveAverageCTC.toLocaleString('en-IN')}.00`}
             </span>
           </div>
         </div>
@@ -230,18 +261,18 @@ const EmployeesView = () => {
         <h3>Quarterly Hiring Velocity Insight</h3>
         <div className={styles.chartPlaceholderVertical}>
           <div className={styles.deptMetricRow}>
-            <span>Q1 Growth Matrix</span>
+            <span>Growth Target</span>
             <div className={styles.progressBarContainer}>
               <div className={styles.progressBarFill} style={{ width: `${q1VelocityRatio}%`, backgroundColor: '#5d55fa', transition: 'width 0.4s ease' }}></div>
             </div>
-            <strong>{q1VelocityRatio}% Target</strong>
+            <strong>{q1VelocityRatio}% Capacity</strong>
           </div>
           <div className={styles.deptMetricRow}>
-            <span>Q2 Active Pipeline</span>
+            <span>Onboarding Velocity</span>
             <div className={styles.progressBarContainer}>
-              <div className={styles.progressBarFill} style={{ width: `${q2PipelineRatio}%`, backgroundColor: '#5d55fa', transition: 'width 0.4s ease' }}></div>
+              <div className={styles.progressBarFill} style={{ width: `${q2PipelineRatio}%`, backgroundColor: '#10b981', transition: 'width 0.4s ease' }}></div>
             </div>
-            <strong>{q2PipelineRatio}% Target</strong>
+            <strong>{q2PipelineRatio}% Active</strong>
           </div>
         </div>
       </div>
@@ -258,7 +289,7 @@ const EmployeesView = () => {
         <button type="button" className={styles.primaryActionButton} onClick={handleCreateClick}>+ Create Employee</button>
       </div>
 
-      {/* Main Core Directory Ledger Layout Table Grid */}
+      {/* Main Core Directory Ledger Table */}
       <div className={styles.activityStream}>
         <table className={styles.activityTable}>
           <thead>
@@ -297,7 +328,10 @@ const EmployeesView = () => {
                   <td>{emp?.dept || 'Unassigned'}</td>
                   <td>{emp?.role || '—'}</td>
                   <td>
-                    <span className={`${styles.statusLabel} ${emp?.status === 'Active' ? styles.statusActive : styles.statusOnboard}`}>
+                    <span 
+                      className={`${styles.statusLabel} ${emp?.status?.toLowerCase() === 'active' ? styles.statusActive : styles.statusOnboard}`}
+                      style={{ textTransform: 'capitalize' }}
+                    >
                       {emp?.status || 'Active'}
                     </span>
                   </td>
@@ -344,6 +378,7 @@ const EmployeesView = () => {
         onSuccess={handleModalSuccess}
         employeeData={selectedEmployee}
         mode={modalMode}
+        allEmployeesList={employeeDataList}
       />
 
       <EmployeeSuccessModal

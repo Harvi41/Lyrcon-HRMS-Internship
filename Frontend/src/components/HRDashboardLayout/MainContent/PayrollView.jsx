@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../HRDashboardLayout.module.css';
 import { getAllEmployees, getMonthlyPayrollDashboard, processMonthlyPayroll, downloadPayslipPDF, loginUser } from '../../../lib/axios';
-import { IoCloseOutline } from 'react-icons/io5';
 
 const PayrollView = () => {
   const [employees, setEmployees] = useState([]);
@@ -16,7 +15,7 @@ const PayrollView = () => {
     `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
   );
 
-  // 3. POPUP MODAL CONTROL STATES
+  // POPUP MODAL CONTROL STATES
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
   const [securityPin, setSecurityPin] = useState('');
@@ -25,27 +24,52 @@ const PayrollView = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // Fetch all employees
+      
+      // 1. Fetch all employees
       const empRes = await getAllEmployees();
       const emps = empRes.data?.data || empRes.data || [];
       const activeEmps = emps.filter(e => !e.isDeleted);
-      setEmployees(activeEmps);
 
-      // Fetch payrolls for the current month
+      // 2. Fetch payrolls for the current month
       const payRes = await getMonthlyPayrollDashboard(currentMonth);
       const records = payRes.data || [];
+      
+      setEmployees(activeEmps);
       setPayrollRecords(records);
 
-      // Calculate summaries
+      // 3. ═══════════════════════════════════════════════════════════════════════════
+      //    ROBUST DYNAMIC SUMMARY GENERATOR ENGINE (FIXED PF ACCUMULATION)
+      //    ═══════════════════════════════════════════════════════════════════════════
       let totalDisbursed = 0;
       let totalPF = 0;
-      records.forEach(r => {
-         if (r.paymentStatus === 'Paid' || r.paymentStatus === 'Processed') {
-            totalDisbursed += (r.netSalary || 0);
-         } else {
-            totalPF += (r.providentFund?.employeeContribution || 0);
-         }
+
+      activeEmps.forEach(emp => {
+        const pRecord = records.find(p => p?.employeeId?._id === emp?._id || p?.employeeId === emp?._id);
+        
+        let isPaid = false;
+        if (pRecord && pRecord?.paymentStatus) {
+          const recordStatusClean = pRecord.paymentStatus.toLowerCase().trim();
+          if (['paid', 'processed', 'draft'].includes(recordStatusClean)) {
+            isPaid = true;
+          }
+        }
+
+        if (isPaid && pRecord) {
+          totalDisbursed += Number(pRecord.netSalary || 0);
+        } else {
+          // 🛠️ FAIL-SAFE PF TRACKER: If unpaid or uncalculated, calculate an approximate
+          // 12% statutory PF rate based on their monthly contract base wage split allocations
+          if (pRecord?.providentFund?.employeeContribution) {
+            totalPF += Number(pRecord.providentFund.employeeContribution);
+          } else {
+            const monthlyBase = Math.round((Number(emp?.baseCTC) || 0) / 12);
+            // Default baseline salary index if baseCTC values are unassigned or 0
+            const basicSalarySplit = monthlyBase > 0 ? (monthlyBase * 0.50) : 15000;
+            totalPF += Math.round(basicSalarySplit * 0.12);
+          }
+        }
       });
+
       setDisbursementTotal(totalDisbursed);
       setPendingPFValue(totalPF);
 
@@ -60,15 +84,15 @@ const PayrollView = () => {
     fetchData();
   }, [currentMonth]);
 
-  // Combine employees and payroll records for the UI
+  // Combine employees and payroll records for the UI list layout table safely
   const mergedData = employees.map(emp => {
-     const pRecord = payrollRecords.find(p => p.employeeId?._id === emp._id || p.employeeId === emp._id);
-     const monthlyBase = Math.round((emp.baseCTC || 0) / 12);
+     const pRecord = payrollRecords.find(p => p?.employeeId?._id === emp?._id || p?.employeeId === emp?._id);
+     const monthlyBase = Math.round((emp?.baseCTC || 0) / 12);
      
-     // Evaluate Status
      let status = 'Unpaid';
-     if (pRecord && pRecord.paymentStatus) {
-         if (['Paid', 'Processed', 'Draft'].includes(pRecord.paymentStatus)) {
+     if (pRecord && pRecord?.paymentStatus) {
+         const recordStatusClean = pRecord.paymentStatus.toLowerCase().trim();
+         if (['paid', 'processed', 'draft'].includes(recordStatusClean)) {
              status = 'Paid';
          }
      }
@@ -77,7 +101,7 @@ const PayrollView = () => {
         ...emp,
         monthlyBase,
         payrollId: pRecord ? pRecord._id : null,
-        netPayout: pRecord ? pRecord.netSalary : 0,
+        netPayout: pRecord ? (Number(pRecord.netSalary) || 0) : 0,
         status
      };
   });
@@ -110,33 +134,36 @@ const PayrollView = () => {
     try {
       setIsProcessingBatch(true);
 
-      // Verify Password (Security Protocol)
-      const currentUser = JSON.parse(window.localStorage.getItem('corehr_user') || '{}');
-      if (currentUser.email) {
+      // Verify Password (Security Protocol Identity Mapping Check)
+      const cachedData = window.localStorage.getItem('corehr_user') || window.localStorage.getItem('user');
+      const currentUser = JSON.parse(cachedData || '{}');
+      if (currentUser?.email) {
           await loginUser({ email: currentUser.email, password: securityPin });
       }
 
-      // Execute immutable status mutation upgrades sequentially
-      for (const profile of unpaidProfiles) {
+      // Execute immutable batch processing asynchronously with individual try-catch buffers
+      await Promise.all(
+        unpaidProfiles.map(async (profile) => {
           try {
-              await processMonthlyPayroll({
-                  employeeId: profile._id,
-                  payrollMonth: currentMonth
-              });
+            await processMonthlyPayroll({
+              employeeId: profile._id,
+              payrollMonth: currentMonth
+            });
           } catch (err) {
-              console.error(`Failed to process payroll for ${profile.firstName}`, err);
+            console.error(`Failed to execute processing route sequence for applicant ID: ${profile._id}`, err);
           }
-      }
+        })
+      );
 
-      await fetchData(); // Sync frontend ledger with backend
-      setWizardStep(3); // Shift view profile to success receipt frame
+      await fetchData(); // Refresh local array datasets from database
+      setWizardStep(3); // Render transaction complete screen
 
     } catch (err) {
       console.error(err);
-      if (err?.response?.data?.message === 'Invalid email or password') {
-          alert('Security Verification Failed: Incorrect password.');
+      if (err?.response?.status === 401 || err?.response?.data?.message?.includes('password')) {
+          alert('Security Verification Failed: Incorrect operational password verification entry.');
       } else {
-          alert(err?.response?.data?.message || 'Error authenticating transaction.');
+          alert(err?.response?.data?.message || 'Error processing transaction workflow sequence.');
       }
     } finally {
       setIsProcessingBatch(false);
@@ -144,13 +171,13 @@ const PayrollView = () => {
   };
 
   const handleDownloadPayslipAsset = async (emp) => {
-    if (emp.status !== 'Paid') return;
+    if (emp?.status !== 'Paid' || !emp?.payrollId) return;
     try {
       const response = await downloadPayslipPDF(emp.payrollId);
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `Payslip_${emp.firstName}_${emp.lastName}_${currentMonth}.pdf`);
+      link.setAttribute('download', `Payslip_${emp.firstName || 'Employee'}_${currentMonth}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
@@ -160,13 +187,22 @@ const PayrollView = () => {
     }
   };
 
+  const getDisplayPeriodLabel = () => {
+    const parts = currentMonth.split('-');
+    if (parts.length === 2) {
+      const date = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+      return date.toLocaleString('en-US', { month: 'short', year: 'numeric' }).toUpperCase();
+    }
+    return currentMonth;
+  };
+
   return (
     <div className={styles.dashboardGrid}>
       
       {/* Dynamic Summary Cards Layout Row */}
-      <div className={styles.metricsRow}>
+      <div className={styles.metricsRow} style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         <div className={styles.metricCard}>
-          <h3>TOTAL DISBURSED ({new Date(currentMonth + '-01').toLocaleString('en-US', { month: 'short', year: 'numeric' }).toUpperCase()})</h3>
+          <h3>TOTAL DISBURSED ({getDisplayPeriodLabel()})</h3>
           <div className={styles.metricValueWrapper}>
             <span className={styles.metricValue}>
               ₹{disbursementTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -182,20 +218,20 @@ const PayrollView = () => {
             </span>
           </div>
         </div>
-        
+
         <div className={`${styles.metricCard} ${styles.transparentCard}`}>
           <button 
             className={styles.primaryActionButtonWidth}
             onClick={handleOpenWizard}
             type="button"
-            style={{ width: '100%', height: '100%', fontSize: '1.1rem' }}
+            style={{ width: '100%', height: '100%', fontSize: '1.1rem', cursor: 'pointer' }}
           >
             Execute Run
           </button>
         </div>
       </div>
 
-      {/* Main Core Directory Table */}
+      {/* Main Core Directory Table Ledger Panel */}
       <div className={styles.activityStream}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>Employee Payroll Ledger</h3>
@@ -219,9 +255,9 @@ const PayrollView = () => {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="5" style={{ textAlign: 'center', padding: '24px' }}>Loading real-time payroll data...</td></tr>
+              <tr><td colSpan="5" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>Loading real-time payroll data...</td></tr>
             ) : mergedData.length === 0 ? (
-              <tr><td colSpan="5" style={{ textAlign: 'center', padding: '24px' }}>No active employees found.</td></tr>
+              <tr><td colSpan="5" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>No active employees found.</td></tr>
             ) : (
               mergedData.map((emp) => {
                 const currentPillIsPaid = emp.status === 'Paid';
@@ -247,6 +283,7 @@ const PayrollView = () => {
                         onClick={() => handleDownloadPayslipAsset(emp)}
                         type="button"
                         disabled={!currentPillIsPaid}
+                        style={{ cursor: currentPillIsPaid ? 'pointer' : 'not-allowed' }}
                       >
                         Download
                       </button>
@@ -259,9 +296,7 @@ const PayrollView = () => {
         </table>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════════════
-         EXECUTE BATCH PROCESSING WIZARD DIALOG OVERLAY
-         ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* EXECUTE BATCH PROCESSING WIZARD DIALOG OVERLAY */}
       {isWizardOpen && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent} style={{ maxWidth: '480px' }}>
@@ -291,8 +326,8 @@ const PayrollView = () => {
                 </div>
 
                 <div className={styles.wizardFooterActions} style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-                  <button className={styles.secondaryActionButton} onClick={handleCloseWizard} style={{ flex: 1 }}>Cancel</button>
-                  <button className={styles.primaryActionButton} onClick={handleNextStep} style={{ flex: 1.5 }}>Proceed to Authorization</button>
+                  <button className={styles.secondaryActionButton} onClick={handleCloseWizard} style={{ flex: 1, cursor: 'pointer' }}>Cancel</button>
+                  <button className={styles.primaryActionButton} onClick={handleNextStep} style={{ flex: 1.5, cursor: 'pointer' }}>Proceed to Authorization</button>
                 </div>
               </div>
             )}
@@ -316,18 +351,18 @@ const PayrollView = () => {
                     value={securityPin}
                     onChange={(e) => setSecurityPin(e.target.value)}
                     style={{ width: '100%', boxSizing: 'border-box', textAlign: 'center', fontSize: '1.2rem', letterSpacing: '0.2em', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                    autoComplete="off"
+                    autoComplete="current-password"
                     required
                   />
                 </div>
 
                 <div className={styles.wizardFooterActions} style={{ display: 'flex', gap: '12px' }}>
-                  <button type="button" className={styles.secondaryActionButton} onClick={handleCloseWizard} disabled={isProcessingBatch} style={{ flex: 1 }}>Abort</button>
+                  <button type="button" className={styles.secondaryActionButton} onClick={handleCloseWizard} disabled={isProcessingBatch} style={{ flex: 1, cursor: 'pointer' }}>Abort</button>
                   <button 
                     type="submit" 
                     className={styles.successActionButton}
                     disabled={!securityPin || isProcessingBatch}
-                    style={{ flex: 1.5, borderRadius: '8px', opacity: isProcessingBatch ? 0.7 : 1 }}
+                    style={{ flex: 1.5, borderRadius: '8px', opacity: isProcessingBatch ? 0.7 : 1, cursor: isProcessingBatch ? 'not-allowed' : 'pointer' }}
                   >
                     {isProcessingBatch ? 'Authenticating & Processing...' : 'Confirm Batch Disburse'}
                   </button>
