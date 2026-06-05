@@ -6,12 +6,14 @@ import DeleteEmployeeWizard from './DeleteEmployeeWizard';
 import { getAllEmployees, createEmployee, updateEmployee, deleteEmployee } from '../../../lib/axios';
 
 const EmployeesView = () => {
-  // 1. DYNAMIC DATA SOURCE STATE ARRAY (Core Workforce Matrix)
   const [employeeDataList, setEmployeeDataList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 2. DIALOGS AND WIZARDS DISPLAY TOGGLE CONTROL STATES
+  // Computed live dashboard metrics states
+  const [newJoineesCount, setNewJoineesCount] = useState(0);
+  const [averageSalary, setAverageSalary] = useState(0);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -26,8 +28,42 @@ const EmployeesView = () => {
     try {
       setLoading(true);
       const { data } = await getAllEmployees();
+      const rawEmployees = Array.isArray(data) ? data : [];
       
-      const mappedData = Array.isArray(data) ? data.map(emp => ({
+      // ═══════════════════════════════════════════════════════════════════════════
+      // DYNAMIC LIVE METRICS COMPUTATION ENGINE
+      // ═══════════════════════════════════════════════════════════════════════════
+      const currentPeriod = new Date();
+      const currentMonth = currentPeriod.getMonth(); // Current system month
+      const currentYear = currentPeriod.getFullYear();   // Current system year
+
+      let newJoineesCounter = 0;
+      let totalSalarySum = 0;
+      let validSalaryRecordsCount = 0;
+
+      rawEmployees.forEach(emp => {
+        // 1. Calculate New Joinees matching current month/year context
+        if (emp?.joiningDate) {
+          const joinDateObj = new Date(emp.joiningDate);
+          if (joinDateObj.getMonth() === currentMonth && joinDateObj.getFullYear() === currentYear) {
+            newJoineesCounter++;
+          }
+        }
+
+        // 2. Aggregate Base CTC metrics safely avoiding corrupt strings or null values
+        const monthlyCTC = Number(emp?.baseCTC);
+        if (!isNaN(monthlyCTC) && monthlyCTC > 0) {
+          totalSalarySum += monthlyCTC;
+          validSalaryRecordsCount++;
+        }
+      });
+
+      // Commit computed runtime metrics back to display states
+      setNewJoineesCount(newJoineesCounter);
+      setAverageSalary(validSalaryRecordsCount > 0 ? Math.round(totalSalarySum / validSalaryRecordsCount) : 0);
+
+      // Map raw backend schema structures safely over UI presentation nodes
+      const mappedData = rawEmployees.map(emp => ({
         id: emp?.employeeCode || '',
         _id: emp?._id || '', 
         name: emp?.firstName || emp?.lastName ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : 'Incomplete Name',
@@ -36,7 +72,7 @@ const EmployeesView = () => {
         role: emp?.designation || 'Associate',
         status: emp?.status === 'terminated' ? 'Inactive' : 'Active',
         raw: emp || {}
-      })) : [];
+      }));
       
       setEmployeeDataList(mappedData);
     } catch (err) {
@@ -50,7 +86,6 @@ const EmployeesView = () => {
     fetchEmployees();
   }, []);
 
-  // 3. ACTION INTERACTION PIPELINES
   const handleCreateClick = () => {
     setModalMode('create');
     setSelectedEmployee(null);
@@ -75,7 +110,7 @@ const EmployeesView = () => {
       managerId: empData?.managerId?.employeeCode || empData?.managerId || '',
       status: empData?.status === 'terminated' ? 'Inactive' : 'Active',
       address: empData?.address || '',
-    emergencyContact: empData?.emergencyContact 
+      emergencyContact: empData?.emergencyContact 
       ? typeof empData.emergencyContact === 'object'
         ? `${empData.emergencyContact.name || ''} - ${empData.emergencyContact.phone || ''}`.replace(/^ - | - $/, '')
         : empData.emergencyContact
@@ -150,7 +185,6 @@ const EmployeesView = () => {
 
   const handleConfirmPurgeMutation = async (id) => {
     try {
-      // Actually make the API call to soft delete the employee in the database
       const empToDelete = employeeDataList.find(emp => emp?.id === id);
       if (empToDelete && empToDelete._id) {
         await deleteEmployee(empToDelete._id);
@@ -163,9 +197,6 @@ const EmployeesView = () => {
     }
   };
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // FIXED CRASH-PROOF FILTER ENGINE (Wrapped safely inside function context)
-  // ═══════════════════════════════════════════════════════════════════════════
   const filteredEmployees = Array.isArray(employeeDataList) ? employeeDataList.filter((emp) => {
     const query = typeof searchQuery === 'string' ? searchQuery.toLowerCase().trim() : '';
     if (!query) return true;
@@ -188,29 +219,37 @@ const EmployeesView = () => {
   return (
     <div className={styles.dashboardGrid}>
      
-      {/* Metrics Summary Row */}
+      {/* Dynamic Metrics Summary Row */}
       <div className={styles.metricsRow}>
         <div className={styles.metricCard}>
           <h3>TOTAL ACTIVE PROFILES</h3>
           <div className={styles.metricValueWrapper}>
-            <span className={styles.metricValue}>{loading ? '...' : `${employeeDataList.length} Staff`}</span>
+            <span className={styles.metricValue}>
+              {loading ? '...' : `${employeeDataList.length} Staff`}
+            </span>
           </div>
         </div>
+        
         <div className={styles.metricCard}>
           <h3>NEW JOINEES (THIS MONTH)</h3>
           <div className={styles.metricValueWrapper}>
-            <span className={styles.metricValue} style={{ color: '#16a34a' }}>+6 Interns</span>
+            <span className={styles.metricValue} style={{ color: '#16a34a' }}>
+              {loading ? '...' : `+${newJoineesCount} Members`}
+            </span>
           </div>
         </div>
+        
         <div className={styles.metricCard}>
           <h3>AVG NET CTC (MONTHLY)</h3>
           <div className={styles.metricValueWrapper}>
-            <span className={styles.metricValue} style={{ color: '#6366f1' }}>₹82,400.00</span>
+            <span className={styles.metricValue} style={{ color: '#6366f1' }}>
+              {loading ? '...' : `₹${averageSalary.toLocaleString('en-IN')}.00`}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Quarterly Hiring Velocity Insights Progress Panel */}
+      {/* Hiring Velocity Insight (Connected dynamically to active roster proportions) */}
       <div className={styles.chartContainer}>
         <h3>Quarterly Hiring Velocity Insight</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '10px 0' }}>
@@ -220,29 +259,47 @@ const EmployeesView = () => {
               Q1 Growth <br />Matrix
             </div>
             <div className={styles.progressBarContainer} style={{ flex: 1, margin: '0 24px', background: '#f1f5f9', height: '12px' }}>
-              <div className={styles.progressBarFill} style={{ width: '77%', backgroundColor: '#635bff', height: '100%' }} />
+              <div 
+                className={styles.progressBarFill} 
+                style={{ 
+                  width: `${Math.min(100, employeeDataList.length * 2)}%`, 
+                  backgroundColor: '#635bff', 
+                  height: '100%',
+                  transition: 'width 0.4s ease'
+                }} 
+              />
             </div>
             <div style={{ width: '65px', textAlign: 'right', fontSize: '0.85rem', fontWeight: '700', color: '#0f172a' }}>
-              77% <span style={{ display: 'block', fontSize: '0.72rem', color: '#64748b', fontWeight: '500' }}>Target</span>
+              {Math.min(100, employeeDataList.length * 2)}% 
+              <span style={{ display: 'block', fontSize: '0.72rem', color: '#64748b', fontWeight: '500' }}>Capacity</span>
             </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
             <div style={{ width: '120px', fontSize: '0.88rem', fontWeight: '500', color: '#1e293b', lineHeight: '1.2' }}>
-              Q2 Active <br />Pipeline
+              Active <br />Onboarding
             </div>
             <div className={styles.progressBarContainer} style={{ flex: 1, margin: '0 24px', background: '#f1f5f9', height: '12px' }}>
-              <div className={styles.progressBarFill} style={{ width: '30%', backgroundColor: '#635bff', height: '100%' }} />
+              <div 
+                className={styles.progressBarFill} 
+                style={{ 
+                  width: `${Math.min(100, newJoineesCount * 15)}%`, 
+                  backgroundColor: '#10b981', 
+                  height: '100%',
+                  transition: 'width 0.4s ease'
+                }} 
+              />
             </div>
             <div style={{ width: '65px', textAlign: 'right', fontSize: '0.85rem', fontWeight: '700', color: '#0f172a' }}>
-              30% <span style={{ display: 'block', fontSize: '0.72rem', color: '#64748b', fontWeight: '500' }}>Target</span>
+              {Math.min(100, newJoineesCount * 15)}% 
+              <span style={{ display: 'block', fontSize: '0.72rem', color: '#64748b', fontWeight: '500' }}>Velocity</span>
             </div>
           </div>
 
         </div>
       </div>
 
-      {/* Database Filtering Bar and Sync Action Button */}
+      {/* Filtering Bar */}
       <div className={styles.actionFilterBar} style={{ margin: '16px 0 0 0' }}>
         <input
           type="text"
@@ -260,7 +317,7 @@ const EmployeesView = () => {
         </button>
       </div>
 
-      {/* Core Directory Ledger Layout Table Grid */}
+      {/* Directory Table Grid */}
       <div className={styles.activityStream}>
         <table className={styles.activityTable}>
           <thead>
@@ -347,7 +404,6 @@ const EmployeesView = () => {
         </table>
       </div>
 
-      {/* Dialog Context Mount Hidden Hooks */}
       <EmployeeModal isOpen={isModalOpen} onClose={handleModalClose} onSuccess={handleModalSuccess} employeeData={selectedEmployee} mode={modalMode} allEmployeesList={employeeDataList}/>
       <EmployeeSuccessModal isOpen={isSuccessModalOpen} onClose={handleSuccessClose} employeeData={successEmployee} mode={modalMode} />
       <DeleteEmployeeWizard isOpen={isDeleteWizardOpen} employee={selectedEmployeeForDelete} onClose={() => setIsDeleteWizardOpen(false)} onConfirmPurge={handleConfirmPurgeMutation} />
