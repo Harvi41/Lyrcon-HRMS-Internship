@@ -23,10 +23,18 @@ const normalizeRoleName = (value) => {
 const usersController = {
   createUser: async (req, res) => {
     try {
-      const { name, email, password, roleName } = req.body || {};
+      const { name, email, password, roleName, address } = req.body || {};
 
       if (!name || !email || !password || !roleName) {
         return res.status(400).json({ message: 'Provide `name`, `email`, `password`, and `roleName`.' });
+      }
+
+      let processedAddress = "";
+      if (address && typeof address === 'object') {
+        const parts = [address.street, address.line2, address.city, address.state, address.zip].filter(Boolean);
+        processedAddress = parts.join(", ");
+      } else if (typeof address === 'string') {
+        processedAddress = address;
       }
 
       const normalizedRoleName = normalizeRoleName(roleName);
@@ -51,6 +59,7 @@ const usersController = {
         email: String(email).trim().toLowerCase(),
         password: hashedPassword,
         role: role._id,
+        address: processedAddress 
       });
 
       const populatedUser = await User.findById(user._id).populate('role', 'name permissions isActive');
