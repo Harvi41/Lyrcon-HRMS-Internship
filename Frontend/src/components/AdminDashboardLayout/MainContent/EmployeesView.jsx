@@ -17,7 +17,7 @@ const EmployeesView = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
- 
+
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [successEmployee, setSuccessEmployee] = useState(null);
 
@@ -29,7 +29,7 @@ const EmployeesView = () => {
       setLoading(true);
       const { data } = await getAllEmployees();
       const rawEmployees = Array.isArray(data) ? data : [];
-      
+
       // ═══════════════════════════════════════════════════════════════════════════
       // DYNAMIC LIVE METRICS COMPUTATION ENGINE
       // ═══════════════════════════════════════════════════════════════════════════
@@ -65,7 +65,7 @@ const EmployeesView = () => {
       // Map raw backend schema structures safely over UI presentation nodes
       const mappedData = rawEmployees.map(emp => ({
         id: emp?.employeeCode || '',
-        _id: emp?._id || '', 
+        _id: emp?._id || '',
         name: emp?.firstName || emp?.lastName ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : 'Incomplete Name',
         email: emp?.email || '',
         dept: emp?.department || 'Unassigned',
@@ -73,7 +73,7 @@ const EmployeesView = () => {
         status: emp?.status === 'terminated' ? 'Inactive' : 'Active',
         raw: emp || {}
       }));
-      
+
       setEmployeeDataList(mappedData);
     } catch (err) {
       console.error('Failed to fetch employees:', err);
@@ -109,12 +109,12 @@ const EmployeesView = () => {
       workLocation: empData?.workLocation || '',
       managerId: empData?.managerId?.employeeCode || empData?.managerId || '',
       status: empData?.status === 'terminated' ? 'Inactive' : 'Active',
-      address: empData?.address || '',
-      emergencyContact: empData?.emergencyContact 
-      ? typeof empData.emergencyContact === 'object'
-        ? `${empData.emergencyContact.name || ''} - ${empData.emergencyContact.phone || ''}`.replace(/^ - | - $/, '')
-        : empData.emergencyContact
-      : '',
+      address: typeof empData?.address === 'object' ? [empData.address.street, empData.address.city, empData.address.state, empData.address.postalCode, empData.address.country].filter(Boolean).join(', ') : empData?.address || '',
+      emergencyContact: empData?.emergencyContact
+        ? typeof empData.emergencyContact === 'object'
+          ? `${empData.emergencyContact.name || ''} - ${empData.emergencyContact.phone || ''}`.replace(/^ - | - $/, '')
+          : empData.emergencyContact
+        : '',
       salary: empData?.baseCTC || ''
     });
     setIsModalOpen(true);
@@ -127,7 +127,7 @@ const EmployeesView = () => {
 
   const handleModalSuccess = async (data, mode) => {
     setIsModalOpen(false);
-    
+
     try {
       let parsedEmergencyContact = { name: data?.emergencyContact || '', phone: '' };
       if (data?.emergencyContact && data.emergencyContact.includes('-')) {
@@ -152,21 +152,27 @@ const EmployeesView = () => {
         managerId: safeManagerId,
         workLocation: data?.workLocation,
         emergencyContact: parsedEmergencyContact,
-        address: data?.address,
-        roleName: 'Employee', 
+        address: { 
+          street: data?.address || '', 
+          city: '', 
+          state: '', 
+          country: '', 
+          postalCode: '' 
+        },
+        roleName: 'Employee',
         baseCTC: data?.salary
       };
 
       if (mode === 'create') {
         await createEmployee(payload);
-        setSuccessEmployee(data); 
+        setSuccessEmployee(data);
       } else {
         await updateEmployee(selectedEmployee?._id, payload);
         setSuccessEmployee(data);
       }
-      
+
       setIsSuccessModalOpen(true);
-      fetchEmployees(); 
+      fetchEmployees();
     } catch (err) {
       console.error('Failed to save employee:', err);
       alert(err.response?.data?.message || 'Failed to save employee data.');
@@ -218,7 +224,7 @@ const EmployeesView = () => {
 
   return (
     <div className={styles.dashboardGrid}>
-     
+
       {/* Dynamic Metrics Summary Row */}
       <div className={styles.metricsRow}>
         <div className={styles.metricCard}>
@@ -229,7 +235,7 @@ const EmployeesView = () => {
             </span>
           </div>
         </div>
-        
+
         <div className={styles.metricCard}>
           <h3>NEW JOINEES (THIS MONTH)</h3>
           <div className={styles.metricValueWrapper}>
@@ -238,7 +244,7 @@ const EmployeesView = () => {
             </span>
           </div>
         </div>
-        
+
         <div className={styles.metricCard}>
           <h3>AVG NET CTC (MONTHLY)</h3>
           <div className={styles.metricValueWrapper}>
@@ -253,24 +259,24 @@ const EmployeesView = () => {
       <div className={styles.chartContainer}>
         <h3>Quarterly Hiring Velocity Insight</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '10px 0' }}>
-         
+
           <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
             <div style={{ width: '120px', fontSize: '0.88rem', fontWeight: '500', color: '#1e293b', lineHeight: '1.2' }}>
               Q1 Growth <br />Matrix
             </div>
             <div className={styles.progressBarContainer} style={{ flex: 1, margin: '0 24px', background: '#f1f5f9', height: '12px' }}>
-              <div 
-                className={styles.progressBarFill} 
-                style={{ 
-                  width: `${Math.min(100, employeeDataList.length * 2)}%`, 
-                  backgroundColor: '#635bff', 
+              <div
+                className={styles.progressBarFill}
+                style={{
+                  width: `${Math.min(100, employeeDataList.length * 2)}%`,
+                  backgroundColor: '#635bff',
                   height: '100%',
                   transition: 'width 0.4s ease'
-                }} 
+                }}
               />
             </div>
             <div style={{ width: '65px', textAlign: 'right', fontSize: '0.85rem', fontWeight: '700', color: '#0f172a' }}>
-              {Math.min(100, employeeDataList.length * 2)}% 
+              {Math.min(100, employeeDataList.length * 2)}%
               <span style={{ display: 'block', fontSize: '0.72rem', color: '#64748b', fontWeight: '500' }}>Capacity</span>
             </div>
           </div>
@@ -280,18 +286,18 @@ const EmployeesView = () => {
               Active <br />Onboarding
             </div>
             <div className={styles.progressBarContainer} style={{ flex: 1, margin: '0 24px', background: '#f1f5f9', height: '12px' }}>
-              <div 
-                className={styles.progressBarFill} 
-                style={{ 
-                  width: `${Math.min(100, newJoineesCount * 15)}%`, 
-                  backgroundColor: '#10b981', 
+              <div
+                className={styles.progressBarFill}
+                style={{
+                  width: `${Math.min(100, newJoineesCount * 15)}%`,
+                  backgroundColor: '#10b981',
                   height: '100%',
                   transition: 'width 0.4s ease'
-                }} 
+                }}
               />
             </div>
             <div style={{ width: '65px', textAlign: 'right', fontSize: '0.85rem', fontWeight: '700', color: '#0f172a' }}>
-              {Math.min(100, newJoineesCount * 15)}% 
+              {Math.min(100, newJoineesCount * 15)}%
               <span style={{ display: 'block', fontSize: '0.72rem', color: '#64748b', fontWeight: '500' }}>Velocity</span>
             </div>
           </div>
@@ -373,9 +379,9 @@ const EmployeesView = () => {
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                      <button 
+                      <button
                         type="button"
-                        onClick={() => handleEditClick(emp)} 
+                        onClick={() => handleEditClick(emp)}
                         title="Edit Profile"
                         style={{ padding: '4px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center' }}
                       >
@@ -384,9 +390,9 @@ const EmployeesView = () => {
                           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                         </svg>
                       </button>
-                      <button 
+                      <button
                         type="button"
-                        onClick={() => handleDeleteClick(emp)} 
+                        onClick={() => handleDeleteClick(emp)}
                         title="Delete Profile"
                         style={{ padding: '4px', background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', display: 'flex', alignItems: 'center' }}
                       >
@@ -404,7 +410,7 @@ const EmployeesView = () => {
         </table>
       </div>
 
-      <EmployeeModal isOpen={isModalOpen} onClose={handleModalClose} onSuccess={handleModalSuccess} employeeData={selectedEmployee} mode={modalMode} allEmployeesList={employeeDataList}/>
+      <EmployeeModal isOpen={isModalOpen} onClose={handleModalClose} onSuccess={handleModalSuccess} employeeData={selectedEmployee} mode={modalMode} allEmployeesList={employeeDataList} />
       <EmployeeSuccessModal isOpen={isSuccessModalOpen} onClose={handleSuccessClose} employeeData={successEmployee} mode={modalMode} />
       <DeleteEmployeeWizard isOpen={isDeleteWizardOpen} employee={selectedEmployeeForDelete} onClose={() => setIsDeleteWizardOpen(false)} onConfirmPurge={handleConfirmPurgeMutation} />
     </div>
