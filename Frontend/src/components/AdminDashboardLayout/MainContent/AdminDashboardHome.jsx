@@ -75,8 +75,11 @@ const AdminDashboardHome = () => {
         : '0%'
       );
 
-      // 3. Fetch Operational tasks to feed dynamic issue cards and timeline metrics
-      const taskRes = await API.get('/api/tasks');
+      // ═══════════════════════════════════════════════════════════════════════════
+      // ✅ FIXED FRONTEND 404 IMPORT ROUTE ERROR:
+      // Removed the duplicate /api text so it doesn't try to build /api/api/tasks
+      // ═══════════════════════════════════════════════════════════════════════════
+      const taskRes = await API.get('/tasks');
       const taskRoster = Array.isArray(taskRes?.data) ? taskRes.data : [];
       
       const pendingIssues = taskRoster.filter(t => t?.status?.toLowerCase() === 'pending' || t?.status?.toLowerCase() === 'todo');

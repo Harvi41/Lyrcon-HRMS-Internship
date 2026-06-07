@@ -23,7 +23,7 @@ const RecruitmentView = () => {
     try {
       setLoading(true);
       // Adjust this endpoint string to match your exact backend server route map
-      const response = await API.get('/api/recruitment');
+      const response = await API.get('/recruitment');
       
       // Defensively parse your response payload array structure
       const rawCandidates = Array.isArray(response?.data) 
