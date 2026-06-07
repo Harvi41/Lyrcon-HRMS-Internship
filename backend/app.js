@@ -13,6 +13,8 @@ const leaveRoutes = require('./src/routes/leaveRoutes');
 const payrollRoutes = require('./src/routes/payrollRoutes');
 const taskRoutes = require('./src/routes/taskRoutes');
 const attendanceRoutes = require('./src/routes/attendanceRoutes');
+const biometricRoutes = require('./src/routes/biometricRoutes');
+const recruitmentRoutes = require('./src/routes/recruitmentRoutes');
 const app = express();
 
 // 🌐 CORS Security Whitelist Mapping
@@ -64,7 +66,8 @@ app.use('/api/leaves', leaveRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/attendance', attendanceRoutes);
-app.use('/api/biometrics', require('./routes/biometricRoutes'));
+app.use('/api/biometrics', biometricRoutes);
+app.use('/api/recruitment', recruitmentRoutes);
 
 // ⚙️ Server Initialization Loop 
 const startServer = async () => {

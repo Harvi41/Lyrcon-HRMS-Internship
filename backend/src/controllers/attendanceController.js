@@ -140,13 +140,49 @@ const attendanceController = {
 
     getMyLogs: async (req, res) => {
         try {
-            const userId = req.user.userId;
-            const employeeProfile = await Employee.findOne({ userId });
-            if (!employeeProfile) return res.status(404).json({ message: "Employee profile not found." });
+            const userId = req.user?.userId || req.user?.id;
+            if (!userId) {
+                return res.status(401).json({ message: "Unable to determine authenticated user." });
+            }
 
-            const logs = await Attendance.find({ employeeId: employeeProfile._id }).sort({ date: -1 }).limit(30);
-            return res.status(200).json(logs);
+            const employeeProfile = await Employee.findOne({ userId });
+            if (!employeeProfile) {
+                return res.status(404).json({ message: "Employee profile not found." });
+            }
+
+            const logs = await Attendance.find({ employeeId: employeeProfile._id })
+                .sort({ date: -1 })
+                .limit(30)
+                .lean();
+
+            const sanitizedLogs = logs.map(log => {
+                const serializedDate = log.date
+                    ? typeof log.date === 'string'
+                        ? log.date.split('T')[0]
+                        : log.date instanceof Date
+                            ? log.date.toISOString().split('T')[0]
+                            : null
+                    : null;
+
+                const fallbackDate = serializedDate ||
+                    (log.clockIn ? new Date(log.clockIn).toISOString().split('T')[0] :
+                     log.clockOut ? new Date(log.clockOut).toISOString().split('T')[0] :
+                     '');
+
+                return {
+                    ...log,
+                    date: fallbackDate,
+                    clockIn: log.clockIn ? new Date(log.clockIn).toISOString() : null,
+                    clockOut: log.clockOut ? new Date(log.clockOut).toISOString() : null,
+                    clockInTime: log.clockIn ? new Date(log.clockIn).toISOString() : null,
+                    clockOutTime: log.clockOut ? new Date(log.clockOut).toISOString() : null,
+                    status: log.status || 'Absent',
+                };
+            });
+
+            return res.status(200).json(sanitizedLogs);
         } catch (error) {
+            console.error("Error inside getMyLogs:", error);
             return res.status(500).json({ message: "Error fetching personal logs.", error: error.message });
         }
     }
