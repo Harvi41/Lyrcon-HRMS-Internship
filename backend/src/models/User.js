@@ -50,6 +50,14 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    
+    faceEmbedding: { 
+      type: [Number], 
+      default: undefined 
+    },
+    trustedDeviceId: { 
+      type: String 
+    }
   },
   {
     timestamps: true,

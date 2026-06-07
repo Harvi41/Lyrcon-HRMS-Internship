@@ -52,9 +52,6 @@ const ClockInModal = ({ isOpen, onClose, onConfirmClockIn }) => {
     loadModels();
   }, [step]);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // ✅ AUTOMATIC LIVE DETECTION LOOP
-  // ═══════════════════════════════════════════════════════════════════════════
   useEffect(() => {
     let loopInterval;
 
@@ -67,32 +64,39 @@ const ClockInModal = ({ isOpen, onClose, onConfirmClockIn }) => {
 
         const img = new Image();
         img.onload = async () => {
-          const detection = await faceapi
-            .detectSingleFace(img)
-            .withFaceLandmarks()
-            .withFaceDescriptor();
+          try {
+            const detection = await faceapi
+              .detectSingleFace(img)
+              .withFaceLandmarks()
+              .withFaceDescriptor();
 
-          // If a face is found with good landmarks, clear loop and log attendance immediately!
-          if (detection) {
-            clearInterval(loopInterval);
-            setIsVerifying(true);
-            
-            const compositePayload = {
-              ...shiftData,
-              image: imageSrc,
-              descriptor: Array.from(detection.faceDescriptor)
-            };
+            const rawDescriptor = detection?.descriptor || detection?.faceDescriptor;
 
-            await onConfirmClockIn(compositePayload);
-            onClose();
+            if (detection && rawDescriptor) {
+              clearInterval(loopInterval);
+              setIsVerifying(true);
+              
+              const compositePayload = {
+                shiftType: shiftData.shiftType,
+                workMode: shiftData.workMode,
+                notes: shiftData.notes,
+                deviceFingerprint: shiftData.deviceToken || "MOCK_DEVICE_TOKEN_12345",
+                faceEmbedding: Array.from(rawDescriptor) // 
+              };
+
+              await onConfirmClockIn(compositePayload);
+              onClose();
+            }
+          } catch (internalLoopErr) {
+            console.error("Biometric frame drop parsing tracking values:", internalLoopErr);
           }
         };
         img.src = imageSrc;
-      }, 600); // Scans smoothly every 600ms
+      }, 700); 
     }
 
     return () => clearInterval(loopInterval);
-  }, [step, isModelsLoaded, isVerifying]);
+  }, [step, isModelsLoaded, isVerifying, shiftData]);
 
   if (!isOpen) return null;
 
@@ -132,6 +136,12 @@ const ClockInModal = ({ isOpen, onClose, onConfirmClockIn }) => {
           <h2>{step === 1 ? 'Shift Session Initialize' : 'Biometric Verification'}</h2>
           <button type="button" className={styles.modalCloseBtn} onClick={onClose}>&times;</button>
         </div>
+
+        {securityError && (
+          <div style={{ padding: '10px 14px', backgroundColor: '#fff1f2', border: '1px solid #fecdd3', color: '#e11d48', borderRadius: '6px', fontSize: '0.85rem', marginBottom: '16px', fontWeight: '600' }}>
+            ⚠️ {securityError}
+          </div>
+        )}
 
         {step === 1 && (
           <form onSubmit={handleProceedToBiometrics} className={styles.modalForm}>

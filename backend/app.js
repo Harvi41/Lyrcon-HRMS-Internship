@@ -64,6 +64,7 @@ app.use('/api/leaves', leaveRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/biometrics', require('./routes/biometricRoutes'));
 
 // ⚙️ Server Initialization Loop 
 const startServer = async () => {

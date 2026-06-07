@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
 import styles from "../EmployeeDashboardLayout.module.css";
-// ✅ Points cleanly to the correct relative paths for your updated face-recognition components
 import ClockInModal from "../../HRDashboardLayout/MainContent/ClockInModal"; 
 import ClockOutModal from "../../HRDashboardLayout/MainContent/ClockOutModal";
-import API from "../../../lib/axios"; 
 
-// 1. LineChart accepts live, scaled component data arrays dynamically
+import API, { 
+  verifyFaceAndLogin, 
+  getEmployeeAttendance,
+  getMyAttendanceLogs
+} from "../../../lib/axios"; 
+
 function DynamicLineChart({ records }) {
   const W = 700;
   const H = 140;
@@ -31,7 +34,6 @@ function DynamicLineChart({ records }) {
           </linearGradient>
         </defs>
 
-        {/* Horizontal Background Grid Lines */}
         {[0, 2, 4, 6, 8, 10].map((hour) => (
           <g key={hour}>
             <line x1={PAD_X} y1={getY(hour)} x2={W - PAD_X} y2={getY(hour)} stroke="#f1f5f9" strokeWidth="1" strokeDasharray="4 4" />
@@ -39,15 +41,12 @@ function DynamicLineChart({ records }) {
           </g>
         ))}
 
-        {/* Shaded Area Underneath Line */}
         {areaFillPath && <path d={areaFillPath} fill="url(#chartGradient)" />}
 
-        {/* Core Line Path */}
         {pathCoordinates && (
           <path d={pathCoordinates} fill="none" stroke="#6366f1" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
         )}
 
-        {/* Active Node Coordinate Circles Data Plot Highlights */}
         {dataPoints.map((val, i) => (
           <g key={i}>
             <circle cx={getX(i)} cy={getY(val)} r="4" fill="#ffffff" stroke="#6366f1" strokeWidth="2.5" />
@@ -56,7 +55,6 @@ function DynamicLineChart({ records }) {
                 {val}h
               </text>
             )}
-            {/* Day Label Text Under Nodes */}
             <text x={getX(i)} y={H - 4} textAnchor="middle" fontSize="11" fontWeight="600" fill="#64748b">
               {records[i].day.substring(0, 3)}
             </text>
@@ -75,7 +73,6 @@ export default function AttendanceView() {
   const [alertSeverity, setAlertSeverity] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Core structured attendance records matrix array placeholders
   const [attendanceRecords, setAttendanceRecords] = useState([
     { day: "Monday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" },
     { day: "Tuesday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" },
@@ -86,7 +83,6 @@ export default function AttendanceView() {
     { day: "Sunday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" }             
   ]);
 
-  // Utility Helper: Formats ISO Date string objects clean into localized 12h user visual cards
   const formatTime = (isoString) => {
     if (!isoString || isoString === "--") return "--";
     try {
@@ -96,7 +92,6 @@ export default function AttendanceView() {
     }
   };
 
-  // Utility Helper: Calculates structural hours delta gap values completely on frontend client
   const calculateHours = (inTime, outTime) => {
     if (!inTime) return 0;
     const end = outTime ? new Date(outTime) : new Date();
@@ -105,25 +100,25 @@ export default function AttendanceView() {
     return Math.max(0, parseFloat(hours.toFixed(1)));
   };
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // RE-ENGINEERED SERVER SYNC LAYER
-  // ═══════════════════════════════════════════════════════════════════════════
   useEffect(() => {
     const fetchPersonalLogs = async () => {
       try {
         setLoading(true);
-        // Target endpoint configuration map
-        const response = await API.get('/attendance/my-logs'); 
-        const logs = Array.isArray(response.data) ? response.data : [];
+        
+        let logs = [];
+        const response = await getMyAttendanceLogs();
+        logs = Array.isArray(response?.data) ? response.data : [];
 
-        // Check active check-in loops
         const todayStr = new Date().toISOString().split('T')[0];
-        const ongoingSession = logs.find(log => log.date === todayStr && !log.clockOutTime);
+        
+        const ongoingSession = logs.length > 0 
+          ? logs.find(log => log && log.date === todayStr && !log.clockOutTime && !log.clockOut)
+          : null;
+          
         setIsClockedIn(!!ongoingSession);
 
         const dayMapping = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
         
-        // Build fresh 7-day view state map from scratch based on true values
         const freshWeek = [
           { day: "Monday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" },
           { day: "Tuesday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" },
@@ -133,18 +128,26 @@ export default function AttendanceView() {
           { day: "Saturday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" }, 
           { day: "Sunday", checkIn: "--", checkOut: "--", hours: 0, status: "Absent" }
         ].map(item => {
-          const serverMatch = logs.find(log => {
-            const logDay = dayMapping[new Date(log.date).getDay()];
-            return logDay === item.day;
-          });
+          const serverMatch = logs.length > 0 ? logs.find(log => {
+            if (!log || !log.date) return false;
+            try {
+              const logDay = dayMapping[new Date(log.date).getDay()];
+              return logDay === item.day;
+            } catch (e) {
+              return false;
+            }
+          }) : null;
 
           if (serverMatch) {
+            const checkInVal = serverMatch.clockIn || serverMatch.clockInTime;
+            const checkOutVal = serverMatch.clockOut || serverMatch.clockOutTime;
+
             return {
               ...item,
-              checkIn: formatTime(serverMatch.clockInTime),
-              checkOut: serverMatch.clockOutTime ? formatTime(serverMatch.clockOutTime) : (serverMatch.status === "Present" ? "Running" : "--"),
-              hours: calculateHours(serverMatch.clockInTime, serverMatch.clockOutTime),
-              status: serverMatch.status
+              checkIn: formatTime(checkInVal),
+              checkOut: checkOutVal ? formatTime(checkOutVal) : (serverMatch.status === "Present" ? "Running" : "--"),
+              hours: calculateHours(checkInVal, checkOutVal),
+              status: serverMatch.status || "Present"
             };
           }
           return item;
@@ -170,34 +173,48 @@ export default function AttendanceView() {
     }
   };
 
-  // Triggered automatically by the automated live-loop webcam scanning hook payload
-  const executeClockInPipeline = async (completePayload) => {
+  const executeClockInPipeline = async ({ faceEmbedding, deviceFingerprint }) => {
     try {
-      await API.post('/attendance/biometric/clock-in', completePayload);
+      const currentUserData = JSON.parse(localStorage.getItem('corehr_user') || '{}');
+      const email = currentUserData.email;
+
+      if (!email || !faceEmbedding) {
+        throw new Error("Missing email context or face scanning vectors.");
+      }
+
+      await verifyFaceAndLogin(email, faceEmbedding, deviceFingerprint);
+      
       setIsClockedIn(true);
-      setUiFeedbackMessage('Biometric Identity Profile Mapped! Shift session initialized.');
+      setUiFeedbackMessage('Biometric Identity Matches! Shift session initialized.');
       setAlertSeverity('success');
     } catch (err) {
-      setUiFeedbackMessage(err.response?.data?.message || 'Access Denied: Scan transaction dropped.');
+      setUiFeedbackMessage(err.response?.data?.message || err.message || 'Access Denied: Face match dropped.');
       setAlertSeverity('critical');
       throw err; 
     }
   };
 
-  const executeClockOutPipeline = async (handoverPayload) => {
+  const executeClockOutPipeline = async ({ faceEmbedding, deviceFingerprint }) => {
     try {
-      await API.post('/attendance/biometric/clock-out', handoverPayload);
+      const currentUserData = JSON.parse(localStorage.getItem('corehr_user') || '{}');
+      const email = currentUserData.email;
+
+      if (!email || !faceEmbedding) {
+        throw new Error("Missing operational parameters.");
+      }
+
+      await verifyFaceAndLogin(email, faceEmbedding, deviceFingerprint);
+
       setIsClockedIn(false);
       setUiFeedbackMessage('Biometric identity confirmed. Duty session successfully terminated.');
       setAlertSeverity('success');
     } catch (err) {
-      setUiFeedbackMessage(err.response?.data?.message || 'Biometric validation rejected on exit.');
+      setUiFeedbackMessage(err.response?.data?.message || err.message || 'Biometric validation rejected on exit.');
       setAlertSeverity('critical');
       throw err;
     }
   };
 
-  // ─── RUNTIME ANALYTICS CORE AGGREGATIONS ───
   const currentDayIndex = new Date().getDay();
   const dayMapping = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const todayName = dayMapping[currentDayIndex];
@@ -213,10 +230,12 @@ export default function AttendanceView() {
   const finalPresentDays = standardMonthBaseline + daysPresentThisLog;
   const totalWorkingDays = 24; 
 
+  if (loading) {
+    return <div style={{ padding: '40px', textAlign: 'center', color: '#64748b', fontWeight: '600' }}>Loading Enterprise Logs...</div>;
+  }
+
   return (
     <div className={styles.page}>
-      
-      {/* Dynamic Flash Notifications Message Ribbon Component */}
       {uiFeedbackMessage && (
         <div style={{
           padding: '14px 18px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '600',
@@ -229,7 +248,6 @@ export default function AttendanceView() {
         </div>
       )}
 
-      {/* Action Header Ribbon Control Toolbar */}
       <div className={styles.actionFilterBar} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <div className={styles.staticDateBadge} style={{ fontWeight: '600', color: '#475569' }}>Terminal Biometric Node</div>
         <button 
@@ -242,7 +260,6 @@ export default function AttendanceView() {
         </button>
       </div>
 
-      {/* Primary Analytics Summary Cards Section */}
       <div className={styles.statRow3}>
         <div className={styles.statCard}>
           <div className={styles.statTopRow}>
@@ -277,13 +294,11 @@ export default function AttendanceView() {
         </div>
       </div>
 
-      {/* Dynamic Graph Tracking Component */}
       <div className={styles.card}>
         <h3 className={styles.cardTitle}>Weekly Attendance Performance Graph (Hours Worked)</h3>
         <DynamicLineChart records={attendanceRecords} />
       </div>
 
-      {/* Complete Log Output Table Grid */}
       <div className={`${styles.tableCard} ${styles.tableCardBordered}`}>
         <table className={styles.table}>
           <thead>
@@ -309,7 +324,6 @@ export default function AttendanceView() {
         </table>
       </div>
 
-      {/* Pop-Up Modal Overlays */}
       <ClockInModal 
         isOpen={isClockInModalOpen}
         onClose={() => setIsClockInModalOpen(false)}

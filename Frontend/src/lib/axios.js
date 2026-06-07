@@ -46,6 +46,7 @@ API.interceptors.response.use(
 // 🔐 AUTHENTICATION ENDPOINTS 
 // ==========================================
 export const loginUser = (credentials) => API.post('/auth/login', credentials);
+export const googleLogin = (tokenId) => API.post('/auth/google-login', { tokenId });
 export const forgotPassword = (email) => API.post('/auth/forgot-password', { email });
 export const resetPassword = (token, newPassword) => API.post('/auth/reset-password', { token, newPassword });
 export const createDashboardUser = (payload) => API.post('/auth/register-user', payload);
@@ -80,6 +81,7 @@ export const markAssetDamaged = (id, userId) => API.put(`/assets/${id}/damage`, 
 // 📍 ATTENDANCE ENDPOINTS
 // ==========================================
 export const clockIn = (deviceFingerprint) => API.post('/attendance/clock-in', { deviceFingerprint });
+export const getMyAttendanceLogs = () => API.get('/attendance/my-logs');
 export const clockOut = () => API.post('/attendance/clock-out');
 export const getLiveRoster = () => API.get('/attendance/live-roster');
 export const getEmployeeAttendance = (employeeId, month) => {
@@ -126,5 +128,11 @@ export const getTargetOptions = () => API.get('/announcements/targets');
 // 📊 DASHBOARD METRICS ENDPOINTS
 // ==========================================
 export const getEmployeeSummary = () => API.get('/dashboard/employee/summary');
+
+// ==========================================
+// 👁️ BIOMETRIC FACE RECOGNITION ENDPOINTS 
+// ==========================================
+export const registerFaceMetrics = (embedding, deviceId) => API.post('/biometrics/register-face', { embedding, deviceId });
+export const verifyFaceAndLogin = (email, embedding, deviceId) => API.post('/biometrics/verify-face', { email, embedding, deviceId });
 
 export default API;
