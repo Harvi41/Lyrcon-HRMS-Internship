@@ -21,7 +21,7 @@ const EmployeesView = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  
+
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [successEmployee, setSuccessEmployee] = useState(null);
 
@@ -33,7 +33,7 @@ const EmployeesView = () => {
       setLoading(true);
       const { data } = await getAllEmployees();
       const rawEmployees = Array.isArray(data) ? data : [];
-      
+
       // ═══════════════════════════════════════════════════════════════════════════
       // DYNAMIC CALCULATIONS ENGINE (100% LIVE DATA)
       // ═══════════════════════════════════════════════════════════════════════════
@@ -77,7 +77,7 @@ const EmployeesView = () => {
       // Defensively parse incoming array records from backend metrics streams
       const mappedData = rawEmployees.map(emp => ({
         id: emp?.employeeCode || '',
-        _id: emp?._id || '', 
+        _id: emp?._id || '',
         name: emp?.firstName || emp?.lastName ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : 'Incomplete Name',
         email: emp?.email || '',
         dept: emp?.department || 'Unassigned',
@@ -85,7 +85,7 @@ const EmployeesView = () => {
         status: emp?.status === 'terminated' ? 'Inactive' : (emp?.status || 'Active'),
         raw: emp || {}
       }));
-      
+
       setEmployeeDataList(mappedData);
     } catch (err) {
       console.error('Failed to fetch employees:', err);
@@ -99,7 +99,7 @@ const EmployeesView = () => {
   }, []);
 
   // Compute progress bar scales dynamically from active data allocations
-  const q1VelocityRatio = liveTotalStaff > 0 ? Math.min(100, Math.round((liveTotalStaff / 200) * 100)) : 0; 
+  const q1VelocityRatio = liveTotalStaff > 0 ? Math.min(100, Math.round((liveTotalStaff / 200) * 100)) : 0;
   const q2PipelineRatio = liveTotalStaff > 0 ? Math.min(100, Math.round((onboardingCount / liveTotalStaff) * 100)) : 0;
 
   // 4. ACTION INTERACTION PIPELINES
@@ -126,7 +126,7 @@ const EmployeesView = () => {
       workLocation: empData?.workLocation || '',
       managerId: empData?.managerId?.employeeCode || empData?.managerId || '',
       status: empData?.status === 'terminated' ? 'Inactive' : 'Active',
-      address: empData?.address || '',
+      address: typeof empData?.address === 'object' ? [empData.address.street, empData.address.city, empData.address.state, empData.address.postalCode, empData.address.country].filter(Boolean).join(', ') : empData?.address || '',
       emergencyContact: empData?.emergencyContact || '',
       salary: empData?.baseCTC || ''
     });
@@ -140,7 +140,7 @@ const EmployeesView = () => {
 
   const handleModalSuccess = async (data, mode) => {
     setIsModalOpen(false);
-    
+
     try {
       let parsedEmergencyContact = { name: data?.emergencyContact || '', phone: '' };
       if (data?.emergencyContact && data.emergencyContact.includes('-')) {
@@ -165,21 +165,27 @@ const EmployeesView = () => {
         managerId: safeManagerId,
         workLocation: data?.workLocation,
         emergencyContact: parsedEmergencyContact,
-        address: data?.address,
-        roleName: 'Employee', 
+        address: { 
+          street: data?.address || '', 
+          city: '', 
+          state: '', 
+          country: '', 
+          postalCode: '' 
+        },
+        roleName: 'Employee',
         baseCTC: data?.salary
       };
 
       if (mode === 'create') {
         await createEmployee(payload);
-        setSuccessEmployee(data); 
+        setSuccessEmployee(data);
       } else {
         await updateEmployee(selectedEmployee?._id, payload);
         setSuccessEmployee(data);
       }
-      
+
       setIsSuccessModalOpen(true);
-      fetchEmployees(); 
+      fetchEmployees();
     } catch (err) {
       console.error('Failed to save employee:', err);
       alert(err.response?.data?.message || 'Failed to save employee data.');
@@ -279,10 +285,10 @@ const EmployeesView = () => {
 
       {/* Database Filtering Inputs and Insertion Triggers */}
       <div className={styles.actionFilterBar}>
-        <input 
-          type="text" 
-          placeholder="Filter by name, id or keyword..." 
-          className={styles.filterInput} 
+        <input
+          type="text"
+          placeholder="Filter by name, id or keyword..."
+          className={styles.filterInput}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -328,7 +334,7 @@ const EmployeesView = () => {
                   <td>{emp?.dept || 'Unassigned'}</td>
                   <td>{emp?.role || '—'}</td>
                   <td>
-                    <span 
+                    <span
                       className={`${styles.statusLabel} ${emp?.status?.toLowerCase() === 'active' ? styles.statusActive : styles.statusOnboard}`}
                       style={{ textTransform: 'capitalize' }}
                     >
@@ -337,9 +343,9 @@ const EmployeesView = () => {
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <button 
+                      <button
                         type="button"
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }} 
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
                         onClick={() => handleEditClick(emp)}
                         title="Edit Profile"
                       >
@@ -349,7 +355,7 @@ const EmployeesView = () => {
                         </svg>
                       </button>
 
-                      <button 
+                      <button
                         type="button"
                         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#e11d48' }}
                         onClick={() => handleDeleteClick(emp)}
@@ -372,9 +378,9 @@ const EmployeesView = () => {
       </div>
 
       {/* Creation and Modification Form Dialogs Context Mounts */}
-      <EmployeeModal 
-        isOpen={isModalOpen} 
-        onClose={handleModalClose} 
+      <EmployeeModal
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
         onSuccess={handleModalSuccess}
         employeeData={selectedEmployee}
         mode={modalMode}
