@@ -26,9 +26,10 @@ const PayrollView = () => {
   const [wizardStep, setWizardStep] = useState(1);
   const [securityPin, setSecurityPin] = useState("");
   const [isProcessingBatch, setIsProcessingBatch] = useState(false);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState([]);
 
   // State to track selected employee checkboxes inside the wizard run list
-  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState([]);
+  // const [selectedEmployeeIds, setSelectedEmployeeIds] = useState([]);
 
   const fetchData = async () => {
     try {
@@ -239,7 +240,7 @@ const PayrollView = () => {
       } else {
         alert(
           err?.response?.data?.message ||
-            "Error processing transaction workflow sequence.",
+          "Error processing transaction workflow sequence.",
         );
       }
     } finally {
@@ -356,6 +357,21 @@ const PayrollView = () => {
         <table className={styles.activityTable}>
           <thead>
             <tr>
+              <th style={{ width: '40px', textAlign: 'center' }}>
+                <input
+                  type="checkbox"
+                  checked={unpaidProfiles.length > 0 && selectedEmployeeIds.length === unpaidProfiles.length}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedEmployeeIds(unpaidProfiles.map(emp => emp._id));
+                    } else {
+                      setSelectedEmployeeIds([]);
+                    }
+                  }}
+                  disabled={unpaidProfiles.length === 0}
+                  style={{ cursor: unpaidProfiles.length === 0 ? 'not-allowed' : 'pointer' }}
+                />
+              </th>
               <th>EMPLOYEE</th>
               <th>BASE SALARY (MONTHLY)</th>
               <th>NET PAYOUT (₹)</th>
@@ -396,6 +412,21 @@ const PayrollView = () => {
 
                 return (
                   <tr key={emp._id}>
+                    <td style={{ textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedEmployeeIds.includes(emp._id)}
+                        onChange={() => {
+                          setSelectedEmployeeIds(prev =>
+                            prev.includes(emp._id)
+                              ? prev.filter(id => id !== emp._id)
+                              : [...prev, emp._id]
+                          );
+                        }}
+                        disabled={currentPillIsPaid}
+                        style={{ cursor: currentPillIsPaid ? 'not-allowed' : 'pointer' }}
+                      />
+                    </td>
                     <td>
                       <div className={styles.userColumnCell}>
                         <strong style={{ color: "#0f172a", fontWeight: "700" }}>
