@@ -13,7 +13,7 @@ const navItems = [
   { key: "announcements", label: "Announcements" },
 ];
 
-export default function Sidebar({ activePage, onNavigate }) {
+export default function Sidebar({ activePage, onNavigate, onOpenPasswordModal }) {
   return (
     <aside className={styles.sidebar}>
       <div className={styles.brand}>
@@ -31,6 +31,16 @@ export default function Sidebar({ activePage, onNavigate }) {
             {item.label}
           </button>
         ))}
+
+        <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
+          <p className={styles.navLabel}>ACCOUNT</p>
+          <button 
+            className={styles.navItem} 
+            onClick={onOpenPasswordModal}
+          >
+            Change Password
+          </button>
+        </div>
       </nav>
     </aside>
   );

@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from '../HRDashboardLayout.module.css';
 
-const Sidebar = ({ activeTab, setActiveTab }) => {
+const Sidebar = ({ activeTab, setActiveTab, onOpenPasswordModal }) => {
   const menuItems = [
     { label: 'Dashboard', id: 'dashboard' },
     { label: 'Employee Overview', id: 'employees' },
@@ -24,27 +24,44 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       </div>
       
       {/* Navigation Links Routing Engine */}
-      <div className={styles.menuSection}>
-        <h2 className={styles.menuTitle}>MAIN MENU</h2>
-        <ul className={styles.menuList}>
-          {menuItems.map((item) => {
-            const isActive = item.id === activeTab;
-            return (
-              <li 
-                key={item.id} 
-                className={`${styles.menuItem} ${isActive ? styles.activeMenuItem : ''}`}
-              >
-                <button 
-                  type="button"
-                  onClick={() => setActiveTab(item.id)}
-                  className={styles.sidebarMenuButton}
+      <div className={styles.menuSection} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div>
+          <h2 className={styles.menuTitle}>MAIN MENU</h2>
+          <ul className={styles.menuList}>
+            {menuItems.map((item) => {
+              const isActive = item.id === activeTab;
+              return (
+                <li 
+                  key={item.id} 
+                  className={`${styles.menuItem} ${isActive ? styles.activeMenuItem : ''}`}
                 >
-                  {item.label}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+                  <button 
+                    type="button"
+                    onClick={() => setActiveTab(item.id)}
+                    className={styles.sidebarMenuButton}
+                  >
+                    {item.label}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        <div style={{ marginTop: 'auto', paddingTop: '20px', paddingBottom: '20px' }}>
+          <h2 className={styles.menuTitle}>ACCOUNT</h2>
+          <ul className={styles.menuList}>
+            <li className={styles.menuItem}>
+              <button 
+                type="button"
+                onClick={onOpenPasswordModal}
+                className={styles.sidebarMenuButton}
+              >
+                Change Password
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
     </nav>
   );

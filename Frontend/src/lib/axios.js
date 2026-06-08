@@ -49,6 +49,7 @@ export const loginUser = (credentials) => API.post('/auth/login', credentials);
 export const googleLogin = (tokenId) => API.post('/auth/google-login', { tokenId });
 export const forgotPassword = (email) => API.post('/auth/forgot-password', { email });
 export const resetPassword = (token, newPassword) => API.post('/auth/reset-password', { token, newPassword });
+export const changePassword = (payload) => API.put('/auth/change-password', payload);
 export const createDashboardUser = (payload) => API.post('/auth/register-user', payload);
 
 // ==========================================

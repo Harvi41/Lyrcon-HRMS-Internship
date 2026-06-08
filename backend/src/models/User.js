@@ -57,6 +57,10 @@ const userSchema = new mongoose.Schema(
     },
     trustedDeviceId: { 
       type: String 
+    },
+    mustChangePassword: {
+      type: Boolean,
+      default: true
     }
   },
   {
