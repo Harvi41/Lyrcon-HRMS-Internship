@@ -13,22 +13,30 @@ export default function PayrollView() {
   const fetchPayroll = async () => {
     try {
       setLoading(true);
-      const { data } = await getMyPayroll();
-      // Assume data is an array of payroll records
-      const mapped = data.map(r => ({
-        id: r._id,
-        month: r.month, // Assumes backend has month field
-        basic: formatCurrency(r.basicSalary),
-        bonus: formatCurrency(r.bonus),
-        deductions: formatCurrency(r.deductions),
-        net: formatCurrency(r.netSalary),
-        rawNetNum: r.netSalary,
-        status: r.status,
+      const response = await getMyPayroll();
+      
+      // ═══════════════════════════════════════════════════════════════════════════
+      // ✅ DEFENSIVE DATA DESERIALIZATION UNPACKING
+      // Extracts payload regardless if backend wraps data or returns a raw array list
+      // ═══════════════════════════════════════════════════════════════════════════
+      const rawData = response?.data?.data || response?.data || response || [];
+      const cleanArray = Array.isArray(rawData) ? rawData : [rawData];
+
+      const mapped = cleanArray.map(r => ({
+        id: r._id || Math.random().toString(),
+        month: r.month || "Unknown Month", 
+        basic: formatCurrency(r.basicSalary || r.baseCTC),
+        bonus: formatCurrency(r.bonus || 0),
+        deductions: formatCurrency(r.deductions || 0),
+        net: formatCurrency(r.netSalary || r.netPay || 0),
+        rawNetNum: r.netSalary || r.netPay || 0,
+        status: r.status || "Processed",
         date: formatDateDisplay(r.paymentDate || r.createdAt)
       }));
+
       setPayrollHistory(mapped);
     } catch (error) {
-      console.error("Failed to fetch payroll history:", error);
+      console.error("Failed to fetch payroll history streams from server node:", error);
     } finally {
       setLoading(false);
     }
@@ -44,9 +52,13 @@ export default function PayrollView() {
   };
 
   const formatDateDisplay = (dateString) => {
-    if (!dateString) return "";
-    const options = { month: 'long', day: 'numeric', year: 'numeric' };
-    return new Date(dateString).toLocaleDateString('en-US', options);
+    if (!dateString) return "—";
+    try {
+      const options = { month: 'long', day: 'numeric', year: 'numeric' };
+      return new Date(dateString).toLocaleDateString('en-US', options);
+    } catch (e) {
+      return "—";
+    }
   };
 
   // 3. Dynamic Calculation Engine
@@ -58,11 +70,6 @@ export default function PayrollView() {
 
   const handleDownloadSlip = async (record) => {
     try {
-      // In a fully integrated system, you'd fetch the PDF blob from the backend here:
-      // const response = await API.get(`/payroll/download/${record.id}`, { responseType: 'blob' });
-      // const url = window.URL.createObjectURL(new Blob([response.data]));
-      
-      // For now, fallback to CSV export
       const csvRows = [
         ["Month", "Basic Salary", "Bonus", "Deductions", "Net Salary", "Status"],
         [
@@ -133,10 +140,10 @@ export default function PayrollView() {
                     <td>{r.basic}</td>
                     <td>{r.bonus}</td>
                     <td>{r.deductions}</td>
-                    <td className={styles.netPay}>{r.net}</td>
+                    <td className={styles.netPay} style={{ color: '#16a34a', fontWeight: '700' }}>{r.net}</td>
                     <td>
-                      <span className={r.status === "Paid" ? styles.badgeGreen : styles.badgeYellow}>
-                        {r.status}
+                      <span className={r.status?.toLowerCase() === "paid" ? styles.badgeGreen : styles.badgeYellow}>
+                        {r.status || 'Processed'}
                       </span>
                     </td>
                     <td>
@@ -144,6 +151,7 @@ export default function PayrollView() {
                         className={styles.iconBtn} 
                         title={`Download Payslip for ${r.month}`}
                         onClick={() => handleDownloadSlip(r)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>

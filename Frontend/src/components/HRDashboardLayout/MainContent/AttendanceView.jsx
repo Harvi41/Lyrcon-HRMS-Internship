@@ -10,7 +10,7 @@ const AttendanceView = () => {
   const [uiFeedbackMessage, setUiFeedbackMessage] = useState('');
   const [alertSeverity, setAlertSeverity] = useState(''); 
 
-  const [totalStaffCount] = useState(142);
+  const [totalStaffCount] = useState(148);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [historicalTurnoutData] = useState([70, 78, 71, 85, 82, 88, 86, 92]);
 
@@ -24,7 +24,6 @@ const AttendanceView = () => {
   }, []);
 
   // 2. Base calculations calculated dynamically directly over state array length
-  // (Removed hardcoded baseline offsets to prevent computational component lockups)
   const presentCount = attendanceRecords.filter(emp => emp.status === 'Present').length;
   const lateCount = attendanceRecords.filter(emp => emp.compliance === 'Late').length;
   const absentCount = attendanceRecords.filter(emp => emp.status === 'Absent').length;
@@ -35,17 +34,33 @@ const AttendanceView = () => {
     return `Date: Today (${today.toLocaleDateString('en-US', options)})`;
   };
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ✅ RE-ENGINEERED SVG GRAPH CALCULATOR
+  // ═══════════════════════════════════════════════════════════════════════════
   const buildSvgPathFromData = (dataArray) => {
+    if (!dataArray || dataArray.length === 0) return '';
+    
     const width = 600;
     const height = 100;
+    const paddingX = 20; // Prevents clipping at start and end boundaries
     const paddingY = 15;
+    const chartWidth = width - paddingX * 2;
     const chartHeight = height - paddingY * 2;
+    
+    // Generate mapped coordinate items matrix
     const points = dataArray.map((val, index) => {
-      const x = (index / (dataArray.length - 1)) * width;
+      const x = paddingX + (index / (dataArray.length - 1)) * chartWidth;
+      // Subtract from height to invert SVG coordinates (0,0 is top-left)
       const y = height - paddingY - (val / 100) * chartHeight;
       return { x, y };
     });
-    return points.reduce((str, pt, idx) => idx === 0 ? `M ${pt.x.toFixed(1)},${pt.y.toFixed(1)}` : `${str} L ${pt.x.toFixed(1)},${pt.y.toFixed(1)}`, '');
+    
+    // Construct an absolute, space-separated command path string
+    return points.reduce((str, pt, idx) => {
+      return idx === 0 
+        ? `M ${pt.x.toFixed(1)} ${pt.y.toFixed(1)}` 
+        : `${str} L ${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`;
+    }, '');
   };
 
   const handleClockButtonClick = () => {
@@ -66,7 +81,6 @@ const AttendanceView = () => {
     setUiFeedbackMessage('Frontend Sandbox: Biometric verification success! Row injected.');
     setAlertSeverity('success');
 
-    // Prepend new row layout immediately into table stream view
     setAttendanceRecords(prevList => [
       {
         id: Date.now(),
@@ -135,7 +149,6 @@ const AttendanceView = () => {
         <div className={styles.metricCard}>
           <h3>PRESENT</h3>
           <div className={styles.metricValueWrapper}>
-            {/* Added a balanced static offset of 136 to cleanly account for remaining staff roster metrics */}
             <span className={styles.metricValue}>{136 + presentCount} / {totalStaffCount}</span>
           </div>
         </div>
@@ -153,13 +166,30 @@ const AttendanceView = () => {
         </div>
       </div>
 
+      {/* ═══════════════════════════════════════════════════════════════════════════
+          ✅ GRAPH STRUCTURAL STABILIZATION
+          Replaced loose overflow flags with responsive layout bounds scaling properties.
+         ═══════════════════════════════════════════════════════════════════════════ */}
       <div className={styles.chartContainer}>
         <h3>Monthly Turnout Graph (30-Day Trend View)</h3>
-        <div className={styles.trendGraphContainer}>
-          <svg className={styles.svgTrendLine} viewBox="0 0 600 100" style={{ overflow: 'visible' }}>
-            <path d={buildSvgPathFromData(historicalTurnoutData)} fill="none" stroke="#6366f1" strokeWidth="3" />
+        <div className={styles.trendGraphContainer} style={{ width: '100%', marginTop: '16px' }}>
+          <svg 
+            viewBox="0 0 600 100" 
+            width="100%" 
+            height="100%" 
+            preserveAspectRatio="none" 
+            style={{ overflow: 'visible', display: 'block' }}
+          >
+            <path 
+              d={buildSvgPathFromData(historicalTurnoutData)} 
+              fill="none" 
+              stroke="#6366f1" 
+              strokeWidth="3" 
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
-          <div className={styles.graphTimelineLabels}>
+          <div className={styles.graphTimelineLabels} style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', padding: '0 10px' }}>
             <span>Week 1</span><span>Week 2</span><span>Week 3</span><span>Week 4</span>
           </div>
         </div>
@@ -188,7 +218,6 @@ const AttendanceView = () => {
         </table>
       </div>
 
-      {/* Modals cleanly linked straight to our local sandbox handlers */}
       <ClockInModal isOpen={isClockInModalOpen} onClose={() => setIsClockInModalOpen(false)} onConfirmClockIn={executeClockInPipeline} />
       <ClockOutModal isOpen={isClockOutModalOpen} onClose={() => setIsClockOutModalOpen(false)} onConfirmClockOut={executeClockOutPipeline} />
     </div>

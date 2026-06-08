@@ -21,7 +21,7 @@ const EmployeesView = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-
+  
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [successEmployee, setSuccessEmployee] = useState(null);
 
@@ -33,7 +33,7 @@ const EmployeesView = () => {
       setLoading(true);
       const { data } = await getAllEmployees();
       const rawEmployees = Array.isArray(data) ? data : [];
-
+      
       // ═══════════════════════════════════════════════════════════════════════════
       // DYNAMIC CALCULATIONS ENGINE (100% LIVE DATA)
       // ═══════════════════════════════════════════════════════════════════════════
@@ -77,7 +77,7 @@ const EmployeesView = () => {
       // Defensively parse incoming array records from backend metrics streams
       const mappedData = rawEmployees.map(emp => ({
         id: emp?.employeeCode || '',
-        _id: emp?._id || '',
+        _id: emp?._id || '', 
         name: emp?.firstName || emp?.lastName ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : 'Incomplete Name',
         email: emp?.email || '',
         dept: emp?.department || 'Unassigned',
@@ -85,7 +85,7 @@ const EmployeesView = () => {
         status: emp?.status === 'terminated' ? 'Inactive' : (emp?.status || 'Active'),
         raw: emp || {}
       }));
-
+      
       setEmployeeDataList(mappedData);
     } catch (err) {
       console.error('Failed to fetch employees:', err);
@@ -99,7 +99,7 @@ const EmployeesView = () => {
   }, []);
 
   // Compute progress bar scales dynamically from active data allocations
-  const q1VelocityRatio = liveTotalStaff > 0 ? Math.min(100, Math.round((liveTotalStaff / 200) * 100)) : 0;
+  const q1VelocityRatio = liveTotalStaff > 0 ? Math.min(100, Math.round((liveTotalStaff / 200) * 100)) : 0; 
   const q2PipelineRatio = liveTotalStaff > 0 ? Math.min(100, Math.round((onboardingCount / liveTotalStaff) * 100)) : 0;
 
   // 4. ACTION INTERACTION PIPELINES
@@ -126,7 +126,7 @@ const EmployeesView = () => {
       workLocation: empData?.workLocation || '',
       managerId: empData?.managerId?.employeeCode || empData?.managerId || '',
       status: empData?.status === 'terminated' ? 'Inactive' : 'Active',
-      address: typeof empData?.address === 'object' ? [empData.address.street, empData.address.city, empData.address.state, empData.address.postalCode, empData.address.country].filter(Boolean).join(', ') : empData?.address || '',
+      address: empData?.address || '',
       emergencyContact: empData?.emergencyContact || '',
       salary: empData?.baseCTC || ''
     });
@@ -140,7 +140,7 @@ const EmployeesView = () => {
 
   const handleModalSuccess = async (data, mode) => {
     setIsModalOpen(false);
-
+    
     try {
       let parsedEmergencyContact = { name: data?.emergencyContact || '', phone: '' };
       if (data?.emergencyContact && data.emergencyContact.includes('-')) {
@@ -165,27 +165,21 @@ const EmployeesView = () => {
         managerId: safeManagerId,
         workLocation: data?.workLocation,
         emergencyContact: parsedEmergencyContact,
-        address: { 
-          street: data?.address || '', 
-          city: '', 
-          state: '', 
-          country: '', 
-          postalCode: '' 
-        },
-        roleName: 'Employee',
+        address: data?.address,
+        roleName: 'Employee', 
         baseCTC: data?.salary
       };
 
       if (mode === 'create') {
         await createEmployee(payload);
-        setSuccessEmployee(data);
+        setSuccessEmployee(data); 
       } else {
         await updateEmployee(selectedEmployee?._id, payload);
         setSuccessEmployee(data);
       }
-
+      
       setIsSuccessModalOpen(true);
-      fetchEmployees();
+      fetchEmployees(); 
     } catch (err) {
       console.error('Failed to save employee:', err);
       alert(err.response?.data?.message || 'Failed to save employee data.');
@@ -262,33 +256,68 @@ const EmployeesView = () => {
         </div>
       </div>
 
-      {/* Dynamic Hiring Goals Target Matrix Progress Bars */}
+      {/* ═══════════════════════════════════════════════════════════════════════════
+          ✅ FIXED LAYOUT REINFORCEMENT: Quarterly Hiring Velocity Insight
+          Uses a structured flex block configuration to prevent chart overlap crashes.
+         ═══════════════════════════════════════════════════════════════════════════ */}
       <div className={styles.chartContainer}>
         <h3>Quarterly Hiring Velocity Insight</h3>
-        <div className={styles.chartPlaceholderVertical}>
-          <div className={styles.deptMetricRow}>
-            <span>Growth Target</span>
-            <div className={styles.progressBarContainer}>
-              <div className={styles.progressBarFill} style={{ width: `${q1VelocityRatio}%`, backgroundColor: '#5d55fa', transition: 'width 0.4s ease' }}></div>
+        <div 
+          className={styles.chartPlaceholderVertical} 
+          style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '10px 0', width: '100%' }}
+        >
+          {/* Target Progress Bar Row */}
+          <div 
+            className={styles.deptMetricRow} 
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', width: '100%' }}
+          >
+            <span style={{ minWidth: '130px', fontWeight: '600', fontSize: '0.9rem', color: '#475569', textAlign: 'left' }}>
+              Growth Target
+            </span>
+            <div 
+              className={styles.progressBarContainer} 
+              style={{ flex: 1, height: '12px', backgroundColor: '#e2e8f0', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}
+            >
+              <div 
+                className={styles.progressBarFill} 
+                style={{ width: `${q1VelocityRatio}%`, backgroundColor: '#5d55fa', height: '100%', borderRadius: '6px', transition: 'width 0.4s ease' }}
+              />
             </div>
-            <strong>{q1VelocityRatio}% Capacity</strong>
+            <strong style={{ minWidth: '120px', textAnchor: 'end', fontSize: '0.88rem', color: '#1e293b', textAlign: 'right' }}>
+              {q1VelocityRatio}% Capacity
+            </strong>
           </div>
-          <div className={styles.deptMetricRow}>
-            <span>Onboarding Velocity</span>
-            <div className={styles.progressBarContainer}>
-              <div className={styles.progressBarFill} style={{ width: `${q2PipelineRatio}%`, backgroundColor: '#10b981', transition: 'width 0.4s ease' }}></div>
+
+          {/* Velocity Progress Bar Row */}
+          <div 
+            className={styles.deptMetricRow} 
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', width: '100%' }}
+          >
+            <span style={{ minWidth: '130px', fontWeight: '600', fontSize: '0.9rem', color: '#475569', textAlign: 'left' }}>
+              Onboarding Velocity
+            </span>
+            <div 
+              className={styles.progressBarContainer} 
+              style={{ flex: 1, height: '12px', backgroundColor: '#e2e8f0', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}
+            >
+              <div 
+                className={styles.progressBarFill} 
+                style={{ width: `${q2PipelineRatio}%`, backgroundColor: '#10b981', height: '100%', borderRadius: '6px', transition: 'width 0.4s ease' }}
+              />
             </div>
-            <strong>{q2PipelineRatio}% Active</strong>
+            <strong style={{ minWidth: '120px', textAnchor: 'end', fontSize: '0.88rem', color: '#1e293b', textAlign: 'right' }}>
+              {q2PipelineRatio}% Active
+            </strong>
           </div>
         </div>
       </div>
 
       {/* Database Filtering Inputs and Insertion Triggers */}
       <div className={styles.actionFilterBar}>
-        <input
-          type="text"
-          placeholder="Filter by name, id or keyword..."
-          className={styles.filterInput}
+        <input 
+          type="text" 
+          placeholder="Filter by name, id or keyword..." 
+          className={styles.filterInput} 
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -334,7 +363,7 @@ const EmployeesView = () => {
                   <td>{emp?.dept || 'Unassigned'}</td>
                   <td>{emp?.role || '—'}</td>
                   <td>
-                    <span
+                    <span 
                       className={`${styles.statusLabel} ${emp?.status?.toLowerCase() === 'active' ? styles.statusActive : styles.statusOnboard}`}
                       style={{ textTransform: 'capitalize' }}
                     >
@@ -343,9 +372,9 @@ const EmployeesView = () => {
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <button
+                      <button 
                         type="button"
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }} 
                         onClick={() => handleEditClick(emp)}
                         title="Edit Profile"
                       >
@@ -355,7 +384,7 @@ const EmployeesView = () => {
                         </svg>
                       </button>
 
-                      <button
+                      <button 
                         type="button"
                         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#e11d48' }}
                         onClick={() => handleDeleteClick(emp)}
@@ -378,9 +407,9 @@ const EmployeesView = () => {
       </div>
 
       {/* Creation and Modification Form Dialogs Context Mounts */}
-      <EmployeeModal
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
+      <EmployeeModal 
+        isOpen={isModalOpen} 
+        onClose={handleModalClose} 
         onSuccess={handleModalSuccess}
         employeeData={selectedEmployee}
         mode={modalMode}
