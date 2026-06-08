@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styles from "../EmployeeDashboardLayout.module.css";
-import { getMyPayroll } from "../../../lib/axios";
+import { getMyPayroll, downloadPayslipPDF } from "../../../lib/axios";
 
 export default function PayrollView() {
   const [payrollHistory, setPayrollHistory] = useState([]);
@@ -22,17 +22,27 @@ export default function PayrollView() {
       const rawData = response?.data?.data || response?.data || response || [];
       const cleanArray = Array.isArray(rawData) ? rawData : [rawData];
 
-      const mapped = cleanArray.map(r => ({
-        id: r._id || Math.random().toString(),
-        month: r.month || "Unknown Month", 
-        basic: formatCurrency(r.basicSalary || r.baseCTC),
-        bonus: formatCurrency(r.bonus || 0),
-        deductions: formatCurrency(r.deductions || 0),
-        net: formatCurrency(r.netSalary || r.netPay || 0),
-        rawNetNum: r.netSalary || r.netPay || 0,
-        status: r.status || "Processed",
-        date: formatDateDisplay(r.paymentDate || r.createdAt)
-      }));
+      const mapped = cleanArray.map(r => {
+        const calcBonus = Array.isArray(r.allowances) 
+           ? r.allowances.reduce((sum, a) => sum + (a.amount || 0), 0)
+           : Number(r.bonus || 0);
+           
+        const calcDeductions = (Number(r.lopDeduction) || 0) 
+           + (Number(r.providentFund?.employeeContribution) || 0) 
+           + (Array.isArray(r.deductions) ? r.deductions.reduce((sum, d) => sum + (d.amount || 0), 0) : Number(r.deductions || 0));
+
+        return {
+          id: r._id || Math.random().toString(),
+          month: r.payrollMonth || r.month || "Unknown Month", 
+          basic: formatCurrency(r.basicSalary || r.baseCTC),
+          bonus: formatCurrency(calcBonus),
+          deductions: formatCurrency(calcDeductions),
+          net: formatCurrency(r.netSalary || r.netPay || 0),
+          rawNetNum: r.netSalary || r.netPay || 0,
+          status: r.paymentStatus || r.status || "Processed",
+          date: formatDateDisplay(r.paymentDate || r.createdAt)
+        };
+      });
 
       setPayrollHistory(mapped);
     } catch (error) {
@@ -68,19 +78,40 @@ export default function PayrollView() {
   // Static target indicator flag for upcoming pay schedules
   const nextScheduledPaymentDate = "End of Current Month";
 
-  const handleDownloadSlip = async (record) => {
+  const handleDownloadSlipPDF = async (record) => {
+    try {
+      const response = await downloadPayslipPDF(record.id);
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      const cleanMonth = (record.month || "Payslip").replace(/\s+/g, "_");
+      link.setAttribute('download', `Payslip_${cleanMonth}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to download PDF payslip. Please try again.');
+    }
+  };
+
+  const handleDownloadFullCSV = () => {
     try {
       const csvRows = [
-        ["Month", "Basic Salary", "Bonus", "Deductions", "Net Salary", "Status"],
-        [
-          record.month,
-          record.basic,
-          record.bonus,
-          record.deductions,
-          record.net,
-          record.status
-        ]
+        ["Month", "Basic Salary", "Bonus", "Deductions", "Net Salary", "Status", "Payment Date"]
       ];
+
+      payrollHistory.forEach(r => {
+        csvRows.push([
+          r.month,
+          r.basic,
+          r.bonus,
+          r.deductions,
+          r.net,
+          r.status,
+          r.date
+        ]);
+      });
 
       const csvContent = "data:text/csv;charset=utf-8," 
         + csvRows.map(row => row.map(val => `"${val}"`).join(",")).join("\n");
@@ -88,16 +119,14 @@ export default function PayrollView() {
       const encodedUri = encodeURI(csvContent);
       const downloadLink = document.createElement("a");
       downloadLink.setAttribute("href", encodedUri);
-      
-      const cleanMonth = (record.month || "Payslip").replace(/\s+/g, "_");
-      downloadLink.setAttribute("download", `Payslip_${cleanMonth}.csv`);
+      downloadLink.setAttribute("download", `Full_Payroll_History.csv`);
       
       document.body.appendChild(downloadLink);
       downloadLink.click();
       document.body.removeChild(downloadLink);
     } catch (err) {
       console.error("Failed to generate file download:", err);
-      alert("Something went wrong compiling your download.");
+      alert("Something went wrong compiling your CSV download.");
     }
   };
 
@@ -117,6 +146,25 @@ export default function PayrollView() {
 
       {/* Dynamic Main Table Grid */}
       <div className={styles.tableCard}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 20px 0 20px' }}>
+          <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#1e293b' }}>Payroll History</h3>
+          <button 
+            onClick={handleDownloadFullCSV}
+            style={{ 
+              backgroundColor: '#10b981', color: 'white', border: 'none', 
+              padding: '8px 16px', borderRadius: '6px', cursor: 'pointer',
+              fontWeight: '600', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px'
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download Full CSV
+          </button>
+        </div>
+
         {loading ? (
           <p style={{ padding: "20px", textAlign: "center", color: "var(--gray-500)" }}>Loading payroll records...</p>
         ) : (
@@ -149,9 +197,9 @@ export default function PayrollView() {
                     <td>
                       <button 
                         className={styles.iconBtn} 
-                        title={`Download Payslip for ${r.month}`}
-                        onClick={() => handleDownloadSlip(r)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                        title={`Download PDF Payslip for ${r.month}`}
+                        onClick={() => handleDownloadSlipPDF(r)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#3b82f6' }}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../AdminDashboardLayout.module.css';
-import { getAllEmployees, getMonthlyPayrollDashboard, downloadPayslipPDF } from '../../../lib/axios';
+import { getAllEmployees, getMonthlyPayrollDashboard, getYearlyPayrollDashboard, downloadPayslipPDF } from '../../../lib/axios';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const PayrollView = () => {
   const [employees, setEmployees] = useState([]);
@@ -14,6 +15,9 @@ const PayrollView = () => {
   const [currentMonth, setCurrentMonth] = useState(
     `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
   );
+  
+  const [yearlyRecords, setYearlyRecords] = useState([]);
+  const [yearlyGraphData, setYearlyGraphData] = useState([]);
 
   const fetchData = async () => {
     try {
@@ -28,8 +32,53 @@ const PayrollView = () => {
       const payRes = await getMonthlyPayrollDashboard(currentMonth);
       const records = payRes.data || [];
       
-      setEmployees(activeEmps);
+      // Extract terminated employees who still have payroll records this month
+      const terminatedEmpsWithRecords = [];
+      records.forEach(p => {
+        if (p.employeeId && !activeEmps.find(e => e._id === (p.employeeId._id || p.employeeId))) {
+          terminatedEmpsWithRecords.push({
+            _id: p.employeeId._id || p.employeeId,
+            firstName: p.employeeSnapshot?.firstName || p.employeeId.firstName || 'Unknown',
+            lastName: p.employeeSnapshot?.lastName || p.employeeId.lastName || '',
+            department: p.employeeSnapshot?.department || p.employeeId.department || 'Terminated',
+            designation: p.employeeSnapshot?.designation || p.employeeId.designation || '',
+            baseCTC: 0,
+            isTerminated: true
+          });
+        }
+      });
+      
+      const allRelevantEmps = [...activeEmps, ...terminatedEmpsWithRecords];
+
+      setEmployees(allRelevantEmps);
       setPayrollRecords(records);
+
+      // 2.5 Fetch Yearly Analytics for Graph
+      const selectedYear = currentMonth.split('-')[0];
+      const yearRes = await getYearlyPayrollDashboard(selectedYear);
+      const yRecords = yearRes.data || [];
+      setYearlyRecords(yRecords);
+
+      // Process Graph Data (Group by Month)
+      const graphMap = {};
+      // Initialize all 12 months
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      monthNames.forEach((m, idx) => {
+         const monthKey = `${selectedYear}-${String(idx + 1).padStart(2, '0')}`;
+         graphMap[monthKey] = { name: m, disbursed: 0, pendingPF: 0, rawMonth: monthKey };
+      });
+
+      yRecords.forEach(p => {
+         if (graphMap[p.payrollMonth]) {
+             if (['paid', 'processed'].includes((p.paymentStatus || '').toLowerCase())) {
+                 graphMap[p.payrollMonth].disbursed += Number(p.netSalary || 0);
+             }
+             if (p.providentFund?.employeeContribution) {
+                 graphMap[p.payrollMonth].pendingPF += Number(p.providentFund.employeeContribution);
+             }
+         }
+      });
+      setYearlyGraphData(Object.values(graphMap));
 
       // 3. ═══════════════════════════════════════════════════════════════════════════
       //    FAIL-SAFE HYBRID DYNAMIC SUMMARY ENGINE (FIXED PENDING PF)
@@ -37,7 +86,7 @@ const PayrollView = () => {
       let totalDisbursed = 0;
       let totalPF = 0;
 
-      activeEmps.forEach(emp => {
+      allRelevantEmps.forEach(emp => {
         // Cross-reference records matching the exact working table row lookup pattern
         const pRecord = records.find(p => p?.employeeId?._id === emp?._id || p?.employeeId === emp?._id);
         
@@ -52,7 +101,7 @@ const PayrollView = () => {
         if (isPaid && pRecord) {
           // Add directly to disbursed card metrics
           totalDisbursed += Number(pRecord.netSalary || 0);
-        } else {
+        } else if (!emp.isTerminated) {
           // 🛠️ FAIL-SAFE: If the record is unpaid or doesn't exist yet on the backend,
           // compute an estimated 12% regulatory PF contribution from their contract base wages
           if (pRecord?.providentFund?.employeeContribution) {
@@ -129,6 +178,57 @@ const PayrollView = () => {
     return currentMonth;
   };
 
+  const generateCSV = (data, filename) => {
+    if (!data || data.length === 0) return alert('No data available to download.');
+    
+    // Convert JSON to CSV
+    const headers = Object.keys(data[0]).join(',');
+    const rows = data.map(obj => 
+      Object.values(obj).map(val => `"${String(val).replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
+    
+    const csvContent = headers + '\n' + rows;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleDownloadMonthlyCSV = () => {
+    const exportData = mergedData.map(emp => ({
+       EmployeeCode: emp.employeeCode || 'N/A',
+       FirstName: emp.firstName,
+       LastName: emp.lastName,
+       Department: emp.department,
+       Designation: emp.designation,
+       MonthlyBaseCTC: emp.monthlyBase,
+       NetPayout: emp.netPayout,
+       Status: emp.status,
+       IsTerminated: emp.isTerminated ? 'Yes' : 'No'
+    }));
+    generateCSV(exportData, `Payroll_Summary_${currentMonth}.csv`);
+  };
+
+  const handleDownloadYearlyCSV = () => {
+    const selectedYear = currentMonth.split('-')[0];
+    const exportData = yearlyRecords.map(p => ({
+       Month: p.payrollMonth,
+       EmployeeName: p.employeeSnapshot?.firstName + ' ' + (p.employeeSnapshot?.lastName || '') || 'N/A',
+       Department: p.employeeSnapshot?.department || 'N/A',
+       BasicSalary: p.basicSalary || 0,
+       GrossSalary: p.grossSalary || 0,
+       EmployeePF: p.providentFund?.employeeContribution || 0,
+       NetSalary: p.netSalary || 0,
+       Status: p.paymentStatus
+    }));
+    generateCSV(exportData, `Yearly_Payroll_Ledger_${selectedYear}.csv`);
+  };
+
   return (
     <div className={styles.dashboardGrid}>
       
@@ -150,6 +250,49 @@ const PayrollView = () => {
                ₹{pendingPFValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
+        </div>
+      </div>
+
+      <div className={styles.activityStream} style={{ marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>Analytics & Export Toolkit</h3>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                className={styles.primaryActionButton} 
+                style={{ padding: '8px 16px', fontSize: '0.9rem', borderRadius: '8px', cursor: 'pointer', border: 'none' }} 
+                onClick={handleDownloadMonthlyCSV}
+              >
+                 Download {getDisplayPeriodLabel()} CSV
+              </button>
+              <button 
+                className={styles.secondaryActionButton} 
+                style={{ padding: '8px 16px', fontSize: '0.9rem', borderRadius: '8px', cursor: 'pointer', border: '1px solid #cbd5e1', backgroundColor: '#f8fafc', color: '#334155', fontWeight: '600' }} 
+                onClick={handleDownloadYearlyCSV}
+              >
+                 Download {currentMonth.split('-')[0]} Year CSV
+              </button>
+            </div>
+        </div>
+
+        <div style={{ width: '100%', overflowX: 'auto', minHeight: '380px', display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '20px', backgroundColor: '#ffffff', borderRadius: '12px', padding: '24px 16px', border: '1px solid #e2e8f0' }}>
+            <BarChart
+              width={900}
+              height={330}
+              data={yearlyGraphData.length > 0 ? yearlyGraphData : [{name: 'Loading', disbursed: 0, pendingPF: 0}]}
+              margin={{ top: 10, right: 30, left: 10, bottom: 40 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 13}} tickMargin={15} interval={0} />
+              <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 13}} tickFormatter={(value) => `₹${value / 1000}k`} tickMargin={10} />
+              <Tooltip 
+                 cursor={{fill: '#f8fafc'}}
+                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                 formatter={(value) => [`₹${value.toLocaleString()}`, '']}
+              />
+              <Legend verticalAlign="bottom" height={40} wrapperStyle={{ bottom: -10, color: '#334155', fontWeight: 500 }} />
+              <Bar dataKey="disbursed" name="Total Net Disbursed" fill="#4f46e5" radius={[4, 4, 0, 0]} minPointSize={0} isAnimationActive={false} barSize={28} />
+              <Bar dataKey="pendingPF" name="Provident Fund Deducted" fill="#0ea5e9" radius={[4, 4, 0, 0]} minPointSize={0} isAnimationActive={false} barSize={28} />
+            </BarChart>
         </div>
       </div>
 
@@ -188,7 +331,7 @@ const PayrollView = () => {
                   <tr key={emp._id}>
                     <td>
                       <div className={styles.userColumnCell}>
-                        <strong style={{ color: '#0f172a', fontWeight: '700' }}>{emp.firstName} {emp.lastName}</strong>
+                        <strong style={{ color: '#0f172a', fontWeight: '700' }}>{emp.firstName} {emp.lastName} {emp.isTerminated ? '(Deleted)' : ''}</strong>
                         <span className={styles.subTextEmail} style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>{emp.department}</span>
                       </div>
                     </td>

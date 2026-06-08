@@ -74,7 +74,41 @@ const dashboardController = {
             const recentAnnouncements = await Announcement.find().sort({ createdAt: -1 }).limit(3);
 
             // Latest Payroll
-            const latestPayroll = await Payroll.findOne({ employeeId: userId }).sort({ createdAt: -1 });
+            const Employee = require('../models/Employee');
+            const employeeProfile = await Employee.findOne({ userId: userId, isDeleted: false });
+            
+            let latestPayroll = null;
+            if (employeeProfile) {
+                latestPayroll = await Payroll.findOne({ 
+                    employeeId: employeeProfile._id,
+                    paymentStatus: { $in: ["Approved", "Paid"] }
+                }).sort({ payrollMonth: -1 }); // Sort by month instead of createdAt
+            }
+
+            let basic = 0;
+            let bonus = 0;
+            let deductions = 0;
+            let net = 0;
+
+            if (latestPayroll) {
+                basic = latestPayroll.basicSalary || 0;
+                
+                // Allowances sum
+                if (Array.isArray(latestPayroll.allowances)) {
+                    bonus = latestPayroll.allowances.reduce((sum, a) => sum + (a.amount || 0), 0);
+                } else if (latestPayroll.bonus) {
+                    bonus = Number(latestPayroll.bonus);
+                }
+
+                // Deductions sum (lop + pf + custom)
+                deductions = (Number(latestPayroll.lopDeduction) || 0) +
+                             (Number(latestPayroll.providentFund?.employeeContribution) || 0) +
+                             (Array.isArray(latestPayroll.deductions) 
+                                ? latestPayroll.deductions.reduce((sum, d) => sum + (d.amount || 0), 0) 
+                                : 0);
+                                
+                net = latestPayroll.netSalary || 0;
+            }
 
             res.json({
                 tasks: {
@@ -86,14 +120,7 @@ const dashboardController = {
                     thisWeek: announcementsThisWeek,
                     recent: recentAnnouncements.map(a => ({ id: a._id, title: a.title, body: a.description }))
                 },
-                payroll: latestPayroll ? {
-                    basic: latestPayroll.basicSalary,
-                    bonus: latestPayroll.bonus,
-                    deductions: latestPayroll.deductions,
-                    net: latestPayroll.netSalary
-                } : {
-                    basic: 0, bonus: 0, deductions: 0, net: 0
-                }
+                payroll: { basic, bonus, deductions, net }
             });
         } catch (error) {
             console.error('Employee dashboard summary error:', error);

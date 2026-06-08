@@ -24,7 +24,7 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
   useEffect(() => {
     if (employeeData && mode === 'edit') {
       const names = employeeData.name ? employeeData.name.split(' ') : ['', ''];
-      
+
       setFormData({
         firstName: names[0] || '',
         lastName: names.slice(1).join(' ') || '',
@@ -40,7 +40,7 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
         status: employeeData.status || 'Active',
         address: employeeData.address || '102 Sky Tower, Andheri East, MH, IN, 400069',
         emergencyContact: employeeData.emergencyContact || 'Ramesh Ghevariya - +91 98331 22211',
-        salary: employeeData.salary || '82400.00' // Pre-loads payroll database entry
+        salary: employeeData.salary || '' // Pre-loads payroll database entry
       });
     } else {
       setFormData({
@@ -73,18 +73,18 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
   // ═══════════════════════════════════════════════════════════════════════════
   // STATUTORY PAYROLL LEDGER MATH LOGIC
   // ═══════════════════════════════════════════════════════════════════════════
-  const numericCTC = Number(formData.salary) || 0;
-  
-  const basicSalary = numericCTC * 0.40; 
-  const hra = basicSalary * 0.25;        
-  const medicalReimbursement = numericCTC > 0 ? 1250 : 0;
-  const lta = numericCTC > 0 ? 2500 : 0;
-  const specialAllowance = Math.max(0, numericCTC - (basicSalary + hra + medicalReimbursement + lta));
+  const yearlyCTC = Number(formData.salary) || 0;
+  const monthlyGrossCTC = Math.round(yearlyCTC / 12);
 
-  const epfDeduction = basicSalary * 0.12; 
-  const professionalTax = numericCTC > 0 ? 200 : 0; 
-  
-  const netTakeHomePay = Math.max(0, numericCTC - epfDeduction - professionalTax);
+  const basicSalary = Math.round(monthlyGrossCTC * 0.50);
+  const hra = Math.round(basicSalary * 0.40);
+  const specialAllowance = Math.max(0, monthlyGrossCTC - (basicSalary + hra));
+
+  // Default Tax / Stat Deductions Node (Using Indian Standard EPF Base 12%)
+  const epfDeduction = Math.round(basicSalary * 0.12);
+  const professionalTax = monthlyGrossCTC > 12000 ? 200 : 0;
+
+  const netTakeHomePay = Math.max(0, monthlyGrossCTC - epfDeduction - professionalTax);
 
   const formatCurrency = (val) => {
     return val.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -98,7 +98,7 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
       name: `${formData.firstName} ${formData.lastName}`.trim(),
       dept: formData.department,
       role: formData.designation,
-      salary: formData.salary 
+      salary: formData.salary
     };
     onSuccess(submittedData, mode);
   };
@@ -106,13 +106,13 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalContentWide} onClick={(e) => e.stopPropagation()}>
-        
+
         {/* Modal Main Header Wrapper */}
         <div className={styles.modalHeader}>
           <h2>{mode === 'edit' ? 'Edit Employee Profile' : 'Create Employee Profile'}</h2>
-          <button 
-            type="button" 
-            className={styles.modalCloseBtn} 
+          <button
+            type="button"
+            className={styles.modalCloseBtn}
             onClick={onClose}
             aria-label="Close modal"
           >
@@ -122,9 +122,9 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
 
         {/* Form Container with Separated Scroll Layout */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-          
+
           <div className={styles.modalScrollForm}>
-            
+
             {/* ── SECTION 1: PERSONAL DETAILS ── */}
             <div className={styles.modalFormSection}>
               <h3 className={styles.modalSectionSubTitle}>Personal Details</h3>
@@ -219,19 +219,19 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
             {/* ── SECTION 4: DETAILED STATUTORY COMPENSATION BREAKDOWN ── */}
             <div className={styles.modalFormSection}>
               <h3 className={styles.modalSectionSubTitle} style={{ color: '#4f46e5' }}>Compensation Details</h3>
-              
+
               <div className={styles.salaryInputRow}>
                 <div className={styles.modalFieldGroup}>
-                  <label style={{ fontWeight: '700' }}>Gross CTC / Base Salary (Monthly)</label>
+                  <label style={{ fontWeight: '700' }}>Gross CTC (Yeraly)</label>
                   <div className={styles.currencyInputContainer}>
                     <span className={styles.currencyPrefix}>Core ₹</span>
-                    <input 
-                      type="number" 
-                      name="salary" 
-                      placeholder="e.g. 82400" 
-                      value={formData.salary} 
-                      onChange={handleChange} 
-                      required 
+                    <input
+                      type="number"
+                      name="salary"
+                      placeholder="e.g. 1000000"
+                      value={formData.salary}
+                      onChange={handleChange}
+                      required
                     />
                   </div>
                 </div>
@@ -239,7 +239,7 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
 
               {/* Class-Bound Structured Itemized Ledger Block Node */}
               <div className={styles.ledgerWrapper}>
-                
+
                 {/* Table Headers */}
                 <div className={styles.ledgerHeaderRow}>
                   <div>Earnings & Allowances</div>
@@ -250,29 +250,19 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
                 {/* Table Body Details */}
                 <div className={styles.ledgerBody}>
                   <div className={styles.ledgerDataRow}>
-                    <span>Basic Salary (40% of CTC)</span>
+                    <span>Basic Salary (50% of Monthly Gross)</span>
                     <span>₹ {formatCurrency(basicSalary)}</span>
                     <span>₹ {formatCurrency(basicSalary * 12)}</span>
                   </div>
                   <div className={styles.ledgerDataRow}>
-                    <span>House Rent Allowance (25% of Basic)</span>
+                    <span>House Rent Allowance (40% of Basic)</span>
                     <span>₹ {formatCurrency(hra)}</span>
                     <span>₹ {formatCurrency(hra * 12)}</span>
                   </div>
-                  <div className={styles.ledgerDataRow}>
+                  <div className={styles.ledgerDataRow} style={{ border: 'none' }}>
                     <span>Special Allowance (Residual)</span>
                     <span>₹ {formatCurrency(specialAllowance)}</span>
                     <span>₹ {formatCurrency(specialAllowance * 12)}</span>
-                  </div>
-                  <div className={styles.ledgerDataRow}>
-                    <span>Medical Reimbursement</span>
-                    <span>₹ {formatCurrency(medicalReimbursement)}</span>
-                    <span>₹ {formatCurrency(medicalReimbursement * 12)}</span>
-                  </div>
-                  <div className={styles.ledgerDataRow} style={{ border: 'none' }}>
-                    <span>Leave Travel Allowance (LTA)</span>
-                    <span>₹ {formatCurrency(lta)}</span>
-                    <span>₹ {formatCurrency(lta * 12)}</span>
                   </div>
                 </div>
 
@@ -324,7 +314,7 @@ const EmployeeModal = ({ isOpen, onClose, onSuccess, employeeData, mode }) => {
               {mode === 'edit' ? 'Save Changes' : 'Create'}
             </button>
           </div>
-          
+
         </form>
       </div>
     </div>

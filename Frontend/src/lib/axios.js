@@ -106,6 +106,7 @@ export const processMonthlyPayroll = (payload) => API.post('/payroll/calculate',
 export const downloadPayslipPDF = (payrollId) => API.get(`/payroll/download/${payrollId}`, { responseType: 'blob' });
 export const getMyPayroll = () => API.get('/payroll/self-history');
 export const getMonthlyPayrollDashboard = (month) => API.get(`/payroll/dashboard?month=${month}`);
+export const getYearlyPayrollDashboard = (year) => API.get(`/payroll/yearly?year=${year}`);
 
 // ==========================================
 // 📝 TASK MANAGEMENT ENDPOINTS

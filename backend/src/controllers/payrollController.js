@@ -93,7 +93,8 @@ const payrollController = {
                         providentFund: { employeeContribution: employeePF, employerContribution: employerPF },
                         grossSalary,
                         netSalary,
-                        paymentStatus: "Draft",
+                        paymentStatus: "Paid",
+                        paymentDate: new Date(),
                         generatedBy: req.user?.userId 
                     }
                 },
@@ -119,6 +120,21 @@ const payrollController = {
             return res.status(200).json(records);
         } catch (error) {
             return res.status(500).json({ message: "Server error fetching dashboard arrays", error: error.message });
+        }
+    },
+
+    // 2.5 Admin Console: View Payslips for a Target Year
+    getYearlyPayrollDashboard: async (req, res) => {
+        try {
+            const { year } = req.query; // Expects "2026"
+            if (!year) return res.status(400).json({ message: "Query parameter `year` is required." });
+
+            const records = await Payroll.find({ payrollMonth: { $regex: `^${year}-` } })
+                .populate('employeeId', 'firstName lastName employeeCode department designation');
+            
+            return res.status(200).json(records);
+        } catch (error) {
+            return res.status(500).json({ message: "Server error fetching yearly dashboard arrays", error: error.message });
         }
     },
 
