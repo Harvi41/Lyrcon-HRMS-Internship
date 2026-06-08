@@ -1,5 +1,4 @@
-// AdminDashboardLayout.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './Common/Sidebar';
 import Header from './Common/Header';
 import AdminDashboardHome from './MainContent/AdminDashboardHome';
@@ -17,11 +16,25 @@ import TasksPanel from '../HRDashboardLayout/MainContent/TasksPanel';
 import AdminSettingsView from './MainContent/AdminSettingsView'; 
 import styles from './AdminDashboardLayout.module.css';
 
+import PasswordChangeBanner from "../Common/PasswordChangeBanner";
+import ChangePasswordModal from "../Common/ChangePasswordModal";
+
 const AdminDashboardLayout = ({ user, onLogout }) => {
   // Syncing default initialization to match the Sidebar lookup keys
   const [activeTab, setActiveTab] = useState('Dashboard');
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
   const userName = user?.name || 'Prince Ghevariya';
   const avatarLetter = (userName.trim()[0] || 'P').toUpperCase();
+
+  useEffect(() => {
+    // Check local storage for the flag on mount or when user changes
+    const userStr = localStorage.getItem('corehr_user');
+    if (userStr) {
+      const parsedUser = JSON.parse(userStr);
+      setMustChangePassword(!!parsedUser.mustChangePassword);
+    }
+  }, [user, isPasswordModalOpen]); // Re-run when modal closes
 
   // Unified layout router dictionary matching your sidebar IDs perfectly
   const pageMeta = {
@@ -45,7 +58,7 @@ const AdminDashboardLayout = ({ user, onLogout }) => {
   return (
     <div className={styles.layoutContainer}>
       {/* 1. Left Fixed Sidebar Layout Area */}
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onOpenPasswordModal={() => setIsPasswordModalOpen(true)} />
       
       {/* 2. Right Flex Context Screen Window */}
       <div className={styles.mainWrapper}>
@@ -58,12 +71,25 @@ const AdminDashboardLayout = ({ user, onLogout }) => {
           onLogout={onLogout}
         />
         
+        {mustChangePassword && (
+          <PasswordChangeBanner onChangePasswordClick={() => setIsPasswordModalOpen(true)} />
+        )}
+
         {/* 3. Independent Main Body Canvas scroll space */}
         <main className={styles.contentArea}>
           {currentPage.component}
         </main>
         
       </div>
+
+      <ChangePasswordModal 
+        isOpen={isPasswordModalOpen} 
+        onClose={() => setIsPasswordModalOpen(false)}
+        onSuccess={() => {
+          setIsPasswordModalOpen(false);
+          setMustChangePassword(false);
+        }}
+      />
     </div>
   );
 };

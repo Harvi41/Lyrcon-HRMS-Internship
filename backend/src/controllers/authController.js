@@ -72,6 +72,7 @@ const authController = {
                     email: user.email,
                     role: user.role?.name || 'Employee',
                     permissions: user.role?.permissions || [],
+                    mustChangePassword: user.mustChangePassword,
                 },
             });
         } catch (error) {
@@ -208,6 +209,39 @@ const authController = {
         }
     },
 
+    changePassword: async (req, res) => {
+        try {
+            const { currentPassword, newPassword } = req.body;
+            const userId = req.user.id; // from verifyToken middleware
+
+            if (!currentPassword || !newPassword) {
+                return res.status(400).json({ message: 'Current password and new password are required.' });
+            }
+
+            const user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({ message: 'User not found.' });
+            }
+
+            const isMatch = await bcrypt.compare(String(currentPassword), user.password);
+            if (!isMatch) {
+                return res.status(400).json({ message: 'Incorrect current password.' });
+            }
+
+            user.password = await bcrypt.hash(String(newPassword), 10);
+            user.mustChangePassword = false;
+            await user.save();
+
+            res.status(200).json({ 
+                message: 'Password successfully changed!',
+                mustChangePassword: false
+            });
+        } catch (error) {
+            console.error('Change password error:', error);
+            res.status(500).json({ message: 'Server error changing password', error: error.message });
+        }
+    },
+
     googleLogin: async (req, res) => {
         try {
             const { token } = req.body;
@@ -273,6 +307,7 @@ const authController = {
                     email: user.email,
                     role: user.role?.name || 'Employee',
                     permissions: user.role?.permissions || [],
+                    mustChangePassword: user.mustChangePassword,
                 },
             });
         } catch (error) {
