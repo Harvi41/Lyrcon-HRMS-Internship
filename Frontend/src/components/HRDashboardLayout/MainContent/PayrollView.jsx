@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import styles from '../HRDashboardLayout.module.css';
-import { getAllEmployees, getMonthlyPayrollDashboard, processMonthlyPayroll, downloadPayslipPDF, loginUser } from '../../../lib/axios';
+import React, { useState, useEffect } from "react";
+import styles from "../HRDashboardLayout.module.css";
+import {
+  getAllEmployees,
+  getMonthlyPayrollDashboard,
+  processMonthlyPayroll,
+  downloadPayslipPDF,
+  loginUser,
+} from "../../../lib/axios";
 
 const PayrollView = () => {
   const [employees, setEmployees] = useState([]);
@@ -12,44 +18,51 @@ const PayrollView = () => {
 
   // Default to current month (YYYY-MM)
   const [currentMonth, setCurrentMonth] = useState(
-    `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
+    `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`,
   );
 
   // POPUP MODAL CONTROL STATES
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
-  const [securityPin, setSecurityPin] = useState('');
+  const [securityPin, setSecurityPin] = useState("");
   const [isProcessingBatch, setIsProcessingBatch] = useState(false);
+
+  // State to track selected employee checkboxes inside the wizard run list
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState([]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       // 1. Fetch all employees
       const empRes = await getAllEmployees();
       const emps = empRes.data?.data || empRes.data || [];
-      const activeEmps = emps.filter(e => !e.isDeleted);
+      const activeEmps = emps.filter((e) => !e.isDeleted);
 
       // 2. Fetch payrolls for the current month
       const payRes = await getMonthlyPayrollDashboard(currentMonth);
       const records = payRes.data || [];
-      
+
       setEmployees(activeEmps);
       setPayrollRecords(records);
 
-      // 3. ═══════════════════════════════════════════════════════════════════════════
-      //    ROBUST DYNAMIC SUMMARY GENERATOR ENGINE (FIXED PF ACCUMULATION)
-      //    ═══════════════════════════════════════════════════════════════════════════
+      // 3. ROBUST DYNAMIC SUMMARY GENERATOR ENGINE (FIXED PF ACCUMULATION)
       let totalDisbursed = 0;
       let totalPF = 0;
 
-      activeEmps.forEach(emp => {
-        const pRecord = records.find(p => p?.employeeId?._id === emp?._id || p?.employeeId === emp?._id);
-        
+      activeEmps.forEach((emp) => {
+        const pRecord = records.find(
+          (p) => p?.employeeId?._id === emp?._id || p?.employeeId === emp?._id,
+        );
+
         let isPaid = false;
         if (pRecord && pRecord?.paymentStatus) {
           const recordStatusClean = pRecord.paymentStatus.toLowerCase().trim();
-          if (['paid', 'processed', 'draft'].includes(recordStatusClean)) {
+          if (
+            ["paid", "processed", "draft", "success"].includes(
+              recordStatusClean,
+            )
+          ) {
             isPaid = true;
           }
         }
@@ -57,14 +70,12 @@ const PayrollView = () => {
         if (isPaid && pRecord) {
           totalDisbursed += Number(pRecord.netSalary || 0);
         } else {
-          // 🛠️ FAIL-SAFE PF TRACKER: If unpaid or uncalculated, calculate an approximate
-          // 12% statutory PF rate based on their monthly contract base wage split allocations
           if (pRecord?.providentFund?.employeeContribution) {
             totalPF += Number(pRecord.providentFund.employeeContribution);
           } else {
             const monthlyBase = Math.round((Number(emp?.baseCTC) || 0) / 12);
-            // Default baseline salary index if baseCTC values are unassigned or 0
-            const basicSalarySplit = monthlyBase > 0 ? (monthlyBase * 0.50) : 15000;
+            const basicSalarySplit =
+              monthlyBase > 0 ? monthlyBase * 0.5 : 15000;
             totalPF += Math.round(basicSalarySplit * 0.12);
           }
         }
@@ -72,9 +83,8 @@ const PayrollView = () => {
 
       setDisbursementTotal(totalDisbursed);
       setPendingPFValue(totalPF);
-
     } catch (err) {
-      console.error('Failed to fetch payroll dashboard data:', err);
+      console.error("Failed to fetch payroll dashboard data:", err);
     } finally {
       setLoading(false);
     }
@@ -85,41 +95,83 @@ const PayrollView = () => {
   }, [currentMonth]);
 
   // Combine employees and payroll records for the UI list layout table safely
-  const mergedData = employees.map(emp => {
-     const pRecord = payrollRecords.find(p => p?.employeeId?._id === emp?._id || p?.employeeId === emp?._id);
-     const monthlyBase = Math.round((emp?.baseCTC || 0) / 12);
-     
-     let status = 'Unpaid';
-     if (pRecord && pRecord?.paymentStatus) {
-         const recordStatusClean = pRecord.paymentStatus.toLowerCase().trim();
-         if (['paid', 'processed', 'draft'].includes(recordStatusClean)) {
-             status = 'Paid';
-         }
-     }
+  const mergedData = employees.map((emp) => {
+    const pRecord = payrollRecords.find(
+      (p) => p?.employeeId?._id === emp?._id || p?.employeeId === emp?._id,
+    );
+    const monthlyBase = Math.round((emp?.baseCTC || 0) / 12);
 
-     return {
-        ...emp,
-        monthlyBase,
-        payrollId: pRecord ? pRecord._id : null,
-        netPayout: pRecord ? (Number(pRecord.netSalary) || 0) : 0,
-        status
-     };
+    let status = "Unpaid";
+    if (pRecord && pRecord?.paymentStatus) {
+      const recordStatusClean = pRecord.paymentStatus.toLowerCase().trim();
+      if (
+        ["paid", "processed", "draft", "success"].includes(recordStatusClean)
+      ) {
+        status = "Paid";
+      }
+    }
+
+    return {
+      ...emp,
+      monthlyBase,
+      payrollId: pRecord ? pRecord._id : null,
+      netPayout: pRecord
+        ? Number(pRecord.netSalary) || 0
+        : Math.round(monthlyBase * 0.75),
+      status,
+    };
   });
 
-  const unpaidProfiles = mergedData.filter(emp => emp.status !== 'Paid');
-  const batchPayoutSum = unpaidProfiles.reduce((sum, curr) => sum + (curr.netPayout > 0 ? curr.netPayout : Math.round(curr.monthlyBase * 0.75)), 0);
+  const unpaidProfiles = mergedData.filter((emp) => emp.status !== "Paid");
 
+  // Open the target selection dialog box panel
   const handleOpenWizard = () => {
     if (unpaidProfiles.length === 0) {
-      alert('Info: Active monthly payroll cycles have already been successfully finalized for all available records.');
+      alert(
+        "Info: Active monthly payroll cycles have already been successfully finalized for all available records.",
+      );
       return;
     }
+
+    // Automatically check every unpaid profile to start with
+    setSelectedEmployeeIds(unpaidProfiles.map((emp) => emp._id));
     setWizardStep(1);
-    setSecurityPin('');
+    setSecurityPin("");
     setIsWizardOpen(true);
   };
 
+  // Checkbox toggle logic matching targeted profiles
+  const handleToggleEmployeeSelection = (employeeId) => {
+    if (selectedEmployeeIds.includes(employeeId)) {
+      setSelectedEmployeeIds((prev) => prev.filter((id) => id !== employeeId));
+    } else {
+      setSelectedEmployeeIds((prev) => [...prev, employeeId]);
+    }
+  };
+
+  // Master Select All / Unselect All checkbox toggle action
+  const handleToggleSelectAll = () => {
+    if (selectedEmployeeIds.length === unpaidProfiles.length) {
+      setSelectedEmployeeIds([]);
+    } else {
+      setSelectedEmployeeIds(unpaidProfiles.map((emp) => emp._id));
+    }
+  };
+
+  // Calculate runtime sum based on checkboxes checking state matrix definitions
+  const activeSelectedProfiles = unpaidProfiles.filter((emp) =>
+    selectedEmployeeIds.includes(emp._id),
+  );
+  const dynamicBatchPayoutSum = activeSelectedProfiles.reduce(
+    (sum, curr) => sum + curr.netPayout,
+    0,
+  );
+
   const handleNextStep = () => {
+    if (selectedEmployeeIds.length === 0) {
+      alert("Please check at least one employee profile box to proceed.");
+      return;
+    }
     setWizardStep(2);
   };
 
@@ -134,36 +186,61 @@ const PayrollView = () => {
     try {
       setIsProcessingBatch(true);
 
-      // Verify Password (Security Protocol Identity Mapping Check)
-      const cachedData = window.localStorage.getItem('corehr_user') || window.localStorage.getItem('user');
-      const currentUser = JSON.parse(cachedData || '{}');
-      if (currentUser?.email) {
-          await loginUser({ email: currentUser.email, password: securityPin });
+      const cachedData =
+        window.localStorage.getItem("corehr_user") ||
+        window.localStorage.getItem("user");
+      const currentUser = JSON.parse(cachedData || "{}");
+
+      const finalEmailToSend =
+        currentUser?.email || currentUser?.user?.email || currentUser?.username;
+
+      if (!finalEmailToSend) {
+        alert(
+          "Session Error: Could not parse your administrative login email address out of active local cache files.",
+        );
+        setIsProcessingBatch(false);
+        return;
       }
 
-      // Execute immutable batch processing asynchronously with individual try-catch buffers
+      // Re-authenticate securely via the backend router login endpoint gate
+      await loginUser({ email: finalEmailToSend, password: securityPin });
+
+      // Executes asynchronous pipeline explicitly ONLY for checked selection arrays
+
       await Promise.all(
-        unpaidProfiles.map(async (profile) => {
+        activeSelectedProfiles.map(async (profile) => {
           try {
+            // ✅ Enforces exact spelling match parameters with the backend validation keys
             await processMonthlyPayroll({
-              employeeId: profile._id,
-              payrollMonth: currentMonth
+              employeeId: profile._id || profile.id || profile.raw?._id, // 🛡️ Triple-check fallback variables
+              payrollMonth: currentMonth, // 👈 Ensure this matches exactly what the backend reads
             });
           } catch (err) {
-            console.error(`Failed to execute processing route sequence for applicant ID: ${profile._id}`, err);
+            console.error(
+              `Failed to process individual row run for component id: ${profile._id}`,
+              err,
+            );
           }
-        })
+        }),
       );
 
-      await fetchData(); // Refresh local array datasets from database
-      setWizardStep(3); // Render transaction complete screen
-
+      await fetchData();
+      setWizardStep(3);
     } catch (err) {
-      console.error(err);
-      if (err?.response?.status === 401 || err?.response?.data?.message?.includes('password')) {
-          alert('Security Verification Failed: Incorrect operational password verification entry.');
+      console.error("Disbursement authentication crash caught:", err);
+      if (
+        err?.response?.status === 400 ||
+        err?.response?.status === 401 ||
+        err?.response?.data?.message?.includes("password")
+      ) {
+        alert(
+          "Security Verification Failed: Incorrect operational password verification entry.",
+        );
       } else {
-          alert(err?.response?.data?.message || 'Error processing transaction workflow sequence.');
+        alert(
+          err?.response?.data?.message ||
+            "Error processing transaction workflow sequence.",
+        );
       }
     } finally {
       setIsProcessingBatch(false);
@@ -171,76 +248,109 @@ const PayrollView = () => {
   };
 
   const handleDownloadPayslipAsset = async (emp) => {
-    if (emp?.status !== 'Paid' || !emp?.payrollId) return;
+    if (emp?.status !== "Paid" || !emp?.payrollId) return;
     try {
       const response = await downloadPayslipPDF(emp.payrollId);
-      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-      const link = document.createElement('a');
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: "application/pdf" }),
+      );
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', `Payslip_${emp.firstName || 'Employee'}_${currentMonth}.pdf`);
+      link.setAttribute(
+        "download",
+        `Payslip_${emp.firstName || "Employee"}_${currentMonth}.pdf`,
+      );
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
     } catch (err) {
       console.error(err);
-      alert('Failed to download payslip. Ensure the payroll was fully generated.');
+      alert(
+        "Failed to download payslip. Ensure the payroll was fully generated.",
+      );
     }
   };
 
   const getDisplayPeriodLabel = () => {
-    const parts = currentMonth.split('-');
+    const parts = currentMonth.split("-");
     if (parts.length === 2) {
       const date = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
-      return date.toLocaleString('en-US', { month: 'short', year: 'numeric' }).toUpperCase();
+      return date
+        .toLocaleString("en-US", { month: "short", year: "numeric" })
+        .toUpperCase();
     }
     return currentMonth;
   };
 
   return (
     <div className={styles.dashboardGrid}>
-      
       {/* Dynamic Summary Cards Layout Row */}
-      <div className={styles.metricsRow} style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+      <div
+        className={styles.metricsRow}
+        style={{ gridTemplateColumns: "repeat(3, 1fr)" }}
+      >
         <div className={styles.metricCard}>
           <h3>TOTAL DISBURSED ({getDisplayPeriodLabel()})</h3>
           <div className={styles.metricValueWrapper}>
             <span className={styles.metricValue}>
-              ₹{disbursementTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ₹
+              {disbursementTotal.toLocaleString("en-IN", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </span>
           </div>
         </div>
-        
+
         <div className={styles.metricCard}>
           <h3>PENDING REGULATORY PF</h3>
           <div className={styles.metricValueWrapper}>
             <span className={`${styles.metricValue} ${styles.warnText}`}>
-               ₹{pendingPFValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ₹
+              {pendingPFValue.toLocaleString("en-IN", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </span>
           </div>
         </div>
 
         <div className={`${styles.metricCard} ${styles.transparentCard}`}>
-          <button 
+          <button
             className={styles.primaryActionButtonWidth}
             onClick={handleOpenWizard}
             type="button"
-            style={{ width: '100%', height: '100%', fontSize: '1.1rem', cursor: 'pointer' }}
+            style={{
+              width: "100%",
+              height: "100%",
+              fontSize: "1.1rem",
+              cursor: "pointer",
+            }}
           >
             Execute Run
           </button>
         </div>
       </div>
 
-      {/* Main Core Directory Table Ledger Panel */}
+      {/* Main Core Table Ledger Layout Grid */}
       <div className={styles.activityStream}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>Employee Payroll Ledger</h3>
-            <input 
-              type="month" 
-              value={currentMonth} 
-              onChange={(e) => setCurrentMonth(e.target.value)}
-              className={styles.monthPickerInput}
-            />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "16px",
+          }}
+        >
+          <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 600 }}>
+            Employee Payroll Ledger
+          </h3>
+          <input
+            type="month"
+            value={currentMonth}
+            onChange={(e) => setCurrentMonth(e.target.value)}
+            className={styles.monthPickerInput}
+          />
         </div>
 
         <table className={styles.activityTable}>
@@ -255,35 +365,91 @@ const PayrollView = () => {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="5" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>Loading real-time payroll data...</td></tr>
+              <tr>
+                <td
+                  colSpan="5"
+                  style={{
+                    textAlign: "center",
+                    padding: "24px",
+                    color: "#64748b",
+                  }}
+                >
+                  Loading real-time payroll data...
+                </td>
+              </tr>
             ) : mergedData.length === 0 ? (
-              <tr><td colSpan="5" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>No active employees found.</td></tr>
+              <tr>
+                <td
+                  colSpan="5"
+                  style={{
+                    textAlign: "center",
+                    padding: "24px",
+                    color: "#64748b",
+                  }}
+                >
+                  No active employees found.
+                </td>
+              </tr>
             ) : (
               mergedData.map((emp) => {
-                const currentPillIsPaid = emp.status === 'Paid';
-                
+                const currentPillIsPaid = emp.status === "Paid";
+
                 return (
                   <tr key={emp._id}>
                     <td>
                       <div className={styles.userColumnCell}>
-                        <strong style={{ color: '#0f172a', fontWeight: '700' }}>{emp.firstName} {emp.lastName}</strong>
-                        <span className={styles.subTextEmail} style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>{emp.department}</span>
+                        <strong style={{ color: "#0f172a", fontWeight: "700" }}>
+                          {emp.firstName} {emp.lastName}
+                        </strong>
+                        <span
+                          className={styles.subTextEmail}
+                          style={{
+                            fontSize: "0.8rem",
+                            color: "#64748b",
+                            marginTop: "2px",
+                          }}
+                        >
+                          {emp.department}
+                        </span>
                       </div>
                     </td>
-                    <td style={{ color: '#334155', fontWeight: '500' }}>₹{emp.monthlyBase.toLocaleString('en-IN')}.00</td>
-                    <td><strong style={{ color: '#0f172a', fontWeight: '700' }}>₹{emp.netPayout.toLocaleString('en-IN')}.00</strong></td>
+                    <td style={{ color: "#334155", fontWeight: "500" }}>
+                      ₹{emp.monthlyBase.toLocaleString("en-IN")}.00
+                    </td>
                     <td>
-                      <span className={currentPillIsPaid ? styles.pillPaidBadge : styles.statusOnboard} style={{ display: 'inline-block', textAlign: 'center', minWidth: '70px' }}>
+                      <strong style={{ color: "#0f172a", fontWeight: "700" }}>
+                        ₹{emp.netPayout.toLocaleString("en-IN")}.00
+                      </strong>
+                    </td>
+                    <td>
+                      <span
+                        className={
+                          currentPillIsPaid
+                            ? styles.pillPaidBadge
+                            : styles.statusOnboard
+                        }
+                        style={{
+                          display: "inline-block",
+                          textAlign: "center",
+                          minWidth: "70px",
+                        }}
+                      >
                         {emp.status}
                       </span>
                     </td>
                     <td>
-                      <button 
-                        className={currentPillIsPaid ? styles.secondaryTableButton : styles.inlineTableButtonDisabled}
+                      <button
+                        className={
+                          currentPillIsPaid
+                            ? styles.secondaryTableButton
+                            : styles.inlineTableButtonDisabled
+                        }
                         onClick={() => handleDownloadPayslipAsset(emp)}
                         type="button"
                         disabled={!currentPillIsPaid}
-                        style={{ cursor: currentPillIsPaid ? 'pointer' : 'not-allowed' }}
+                        style={{
+                          cursor: currentPillIsPaid ? "pointer" : "not-allowed",
+                        }}
                       >
                         Download
                       </button>
@@ -296,116 +462,410 @@ const PayrollView = () => {
         </table>
       </div>
 
-      {/* EXECUTE BATCH PROCESSING WIZARD DIALOG OVERLAY */}
+      {/* RE-ENGINEERED OVERLAY DIALOG BOX WITH INTERNAL EMPLOYEE CHECKBOXES */}
       {isWizardOpen && (
         <div className={styles.modalOverlay}>
-          <div className={styles.modalContent} style={{ maxWidth: '480px' }}>
-            
-            {/* STEP 1: TRANSACTION BATCH REVIEW FRAME */}
+          <div
+            className={styles.modalContent}
+            style={{ maxWidth: "520px", padding: "24px", borderRadius: "12px" }}
+          >
+            {/* STEP 1: CHECKBOX SELECTION LIST DRAWER */}
             {wizardStep === 1 && (
               <div className={styles.wizardStepBody}>
-                <div className={styles.wizardWarningHeader}>
-                  <div className={styles.warningIconCircle} style={{ backgroundColor: '#e0e7ff', color: '#4f46e5' }}>⚙️</div>
-                  <h2>Review Payroll Run Batch</h2>
+                <div
+                  className={styles.wizardWarningHeader}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "6px 10px",
+                      backgroundColor: "#e0e7ff",
+                      color: "#4f46e5",
+                      borderRadius: "50%",
+                      fontSize: "1.2rem",
+                    }}
+                  >
+                    ⚙️
+                  </div>
+                  <h2 style={{ fontSize: "1.25rem", margin: 0 }}>
+                    Select Employees for Payroll
+                  </h2>
                 </div>
-                <p className={styles.wizardSubtitleText}>
-                  You are about to compile and initialize the monthly financial transaction pipeline for outstanding workforce profiles.
+                <p
+                  style={{
+                    fontSize: "0.88rem",
+                    color: "#64748b",
+                    textAlign: "left",
+                    marginBottom: "16px",
+                  }}
+                >
+                  Check the box next to each employee you want to include in
+                  this processing cycle.
                 </p>
 
-                <div className={styles.purgeSummaryMetadataGrid} style={{ border: '1px solid #cbd5e1', width: '100%', margin: '20px 0' }}>
-                  <div className={styles.summaryMetaRow} style={{ display: 'flex', justifyContent: 'space-between', padding: '16px' }}>
-                    <div>
-                      <span className={styles.metaLabelText} style={{ display: 'block', fontSize: '0.8rem', color: '#64748b', marginBottom: '4px' }}>Pending Profiles:</span>
-                      <strong className={styles.metaValueText} style={{ fontSize: '1.1rem', color: '#0f172a' }}>{unpaidProfiles.length} Staff Records</strong>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <span className={styles.metaLabelText} style={{ display: 'block', fontSize: '0.8rem', color: '#64748b', marginBottom: '4px' }}>Estimated Outflow:</span>
-                      <strong className={styles.metaValueText} style={{ fontSize: '1.1rem', color: '#4f46e5' }}>~ ₹{batchPayoutSum.toLocaleString('en-IN')}.00</strong>
-                    </div>
-                  </div>
+                {/* Master Select Toggle Bar */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "10px 14px",
+                    background: "#f8fafc",
+                    borderRadius: "8px",
+                    marginBottom: "12px",
+                    border: "1px solid #e2e8f0",
+                  }}
+                >
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      fontSize: "0.88rem",
+                      fontWeight: "600",
+                      color: "#334155",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={
+                        selectedEmployeeIds.length === unpaidProfiles.length &&
+                        unpaidProfiles.length > 0
+                      }
+                      onChange={handleToggleSelectAll}
+                      style={{ transform: "scale(1.15)", cursor: "pointer" }}
+                    />
+                    Select All Unpaid ({unpaidProfiles.length})
+                  </label>
+                  <span
+                    style={{
+                      fontSize: "0.85rem",
+                      color: "#64748b",
+                      fontWeight: "500",
+                    }}
+                  >
+                    Checked: <strong>{selectedEmployeeIds.length}</strong>
+                  </span>
                 </div>
 
-                <div className={styles.wizardFooterActions} style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-                  <button className={styles.secondaryActionButton} onClick={handleCloseWizard} style={{ flex: 1, cursor: 'pointer' }}>Cancel</button>
-                  <button className={styles.primaryActionButton} onClick={handleNextStep} style={{ flex: 1.5, cursor: 'pointer' }}>Proceed to Authorization</button>
+                {/* Individual Checkbox Scrollable List Area Wrapper */}
+                <div
+                  style={{
+                    maxHeight: "240px",
+                    overflowY: "auto",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "8px",
+                    padding: "6px 0",
+                    backgroundColor: "#fff",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  {unpaidProfiles.map((emp) => {
+                    const isChecked = selectedEmployeeIds.includes(emp._id);
+                    return (
+                      <label
+                        key={emp._id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                          padding: "10px 16px",
+                          cursor: "pointer",
+                          transition: "background 0.15s",
+                          borderBottom: "1px solid #f1f5f9",
+                          background: isChecked ? "#f5f3ff" : "transparent",
+                          textAlign: "left",
+                        }}
+                        className={styles.checkboxRowItem}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() =>
+                            handleToggleEmployeeSelection(emp._id)
+                          }
+                          style={{ transform: "scale(1.1)", cursor: "pointer" }}
+                        />
+                        <div
+                          style={{ display: "flex", flexDirection: "column" }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "0.9rem",
+                              fontWeight: "600",
+                              color: "#1e293b",
+                            }}
+                          >
+                            {emp.firstName} {emp.lastName}
+                          </span>
+                          <span
+                            style={{ fontSize: "0.75rem", color: "#64748b" }}
+                          >
+                            {emp.department} • ₹
+                            {emp.netPayout.toLocaleString("en-IN")}.00
+                          </span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                {/* Calculated Running Financial Metrics Summary Box */}
+                <div
+                  style={{
+                    marginTop: "16px",
+                    padding: "12px 16px",
+                    background: "#f0fdf4",
+                    borderRadius: "8px",
+                    border: "1px solid #bbf7d0",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "0.85rem",
+                      fontWeight: "600",
+                      color: "#166534",
+                    }}
+                  >
+                    Target Batch Total Outflow:
+                  </span>
+                  <strong style={{ fontSize: "1.05rem", color: "#15803d" }}>
+                    ₹{dynamicBatchPayoutSum.toLocaleString("en-IN")}.00
+                  </strong>
+                </div>
+
+                <div
+                  className={styles.wizardFooterActions}
+                  style={{ display: "flex", gap: "12px", marginTop: "20px" }}
+                >
+                  <button
+                    type="button"
+                    className={styles.secondaryActionButton}
+                    onClick={handleCloseWizard}
+                    style={{ flex: 1, cursor: "pointer" }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.primaryActionButton}
+                    onClick={handleNextStep}
+                    style={{ flex: 1.5, cursor: "pointer" }}
+                  >
+                    Proceed to Authorization
+                  </button>
                 </div>
               </div>
             )}
 
-            {/* STEP 2: SECURITY PASSTHROUGH MATCH */}
+            {/* STEP 2: SECURITY AUTHORIZATION passthrough */}
             {wizardStep === 2 && (
-              <form onSubmit={handleFinalBatchDisbursement} className={styles.wizardStepBody}>
-                <div className={styles.wizardHeaderSimple} style={{ textAlign: 'center', marginBottom: '24px' }}>
-                  <h2 style={{ fontSize: '1.4rem', color: '#0f172a', marginBottom: '8px' }}>Secure Gate Authority</h2>
-                  <p className={styles.wizardSubtitleText} style={{ color: '#64748b', fontSize: '0.95rem' }}>
-                    Please provide your administrative password to execute bank transfers.
+              <form
+                onSubmit={handleFinalBatchDisbursement}
+                className={styles.wizardStepBody}
+              >
+                <div style={{ textAlign: "center", marginBottom: "20px" }}>
+                  <h2
+                    style={{
+                      fontSize: "1.35rem",
+                      color: "#0f172a",
+                      margin: "0 0 6px 0",
+                    }}
+                  >
+                    Secure Gate Authority
+                  </h2>
+                  <p
+                    style={{ color: "#64748b", fontSize: "0.88rem", margin: 0 }}
+                  >
+                    Please enter your password to authorize payroll disburse for{" "}
+                    <strong>{selectedEmployeeIds.length}</strong> selected
+                    accounts.
                   </p>
                 </div>
 
-                <div className={styles.inputGroup} style={{ width: '100%', marginBottom: '24px' }}>
-                  <label htmlFor="authPinCode" style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '8px', textAlign: 'center' }}>ACCOUNT PASSWORD</label>
+                <div
+                  style={{
+                    width: "100%",
+                    marginBottom: "20px",
+                    textAlign: "left",
+                  }}
+                >
+                  <label
+                    htmlFor="authPinCode"
+                    style={{
+                      display: "block",
+                      fontSize: "0.8rem",
+                      fontWeight: "600",
+                      color: "#475569",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    ADMIN PASSWORD
+                  </label>
                   <input
                     type="password"
                     id="authPinCode"
                     placeholder="••••••••"
                     value={securityPin}
                     onChange={(e) => setSecurityPin(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', textAlign: 'center', fontSize: '1.2rem', letterSpacing: '0.2em', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                    style={{
+                      width: "100%",
+                      boxSizing: "border-box",
+                      padding: "12px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "1.1rem",
+                      letterSpacing: "0.1em",
+                    }}
                     autoComplete="current-password"
                     required
                   />
                 </div>
 
-                <div className={styles.wizardFooterActions} style={{ display: 'flex', gap: '12px' }}>
-                  <button type="button" className={styles.secondaryActionButton} onClick={handleCloseWizard} disabled={isProcessingBatch} style={{ flex: 1, cursor: 'pointer' }}>Abort</button>
-                  <button 
-                    type="submit" 
+                <div
+                  className={styles.wizardFooterActions}
+                  style={{ display: "flex", gap: "12px" }}
+                >
+                  <button
+                    type="button"
+                    className={styles.secondaryActionButton}
+                    onClick={() => setWizardStep(1)}
+                    disabled={isProcessingBatch}
+                    style={{ flex: 1, cursor: "pointer" }}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
                     className={styles.successActionButton}
                     disabled={!securityPin || isProcessingBatch}
-                    style={{ flex: 1.5, borderRadius: '8px', opacity: isProcessingBatch ? 0.7 : 1, cursor: isProcessingBatch ? 'not-allowed' : 'pointer' }}
+                    style={{
+                      flex: 1.5,
+                      cursor: isProcessingBatch ? "not-allowed" : "pointer",
+                    }}
                   >
-                    {isProcessingBatch ? 'Authenticating & Processing...' : 'Confirm Batch Disburse'}
+                    {isProcessingBatch
+                      ? "Processing Disbursement Run..."
+                      : "Confirm Disburse"}
                   </button>
                 </div>
               </form>
             )}
 
-            {/* STEP 3: SUCCESS TRANSMISSION RECEPTACLE SUMMARY */}
+            {/* STEP 3: TRANSACTION RUN SUCCESS SCREEN */}
             {wizardStep === 3 && (
               <div className={styles.wizardStepBody}>
-                <div className={styles.wizardSuccessHeader} style={{ textAlign: 'center', marginBottom: '24px' }}>
-                  <div className={styles.successIconCircle} style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '2px solid #bbf7d0' }}>
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3">
+                <div style={{ textAlign: "center", marginBottom: "20px" }}>
+                  <div
+                    style={{
+                      width: "56px",
+                      height: "56px",
+                      borderRadius: "50%",
+                      backgroundColor: "#dcfce7",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      margin: "0 auto 12px",
+                      border: "2px solid #bbf7d0",
+                    }}
+                  >
+                    <svg
+                      width="26"
+                      height="26"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#16a34a"
+                      strokeWidth="3"
+                    >
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                   </div>
-                  <h2 style={{ color: '#14532d', fontSize: '1.5rem', marginBottom: '8px' }}>Batch Core Run Success</h2>
-                  <p className={styles.wizardMutedText} style={{ margin: 0, color: '#64748b' }}>Capital assets distributed and ledger nodes committed cleanly.</p>
+                  <h2
+                    style={{
+                      color: "#14532d",
+                      fontSize: "1.4rem",
+                      margin: "0 0 4px 0",
+                    }}
+                  >
+                    Disbursement Successful
+                  </h2>
+                  <p
+                    style={{ color: "#64748b", fontSize: "0.88rem", margin: 0 }}
+                  >
+                    Financial ledger nodes updated cleanly.
+                  </p>
                 </div>
 
-                <div className={styles.purgeSummaryMetadataGrid} style={{ width: '100%', margin: '24px 0', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', backgroundColor: '#f8fafc' }}>
-                  <div className={styles.summarySystemLogsBox}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <strong style={{ color: '#475569', fontSize: '0.9rem' }}>action system log:</strong> 
-                      <span style={{ color: '#0f172a', fontSize: '0.9rem', fontWeight: '500' }}>Ledger settlement verified</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <strong style={{ color: '#475569', fontSize: '0.9rem' }}>bank wire status:</strong> 
-                      <span style={{ color: '#0f172a', fontSize: '0.9rem', fontWeight: '500' }}>Transfers transmitted instantly</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: '12px' }}>
-                      <strong style={{ color: '#0f172a', fontSize: '1rem' }}>payout aggregate:</strong> 
-                      <span style={{ color: '#16a34a', fontWeight: '700', fontSize: '1.1rem' }}>₹{batchPayoutSum.toLocaleString('en-IN')}.00</span>
-                    </div>
+                <div
+                  style={{
+                    width: "100%",
+                    margin: "20px 0",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "8px",
+                    padding: "16px",
+                    backgroundColor: "#f8fafc",
+                    textAlign: "left",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "10px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      fontSize: "0.88rem",
+                    }}
+                  >
+                    <span style={{ color: "#475569" }}>Accounts Paid:</span>
+                    <span style={{ color: "#0f172a", fontWeight: "600" }}>
+                      {activeSelectedProfiles.length} Profiles
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      fontSize: "0.88rem",
+                    }}
+                  >
+                    <span style={{ color: "#475569" }}>
+                      Total Net Capital Disbursed:
+                    </span>
+                    <span style={{ color: "#16a34a", fontWeight: "700" }}>
+                      ₹{dynamicBatchPayoutSum.toLocaleString("en-IN")}.00
+                    </span>
                   </div>
                 </div>
 
-                <button className={styles.returnDirectoryButton} onClick={handleCloseWizard} style={{ width: '100%', padding: '12px', borderRadius: '8px', backgroundColor: '#f1f5f9', color: '#334155', fontWeight: '600', border: 'none', cursor: 'pointer' }}>
+                <button
+                  className={styles.returnDirectoryButton}
+                  onClick={handleCloseWizard}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    borderRadius: "8px",
+                    backgroundColor: "#f1f5f9",
+                    color: "#334155",
+                    fontWeight: "600",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                >
                   Return to Dashboard
                 </button>
               </div>
             )}
-
           </div>
         </div>
       )}

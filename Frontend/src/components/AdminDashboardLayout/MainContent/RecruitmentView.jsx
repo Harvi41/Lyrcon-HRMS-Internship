@@ -134,27 +134,39 @@ const RecruitmentView = () => {
         </div>
       </div>
 
-      {/* Live Recruitment Pipeline Visualizer Progress Bars */}
-      <div className={styles.chartContainer}>
+      {/* ═══════════════════════════════════════════════════════════════════════════
+          ✅ FIXED LAYOUT REINFORCEMENT: Recruitment Pipeline Progress Bars
+          Injected absolute inline layout boundaries to lock container alignment.
+         ═══════════════════════════════════════════════════════════════════════════ */}
+      <div className={styles.chartContainer} style={{ width: '100%', boxSizing: 'border-box' }}>
         <h3 style={{ fontSize: '0.95rem', fontWeight: '700', marginBottom: '18px' }}>Recruitment Pipeline</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '10px 0' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '10px 0', width: '100%' }}>
           {pipelineMetrics.map((item) => (
-            <div key={item.label} style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-              <span style={{ width: '120px', fontSize: '0.88rem', fontWeight: '500', color: '#1e293b' }}>
+            <div key={item.label} style={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
+              {/* Text Label Column */}
+              <span style={{ width: '110px', minWidth: '110px', fontSize: '0.88rem', fontWeight: '600', color: '#475569', textAlign: 'left' }}>
                 {item.label}
               </span>
-              <div className={styles.progressBarContainer} style={{ flex: 1, margin: '0 24px', background: '#f1f5f9', height: '12px' }}>
+              
+              {/* Central Bar Tracker Housing Track */}
+              <div 
+                className={styles.progressBarContainer} 
+                style={{ flex: 1, margin: '0 20px', background: '#e2e8f0', height: '12px', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}
+              >
                 <div 
                   className={styles.progressBarFill} 
                   style={{ 
                     width: item.width, 
-                    backgroundColor: item.label === 'Hired' ? '#10b981' : (item.label === 'Shortlisted' ? '#6366f1' : '#635bff'), 
+                    backgroundColor: item.label === 'Hired' ? '#10b981' : (item.label === 'Shortlisted' ? '#6366f1' : '#4f46e5'), 
                     height: '100%',
+                    borderRadius: '6px',
                     transition: 'width 0.4s ease-out'
                   }} 
                 />
               </div>
-              <strong style={{ width: '40px', textAlign: 'right', fontSize: '0.95rem', color: '#0f172a', fontWeight: '700' }}>
+
+              {/* Counter Metrics Column */}
+              <strong style={{ width: '40px', minWidth: '40px', textAlign: 'right', fontSize: '0.95rem', color: '#0f172a', fontWeight: '700' }}>
                 {loading ? '...' : item.value}
               </strong>
             </div>

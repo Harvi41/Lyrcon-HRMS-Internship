@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import Sidebar from './Common/Sidebar';
 import Header from './Common/Header';
 import AdminDashboardHome from './MainContent/AdminDashboardHome';
-import AdminUsersView from './MainContent/AdminUsersView';
+// import AdminUsersView from './MainContent/AdminUsersView';
 import EmployeesView from './MainContent/EmployeesView';
 import AttendanceView from './MainContent/AttendanceView';
 import LeaveView from './MainContent/LeaveView';
@@ -26,7 +26,7 @@ const AdminDashboardLayout = ({ user, onLogout }) => {
   // Unified layout router dictionary matching your sidebar IDs perfectly
   const pageMeta = {
     'Dashboard': { title: "Dashboard Overview", component: <AdminDashboardHome /> },
-    'Users': { title: "User Provisioning Console", component: <AdminUsersView /> },
+    // 'Users': { title: "User Provisioning Console", component: <AdminUsersView /> },
     'Employees': { title: "Employee Overview", component: <EmployeesView /> },
     'Attendance': { title: "Attendance Analytics Hub", component: <AttendanceView /> },
     'Leave Management': { title: "Leave Operations & Trends", component: <LeaveView /> },
