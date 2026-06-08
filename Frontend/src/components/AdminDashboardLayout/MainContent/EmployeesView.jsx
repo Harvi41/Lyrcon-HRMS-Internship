@@ -255,48 +255,61 @@ const EmployeesView = () => {
         </div>
       </div>
 
-      {/* Hiring Velocity Insight (Connected dynamically to active roster proportions) */}
-      <div className={styles.chartContainer}>
+      {/* ═══════════════════════════════════════════════════════════════════════════
+          ✅ FIXED LAYOUT REINFORCEMENT: Hiring Velocity Insight Progress Bars
+          Injected spatial row alignments and explicit dimensions to enforce clean sizing.
+         ═══════════════════════════════════════════════════════════════════════════ */}
+      <div className={styles.chartContainer} style={{ width: '100%', boxSizing: 'border-box' }}>
         <h3>Quarterly Hiring Velocity Insight</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '10px 0' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '10px 0', width: '100%' }}>
 
-          <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-            <div style={{ width: '120px', fontSize: '0.88rem', fontWeight: '500', color: '#1e293b', lineHeight: '1.2' }}>
+          {/* Q1 Growth Tracking Row */}
+          <div style={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
+            <div style={{ width: '110px', minWidth: '110px', fontSize: '0.88rem', fontWeight: '600', color: '#475569', lineHeight: '1.3', textAlign: 'left' }}>
               Q1 Growth <br />Matrix
             </div>
-            <div className={styles.progressBarContainer} style={{ flex: 1, margin: '0 24px', background: '#f1f5f9', height: '12px' }}>
+            <div 
+              className={styles.progressBarContainer} 
+              style={{ flex: 1, margin: '0 20px', background: '#e2e8f0', height: '12px', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}
+            >
               <div
                 className={styles.progressBarFill}
                 style={{
                   width: `${Math.min(100, employeeDataList.length * 2)}%`,
                   backgroundColor: '#635bff',
                   height: '100%',
+                  borderRadius: '6px',
                   transition: 'width 0.4s ease'
                 }}
               />
             </div>
-            <div style={{ width: '65px', textAlign: 'right', fontSize: '0.85rem', fontWeight: '700', color: '#0f172a' }}>
+            <div style={{ width: '65px', minWidth: '65px', textAlign: 'right', fontSize: '0.85rem', fontWeight: '700', color: '#0f172a', lineHeight: '1.2' }}>
               {Math.min(100, employeeDataList.length * 2)}%
               <span style={{ display: 'block', fontSize: '0.72rem', color: '#64748b', fontWeight: '500' }}>Capacity</span>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-            <div style={{ width: '120px', fontSize: '0.88rem', fontWeight: '500', color: '#1e293b', lineHeight: '1.2' }}>
+          {/* Active Onboarding Tracking Row */}
+          <div style={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
+            <div style={{ width: '110px', minWidth: '110px', fontSize: '0.88rem', fontWeight: '600', color: '#475569', lineHeight: '1.3', textAlign: 'left' }}>
               Active <br />Onboarding
             </div>
-            <div className={styles.progressBarContainer} style={{ flex: 1, margin: '0 24px', background: '#f1f5f9', height: '12px' }}>
+            <div 
+              className={styles.progressBarContainer} 
+              style={{ flex: 1, margin: '0 20px', background: '#e2e8f0', height: '12px', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}
+            >
               <div
                 className={styles.progressBarFill}
                 style={{
                   width: `${Math.min(100, newJoineesCount * 15)}%`,
                   backgroundColor: '#10b981',
                   height: '100%',
+                  borderRadius: '6px',
                   transition: 'width 0.4s ease'
                 }}
               />
             </div>
-            <div style={{ width: '65px', textAlign: 'right', fontSize: '0.85rem', fontWeight: '700', color: '#0f172a' }}>
+            <div style={{ width: '65px', minWidth: '65px', textAlign: 'right', fontSize: '0.85rem', fontWeight: '700', color: '#0f172a', lineHeight: '1.2' }}>
               {Math.min(100, newJoineesCount * 15)}%
               <span style={{ display: 'block', fontSize: '0.72rem', color: '#64748b', fontWeight: '500' }}>Velocity</span>
             </div>

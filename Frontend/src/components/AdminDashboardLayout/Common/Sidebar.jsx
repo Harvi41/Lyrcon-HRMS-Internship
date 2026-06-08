@@ -6,7 +6,7 @@ const Sidebar = ({ activeTab, setActiveTab, onOpenPasswordModal }) => {
   // Synchronized item array perfectly mirroring the text labels from your layout routes
   const menuItems = [
     { label: 'Dashboard', id: 'Dashboard' },
-    { label: 'Users', id: 'Users' },
+   // { label: 'Users', id: 'Users' },
     { label: 'Employees', id: 'Employees' },
     { label: 'Attendance', id: 'Attendance' },
     { label: 'Leave Management', id: 'Leave Management' },
