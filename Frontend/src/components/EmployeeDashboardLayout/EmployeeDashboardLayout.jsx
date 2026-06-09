@@ -6,6 +6,7 @@ import Header               from "./Common/Header";
 import EmployeeDashboardHome from "./MainContent/EmployeeDashboardHome";
 import TasksView            from "./MainContent/TasksView";
 import AttendanceView       from "./MainContent/AttendanceView";
+import MissPunchingView     from "./MainContent/MissPunchingView";
 import LeaveView            from "./MainContent/LeaveView";
 import PayrollView          from "./MainContent/PayrollView";
 import AnnouncementsView    from "./MainContent/AnnouncementsView";
@@ -36,6 +37,7 @@ export default function EmployeeDashboardLayout({ onLogout, user }) {
       case "dashboard":     return <EmployeeDashboardHome onNavigate={setPage} />;
       case "tasks":         return <TasksView />;
       case "attendance":    return <AttendanceView />;
+      case "miss-punch":    return <MissPunchingView />;
       case "leave":         return <LeaveView />;
       case "payroll":       return <PayrollView />;
       case "announcements": return <AnnouncementsView />;

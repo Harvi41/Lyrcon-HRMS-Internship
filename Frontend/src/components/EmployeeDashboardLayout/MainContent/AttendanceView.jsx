@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import styles from "../EmployeeDashboardLayout.module.css";
 import ClockInModal from "../../HRDashboardLayout/MainContent/ClockInModal"; 
 import ClockOutModal from "../../HRDashboardLayout/MainContent/ClockOutModal";
+import MissPunchingView from "./MissPunchingView";
 
 import API, { 
   verifyFaceAndLogin, 

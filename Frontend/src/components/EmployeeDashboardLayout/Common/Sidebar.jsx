@@ -6,6 +6,7 @@ const navItems = [
   { key: "profile",       label: "My Profile" },
   { key: "tasks",         label: "Tasks" },
   { key: "attendance",    label: "Attendance" },
+  { key: "miss-punch",    label: "Miss Punch", icon: "🕐" },
   { key: "leave",         label: "Leave" },
   { key: "payroll",       label: "Payroll" },
   { key: "assets",        label: "My Assets" },
