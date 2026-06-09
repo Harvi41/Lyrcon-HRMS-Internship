@@ -9,6 +9,12 @@ const pageTitles = (name) => ({
   myprofile:     "My Profile",
   tasks:         "Tasks",
   attendance:    "Attendance",
+
+  misspunch:     "Miss Punch Management",
+  misspunching:  "Miss Punch Management",
+  "miss-punch":  "Miss Punch Management",
+  
+
   leave:         "Leave Management",
   payroll:       "Payroll",
   announcements: "Announcements",
