@@ -5,6 +5,7 @@ import AdminDashboardHome from './MainContent/AdminDashboardHome';
 // import AdminUsersView from './MainContent/AdminUsersView';
 import EmployeesView from './MainContent/EmployeesView';
 import AttendanceView from './MainContent/AttendanceView';
+import AdminMissPunchingView from './MainContent/AdminMissPunchingView';
 import LeaveView from './MainContent/LeaveView';
 import PayrollView from './MainContent/PayrollView';
 import RecruitmentView from './MainContent/RecruitmentView'; // IMPORTED: Your recruitment workflow subview
@@ -42,6 +43,7 @@ const AdminDashboardLayout = ({ user, onLogout }) => {
     // 'Users': { title: "User Provisioning Console", component: <AdminUsersView /> },
     'Employees': { title: "Employee Overview", component: <EmployeesView /> },
     'Attendance': { title: "Attendance Analytics Hub", component: <AttendanceView /> },
+    'Miss Punch Management': { title: "Miss Punch Management", component: <AdminMissPunchingView /> },
     'Leave Management': { title: "Leave Operations & Trends", component: <LeaveView /> },
     'Payroll': { title: "Payroll Management", component: <PayrollView /> },
     'Recruitment': { title: "Recruitment Pipeline", component: <RecruitmentView /> }, // ADDED: Mapped key routing path for recruitment

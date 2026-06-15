@@ -4,6 +4,7 @@ import Header from './Common/Header';
 import HRDashboardHome from './MainContent/HRDashboardHome';
 import EmployeesView from './MainContent/EmployeesView';
 import AttendanceView from './MainContent/AttendanceView';
+import HRMissPunchingView from "./MainContent/HRMissPunchingView";
 import LeaveView from './MainContent/LeaveView';
 import PayrollView from './MainContent/PayrollView';
 import RecruitmentView from './MainContent/RecruitmentView';
@@ -37,6 +38,7 @@ const HRDashboardLayout = ({ user, onLogout }) => {
     dashboard: { title: "HRMS Operational Intelligence", component: <HRDashboardHome /> },
     employees: { title: "Employee Overview", component: <EmployeesView /> },
     attendance: { title: "Attendance Analytics Hub", component: <AttendanceView /> },
+    'miss-punch': { title: "Miss Punch Management", component: <HRMissPunchingView /> },
     leave: { title: "Leave Management", component: <LeaveView /> },
     payroll: { title: "Payroll Management", component: <PayrollView /> },
     recruitment: { title: "Recruitment", component: <RecruitmentView /> },

@@ -76,7 +76,7 @@ exports.updateTicketStatus = async (req, res) => {
         const ticket = await Ticket.findByIdAndUpdate(
             req.params.id,
             { $set: updateData },
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         if (!ticket) {

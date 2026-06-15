@@ -9,6 +9,7 @@ const Sidebar = ({ activeTab, setActiveTab, onOpenPasswordModal }) => {
    // { label: 'Users', id: 'Users' },
     { label: 'Employees', id: 'Employees' },
     { label: 'Attendance', id: 'Attendance' },
+    { label: 'Miss Punch Management', id: 'Miss Punch Management' },
     { label: 'Leave Management', id: 'Leave Management' },
     { label: 'Payroll', id: 'Payroll' },
     { label: 'Recruitment', id: 'Recruitment' },
