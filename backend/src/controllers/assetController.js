@@ -141,7 +141,7 @@ exports.updateAsset = async (req, res) => {
         }
 
         const payload = buildAssetPayload(req.body);
-        const updated = await Asset.findByIdAndUpdate(req.params.id, payload, { new: true }).populate('damagedBy', 'name email');
+        const updated = await Asset.findByIdAndUpdate(req.params.id, payload, { returnDocument: 'after' }).populate('damagedBy', 'name email');
 
         res.json(updated);
     } catch (error) {
@@ -164,7 +164,7 @@ exports.deleteAsset = async (req, res) => {
 
 exports.addComment = async (req, res) => {
     try {
-        const updated = await Asset.findByIdAndUpdate(req.params.id, { $push: { comments: clean(req.body.comment) } }, { new: true });
+        const updated = await Asset.findByIdAndUpdate(req.params.id, { $push: { comments: clean(req.body.comment) } }, { returnDocument: 'after' });
         res.json(updated);
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });
@@ -173,7 +173,7 @@ exports.addComment = async (req, res) => {
 
 exports.markDamaged = async (req, res) => {
     try {
-        const updated = await Asset.findByIdAndUpdate(req.params.id, { damaged: true, damagedBy: req.body.damagedBy, status: 'damaged' }, { new: true });
+        const updated = await Asset.findByIdAndUpdate(req.params.id, { damaged: true, damagedBy: req.body.damagedBy, status: 'damaged' }, { returnDocument: 'after' });
         res.json(updated);
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });
