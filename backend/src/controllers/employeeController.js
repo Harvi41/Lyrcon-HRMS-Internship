@@ -3,7 +3,18 @@ const User = require('../models/User');
 const Role = require('../models/Role');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer'); // ◄ Added for automated credential delivery
 
+// 📧 Configure Automated SMTP Mail Transporter 
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.SYSTEM_EMAIL,    // Maps to your .env file
+        pass: process.env.SYSTEM_PASSWORD  // Maps to your 16-character Google App Password
+    }
+});
+
+// 1. CREATE AND ONBOARD NEW EMPLOYEE
 exports.createEmployee = async (req, res) => {
     try {
         const { 
@@ -45,15 +56,25 @@ exports.createEmployee = async (req, res) => {
         }
 
         // Generate a secure temporary password for the new hire
-        const temporaryPassword = `Lyrcon2026!${crypto.randomBytes(8).toString('hex')}`;
+        const temporaryPassword = `Lyrcon2026!${crypto.randomBytes(4).toString('hex')}`;
         const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+
+        // 🛡️ FIX: Flatten the incoming Frontend Address Object cleanly into a structured String
+        let processedAddress = "";
+        if (address && typeof address === 'object') {
+            // Extracts the nested 'street' property sent by your frontend form schema
+            processedAddress = address.street || "";
+        } else {
+            processedAddress = address || "";
+        }
 
         // Create the Auth Account inside the User collection
         const newUser = await User.create({
             name: `${firstName} ${lastName}`.trim(),
             email: email.toLowerCase(),
             password: hashedPassword,
-            role: targetRole._id
+            role: targetRole._id,
+            address: processedAddress // ◄ Safe flat string applied here
         });
 
         let EmployeeModel;
@@ -94,7 +115,7 @@ exports.createEmployee = async (req, res) => {
             managerId: verifiedManagerId, 
             workLocation,
             emergencyContact,
-            address,
+            address: processedAddress, // ◄ Safe flat string applied here to prevent document corruption
             baseCTC : Number(baseCTC) || 0,
             ...roleSpecificFields
         });
@@ -103,6 +124,40 @@ exports.createEmployee = async (req, res) => {
 
         await User.findByIdAndUpdate(newUser._id, {
             $set: { employeeId: savedEmployee._id }
+        });
+
+        // ✉️ REQUIREMENT 4: Automated Credentials Mail Dispatcher
+        const mailOptions = {
+            from: `"Lyrcon HRMS Workspace" <${process.env.SYSTEM_EMAIL}>`,
+            to: email,
+            subject: "Welcome to Lyrcon HRMS - Workspace Onboarding Credentials",
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 25px; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 8px; color: #1e293b;">
+                    <h2 style="color: #4f46e5; margin-bottom: 5px;">Welcome aboard, ${firstName}!</h2>
+                    <p style="font-size: 15px; color: #475569;">Your official corporate employee profile record has been successfully generated.</p>
+                    <p style="font-size: 15px; color: #475569;">Please log into your dashboard using the access credentials below:</p>
+                    <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #4f46e5;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr style="height: 35px;">
+                                <td style="font-weight: bold; width: 140px; color: #334155;">Employee ID:</td>
+                                <td style="color: #0f172a; font-family: monospace; font-size: 15px;">${employeeCode}</td>
+                            </tr>
+                            <tr style="height: 35px;">
+                                <td style="font-weight: bold; color: #334155;">Login Email:</td>
+                                <td style="color: #0f172a;">${email.toLowerCase()}</td>
+                            </tr>
+                            <tr style="height: 35px;">
+                                <td style="font-weight: bold; color: #334155;">Temp Password:</td>
+                                <td style="color: #ef4444; font-weight: bold; font-size: 15px;">${temporaryPassword}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            `
+        };
+
+        transporter.sendMail(mailOptions, (mailErr) => {
+            if (mailErr) console.error("SMTP Automation error log:", mailErr);
         });
 
         res.status(201).json({
@@ -119,7 +174,6 @@ exports.createEmployee = async (req, res) => {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
-
 // 2. GET ALL ACTIVE EMPLOYEES
 exports.getAllEmployees = async (req, res) => {
     try {
