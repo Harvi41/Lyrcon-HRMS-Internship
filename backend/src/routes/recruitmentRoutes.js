@@ -8,5 +8,6 @@ router.use(authorizeRoles('admin', 'hr'));
 
 router.post('/', recruitmentController.createJobOpening);
 router.get('/', recruitmentController.getJobOpenings);
+router.put('/:id', recruitmentController.updateCandidateStatus);
 
 module.exports = router;

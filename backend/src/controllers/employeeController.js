@@ -190,7 +190,7 @@ exports.updateEmployee = async (req, res) => {
         const updatedEmployee = await Employee.findOneAndUpdate(
             { _id: req.params.id, isDeleted: false },
             { $set: updates },
-            { new: true, runValidators: true }
+            { returnDocument: 'after', runValidators: true }
         ).populate('managerId', 'firstName lastName employeeCode');
         
         if (!updatedEmployee) {
@@ -209,7 +209,7 @@ exports.deleteEmployee = async (req, res) => {
         const deletedEmployee = await Employee.findByIdAndUpdate(
             req.params.id,
             { $set: { isDeleted: true, status: 'terminated' } },
-            { new: true }
+            { returnDocument: 'after' }
         );
         
         if (!deletedEmployee) {

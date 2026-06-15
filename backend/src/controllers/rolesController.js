@@ -51,7 +51,7 @@ const rolesController = {
       const updated = await Role.findOneAndUpdate(
         { name: roleName },
         { $set: { permissions: sanitizedPermissions } },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
+        { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
       );
 
       return res.status(200).json({ message: 'Role updated', role: updated });
