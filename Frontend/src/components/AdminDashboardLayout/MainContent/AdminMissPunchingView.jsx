@@ -1,5 +1,7 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "./AdminMissPunchingView.module.css";
+// 🚀 Injected custom api controllers from your central middleware hub
+import API from "../../../lib/axios"; 
 
 /* ─── Constants ─── */
 const STATUS_COLORS = {
@@ -13,49 +15,9 @@ const ROLE_COLORS = {
   HR:       { bg: "#F5F3FF", color: "#6D28D9" },
 };
 
-/* ─── Mock data: all roles ─── */
-const ALL_REQUESTS_MOCK = [
-  {
-    id: 301, name: "Riya Sharma",   empId: "EMP-042", role: "Employee",
-    department: "Finance",     date: "2026-06-07", shift: "09:00 AM – 06:00 PM",
-    missType: "Clock-Out", reason: "Left office from back gate; scanner was down",
-    status: "Pending", submittedOn: "2026-06-08", proof: true,  adminRemark: null,
-  },
-  {
-    id: 302, name: "Arjun Patel",   empId: "EMP-017", role: "Employee",
-    department: "Engineering", date: "2026-06-05", shift: "09:00 AM – 06:00 PM",
-    missType: "Clock-In",  reason: "Power failure at biometric gate",
-    status: "Pending", submittedOn: "2026-06-06", proof: false, adminRemark: null,
-  },
-  {
-    id: 303, name: "Neha Joshi",    empId: "HR-005",  role: "HR",
-    department: "Human Resources", date: "2026-06-05", shift: "09:00 AM – 06:00 PM",
-    missType: "Both",      reason: "Face scanner offline at HR cabin entry during system update",
-    status: "Pending", submittedOn: "2026-06-06", proof: true,  adminRemark: null,
-  },
-  {
-    id: 304, name: "Pooja Mehta",   empId: "EMP-031", role: "Employee",
-    department: "Marketing",   date: "2026-06-01", shift: "09:00 AM – 06:00 PM",
-    missType: "Both",      reason: "Face recognition error — system rebooting",
-    status: "Approved", submittedOn: "2026-06-02", proof: true,  adminRemark: "CCTV footage verified.",
-  },
-  {
-    id: 305, name: "Karan Desai",   empId: "EMP-055", role: "Employee",
-    department: "Sales",       date: "2026-05-29", shift: "09:00 AM – 06:00 PM",
-    missType: "Clock-In",  reason: "Was on client call outside office",
-    status: "Rejected", submittedOn: "2026-05-30", proof: false, adminRemark: "No valid proof.",
-  },
-  {
-    id: 306, name: "Sanjana Verma", empId: "HR-003",  role: "HR",
-    department: "Human Resources", date: "2026-05-28", shift: "09:00 AM – 06:00 PM",
-    missType: "Clock-In",  reason: "System maintenance window overlapped shift start",
-    status: "Approved", submittedOn: "2026-05-29", proof: false, adminRemark: "Verified with access log.",
-  },
-];
-
 /* ─── Badge ─── */
 function StatusBadge({ status }) {
-  const sc = STATUS_COLORS[status];
+  const sc = STATUS_COLORS[status] || { bg: "#F1F5F9", color: "#475569", dot: "#94a3b8" };
   return (
     <span className={styles.badge} style={{ background: sc.bg, color: sc.color }}>
       <span className={styles.dot} style={{ background: sc.dot }} />
@@ -77,33 +39,89 @@ function RolePill({ role }) {
    Admin Miss Punching View
 ══════════════════════════════════════════ */
 export default function AdminMissPunchingView() {
-  const [requests, setRequests]       = useState(ALL_REQUESTS_MOCK);
-  const [selected, setSelected]       = useState(null);
-  const [remark, setRemark]           = useState("");
-  const [remarkErr, setRemarkErr]     = useState("");
-  const [actionMsg, setActionMsg]     = useState("");
+  const [requests, setRequests]         = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [selected, setSelected]         = useState(null);
+  const [remark, setRemark]             = useState("");
+  const [remarkErr, setRemarkErr]       = useState("");
+  const [actionMsg, setActionMsg]       = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterRole, setFilterRole]     = useState("All");
   const [search, setSearch]             = useState("");
 
-  /* ── Actions ── */
-  const handleAction = (action) => {
-    if (!remark.trim()) { setRemarkErr("Admin remark is required before taking action."); return; }
-    setRequests((prev) =>
-      prev.map((r) => r.id === selected.id ? { ...r, status: action, adminRemark: remark } : r)
-    );
-    const name = selected.name;
-    setActionMsg(`${name}'s request has been ${action.toLowerCase()}.`);
-    setTimeout(() => setActionMsg(""), 4500);
-    setSelected(null);
-    setRemark("");
-    setRemarkErr("");
+  // 📥 1. FETCH LIVE DATABASE REQUEST NODES FRESH
+  const fetchLiveRequests = async () => {
+    try {
+      setLoading(true);
+      // Adjust this URL path parameter string to match your exact backend Router mount definition
+      const res = await API.get('/misspunch/pending'); 
+      const rawData = res.data?.data || res.data || [];
+      
+      // Ensure variables match database documents cleanly (providing generic safe string fallbacks)
+      const sanitizedData = rawData.map(item => ({
+        id: item._id || item.id,
+        name: item.employeeId ? `${item.employeeId.firstName} ${item.employeeId.lastName}` : (item.name || "Unknown User"),
+        empId: item.employeeId?.empId || item.empId || "N/A",
+        role: item.employeeId?.role || item.role || "Employee",
+        department: item.employeeId?.department || item.department || "General",
+        date: item.date || "",
+        shift: item.shift || "09:00 AM – 06:00 PM",
+        missType: item.missType || "Both",
+        reason: item.reason || "",
+        status: item.status || "Pending",
+        submittedOn: item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : (item.submittedOn || ""),
+        proof: !!item.proof,
+        adminRemark: item.adminRemark || null
+      }));
+
+      setRequests(sanitizedData);
+    } catch (err) {
+      console.error("Failed to collect dynamic miss punch telemetry streams:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveRequests();
+  }, []);
+
+  /* ── 2. LIVE ACTION DISPATCH: SUBMITS STATE TO MONGODB ── */
+  const handleAction = async (action) => {
+    if (!remark.trim()) { 
+      setRemarkErr("Admin remark is required before taking action."); 
+      return; 
+    }
+    
+    try {
+      // Hits your backend regularization review gateway pipeline directly
+      await API.post('/misspunch/review', {
+        requestId: selected.id,
+        status: action, // 'Approved' or 'Rejected'
+        remark: remark
+      });
+
+      const targetName = selected.name;
+      setActionMsg(`${targetName}'s attendance adjustment has been successfully ${action.toLowerCase()}.`);
+      
+      setSelected(null);
+      setRemark("");
+      setRemarkErr("");
+      
+      // Pull fresh state counters instantly to re-scale the active metrics grid cards
+      await fetchLiveRequests(); 
+      
+      setTimeout(() => setActionMsg(""), 4500);
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Failed to commit decision state change node matrix.");
+    }
   };
 
   /* ── Filtering ── */
   const filtered = requests.filter((r) => {
     const matchStatus = filterStatus === "All" || r.status === filterStatus;
-    const matchRole   = filterRole   === "All" || r.role   === filterRole;
+    const matchRole   = filterRole   === "All" || r.role === filterRole;
     const matchSearch = !search.trim() ||
       r.name.toLowerCase().includes(search.toLowerCase()) ||
       r.empId.toLowerCase().includes(search.toLowerCase()) ||
@@ -115,12 +133,12 @@ export default function AdminMissPunchingView() {
 
   /* ── Summary ── */
   const stats = [
-    { label: "Total",             count: requests.length,                                        accent: "#6366F1", icon: "📋" },
-    { label: "Pending",           count: requests.filter((r) => r.status === "Pending").length,    accent: "#F97316", icon: "⏳" },
-    { label: "Approved",          count: requests.filter((r) => r.status === "Approved").length,   accent: "#22C55E", icon: "✅" },
-    { label: "Rejected",          count: requests.filter((r) => r.status === "Rejected").length,   accent: "#F43F5E", icon: "❌" },
-    { label: "HR Requests",       count: requests.filter((r) => r.role === "HR").length,           accent: "#8B5CF6", icon: "👤" },
-    { label: "Employee Requests", count: requests.filter((r) => r.role === "Employee").length,     accent: "#0EA5E9", icon: "👥" },
+    { label: "Total",             count: requests.length,                                         accent: "#6366F1", icon: "📋" },
+    { label: "Pending",           count: requests.filter((r) => r.status === "Pending").length,   accent: "#F97316", icon: "⏳" },
+    { label: "Approved",          count: requests.filter((r) => r.status === "Approved").length,  accent: "#22C55E", icon: "✅" },
+    { label: "Rejected",          count: requests.filter((r) => r.status === "Rejected").length,  accent: "#F43F5E", icon: "❌" },
+    { label: "HR Requests",       count: requests.filter((r) => r.role?.toUpperCase() === "HR").length,           accent: "#8B5CF6", icon: "👤" },
+    { label: "Employee Requests", count: requests.filter((r) => r.role?.toUpperCase() === "EMPLOYEE").length,     accent: "#0EA5E9", icon: "👥" },
   ];
 
   return (
@@ -201,14 +219,18 @@ export default function AdminMissPunchingView() {
         </div>
       </div>
 
-      {/* ── Main Table ── */}
+      {/* ── Main Table Content Area ── */}
       <div className={styles.tableCard}>
         <div className={styles.tableHeader}>
           <h3 className={styles.sectionTitle}>All Miss Punch Requests</h3>
           <span className={styles.resultCount}>{filtered.length} result{filtered.length !== 1 ? "s" : ""}</span>
         </div>
 
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className={styles.empty} style={{ padding: "48px 0" }}>
+            <p style={{ fontWeight: "600", color: "#64748b" }}>Syncing live database request queues...</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className={styles.empty}>
             <p>No requests match the current filters.</p>
           </div>
@@ -237,7 +259,7 @@ export default function AdminMissPunchingView() {
                     <td>
                       <div className={styles.personCell}>
                         <div className={styles.avatar}
-                          style={{ background: ROLE_COLORS[req.role]?.bg, color: ROLE_COLORS[req.role]?.color }}>
+                          style={{ background: ROLE_COLORS[req.role]?.bg || "#f1f5f9", color: ROLE_COLORS[req.role]?.color || "#475569" }}>
                           {req.name.charAt(0)}
                         </div>
                         <div>
@@ -290,7 +312,7 @@ export default function AdminMissPunchingView() {
               {/* Person strip */}
               <div className={styles.personStrip}>
                 <div className={styles.stripAvatar}
-                  style={{ background: ROLE_COLORS[selected.role]?.bg, color: ROLE_COLORS[selected.role]?.color }}>
+                  style={{ background: ROLE_COLORS[selected.role]?.bg || "#f1f5f9", color: ROLE_COLORS[selected.role]?.color || "#475569" }}>
                   {selected.name.charAt(0)}
                 </div>
                 <div className={styles.stripInfo}>

@@ -1,5 +1,7 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "./HRMissPunchingView.module.css";
+// 🚀 Dynamic connection bindings imported straight from your axios configurations folder
+import API from "../../../lib/axios"; 
 
 /* ─── Constants ─── */
 const STATUS_COLORS = {
@@ -15,93 +17,9 @@ const SHIFTS = [
   { label: "Night   — 10:00 PM to 06:00 AM",  value: "10:00 PM – 06:00 AM" },
 ];
 
-/* ─── Mock: HR's own requests ─── */
-const MY_MOCK = [
-  {
-    id: 101,
-    date: "2026-06-05",
-    shift: "09:00 AM – 06:00 PM",
-    missType: "Clock-In",
-    reason: "Face scanner offline at HR cabin entry",
-    status: "Approved",
-    submittedOn: "2026-06-06",
-    adminRemark: "Verified with access log.",
-  },
-  {
-    id: 102,
-    date: "2026-06-03",
-    shift: "09:00 AM – 06:00 PM",
-    missType: "Both",
-    reason: "System maintenance window overlapped shift start",
-    status: "Pending",
-    submittedOn: "2026-06-04",
-    adminRemark: null,
-  },
-];
-
-/* ─── Mock: Employee requests assigned to HR ─── */
-const TEAM_MOCK = [
-  {
-    id: 201,
-    employee: "Riya Sharma",
-    empId: "EMP-042",
-    department: "Finance",
-    date: "2026-06-07",
-    shift: "09:00 AM – 06:00 PM",
-    missType: "Clock-Out",
-    reason: "Left office from back gate; scanner was down",
-    status: "Pending",
-    submittedOn: "2026-06-08",
-    proof: true,
-    hrRemark: null,
-  },
-  {
-    id: 202,
-    employee: "Arjun Patel",
-    empId: "EMP-017",
-    department: "Engineering",
-    date: "2026-06-05",
-    shift: "09:00 AM – 06:00 PM",
-    missType: "Clock-In",
-    reason: "Power failure at biometric gate",
-    status: "Pending",
-    submittedOn: "2026-06-06",
-    proof: false,
-    hrRemark: null,
-  },
-  {
-    id: 203,
-    employee: "Pooja Mehta",
-    empId: "EMP-031",
-    department: "Marketing",
-    date: "2026-06-01",
-    shift: "09:00 AM – 06:00 PM",
-    missType: "Both",
-    reason: "Face recognition error — system rebooting",
-    status: "Approved",
-    submittedOn: "2026-06-02",
-    proof: true,
-    hrRemark: "CCTV confirmed entry and exit.",
-  },
-  {
-    id: 204,
-    employee: "Karan Desai",
-    empId: "EMP-055",
-    department: "Sales",
-    date: "2026-05-29",
-    shift: "09:00 AM – 06:00 PM",
-    missType: "Clock-In",
-    reason: "Was on client call outside office during punch time",
-    status: "Rejected",
-    submittedOn: "2026-05-30",
-    proof: false,
-    hrRemark: "No valid reason provided for absence from scanner.",
-  },
-];
-
 /* ─── Badge ─── */
 function Badge({ status }) {
-  const sc = STATUS_COLORS[status];
+  const sc = STATUS_COLORS[status] || { bg: "#F1F5F9", color: "#475569", dot: "#94a3b8" };
   return (
     <span className={styles.badge} style={{ background: sc.bg, color: sc.color }}>
       <span className={styles.dot} style={{ background: sc.dot }} />
@@ -115,9 +33,10 @@ function Badge({ status }) {
 ══════════════════════════════════════════ */
 export default function HRMissPunchingView() {
   const [activeTab, setActiveTab] = useState("mine"); // "mine" | "team"
+  const [loading, setLoading] = useState(true);
 
   /* ── My Requests state ── */
-  const [myRequests, setMyRequests] = useState(MY_MOCK);
+  const [myRequests, setMyRequests] = useState([]);
   const [showForm, setShowForm]     = useState(false);
   const [mySelected, setMySelected] = useState(null);
   const [successMsg, setSuccessMsg] = useState("");
@@ -125,7 +44,7 @@ export default function HRMissPunchingView() {
   const [errors, setErrors] = useState({});
 
   /* ── Team Requests state ── */
-  const [teamRequests, setTeamRequests] = useState(TEAM_MOCK);
+  const [teamRequests, setTeamRequests] = useState([]);
   const [teamSelected, setTeamSelected] = useState(null);
   const [remark, setRemark]             = useState("");
   const [remarkErr, setRemarkErr]       = useState("");
@@ -134,26 +53,92 @@ export default function HRMissPunchingView() {
 
   const todayStr = new Date().toISOString().split("T")[0];
 
+  // 📥 1. SYNC TELEMETRY ENGINES WITH BACKEND LIVE DATA
+  const syncMissPunchData = async () => {
+    try {
+      setLoading(true);
+
+      // A. Pull HR's own personal missed punch request history logs
+      const selfRes = await API.get('/attendance/my-logs'); // Adjust endpoint pathing if required
+      const selfRaw = Array.isArray(selfRes.data) ? selfRes.data : (selfRes.data?.data || []);
+      const regularizedSelfLogs = selfRaw.filter(log => log.isRegularized || log.status === "Pending");
+      
+      setMyRequests(regularizedSelfLogs.map(item => ({
+        id: item._id || item.id,
+        date: item.date || "",
+        shift: item.shift || "09:00 AM – 06:00 PM",
+        missType: item.missType || "Both",
+        reason: item.reason || "Biometric failure logs.",
+        status: item.status || "Pending",
+        submittedOn: item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : todayStr,
+        adminRemark: item.adminRemark || item.remark || null
+      })));
+
+      // B. Pull active employee miss punch applications waiting for HR team review
+      const teamRes = await API.get('/misspunch/pending');
+      const teamRaw = teamRes.data?.data || teamRes.data || [];
+      
+      setTeamRequests(teamRaw.map(item => ({
+        id: item._id || item.id,
+        employee: item.employeeId ? `${item.employeeId.firstName} ${item.employeeId.lastName}` : "Unknown Profile",
+        empId: item.employeeId?.empId || "N/A",
+        department: item.employeeId?.department || "General",
+        date: item.date || "",
+        shift: item.shift || "09:00 AM – 06:00 PM",
+        missType: item.missType || "Both",
+        reason: item.reason || "",
+        status: item.status || "Pending",
+        submittedOn: item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : todayStr,
+        proof: !!item.proof,
+        hrRemark: item.hrRemark || item.remark || null
+      })));
+
+    } catch (err) {
+      console.error("MERN architecture telemetry syncing crash:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    syncMissPunchData();
+  }, []);
+
   /* ── My Requests handlers ── */
   const validate = () => {
     const e = {};
-    if (!form.date)         e.date   = "Date is required.";
-    if (!form.shift)        e.shift  = "Shift is required.";
+    if (!form.date)          e.date   = "Date is required.";
+    if (!form.shift)         e.shift  = "Shift is required.";
     if (!form.reason.trim()) e.reason = "Reason is required.";
     return e;
   };
 
-  const handleSubmit = () => {
+  // 🚀 2. SUBMIT SELF-REQUEST TO SYSTEM ADMIN
+  const handleSubmit = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
-    setMyRequests([{ id: Date.now(), date: form.date, shift: form.shift,
-      missType: form.missType, reason: form.reason, status: "Pending",
-      submittedOn: todayStr, adminRemark: null }, ...myRequests]);
-    setForm({ date: "", shift: "", missType: "Both", reason: "", proof: null });
-    setErrors({});
-    setShowForm(false);
-    setSuccessMsg("Your miss punch request has been submitted to System Admin.");
-    setTimeout(() => setSuccessMsg(""), 4500);
+    
+    try {
+      setLoading(true);
+      await API.post('/misspunch/apply', {
+        date: form.date,
+        shift: form.shift,
+        missType: form.missType,
+        reason: form.reason
+      });
+
+      setForm({ date: "", shift: "", missType: "Both", reason: "", proof: null });
+      setErrors({});
+      setShowForm(false);
+      setSuccessMsg("Your miss punch request has been submitted to System Admin.");
+      
+      await syncMissPunchData(); // Reload structural nodes
+      setTimeout(() => setSuccessMsg(""), 4500);
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to drop regularization document framework.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (field, value) => {
@@ -161,19 +146,27 @@ export default function HRMissPunchingView() {
     setErrors((p) => ({ ...p, [field]: undefined }));
   };
 
-  /* ── Team Requests handlers ── */
-  const handleAction = (action) => {
+  // 👑 3. APPROVE / REJECT JUNIOR EMPLOYEE LOGS
+  const handleAction = async (action) => {
     if (!remark.trim()) { setRemarkErr("Remark is required before taking action."); return; }
-    setTeamRequests((prev) =>
-      prev.map((r) =>
-        r.id === teamSelected.id ? { ...r, status: action, hrRemark: remark } : r
-      )
-    );
-    setActionMsg(`Request ${action.toLowerCase()} successfully.`);
-    setTimeout(() => setActionMsg(""), 4000);
-    setTeamSelected(null);
-    setRemark("");
-    setRemarkErr("");
+    
+    try {
+      await API.post('/misspunch/review', {
+        requestId: teamSelected.id,
+        status: action, // 'Approved' or 'Rejected'
+        remark: remark
+      });
+
+      setActionMsg(`Request ${action.toLowerCase()} successfully.`);
+      setTeamSelected(null);
+      setRemark("");
+      setRemarkErr("");
+
+      await syncMissPunchData(); // Refresh list counters dynamically
+      setTimeout(() => setActionMsg(""), 4000);
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to commit regularization parameter change.");
+    }
   };
 
   const filteredTeam = filterStatus === "All"
@@ -182,10 +175,8 @@ export default function HRMissPunchingView() {
 
   const pendingCount = teamRequests.filter((r) => r.status === "Pending").length;
 
-  /* ══ RENDER ══ */
   return (
     <div className={styles.container}>
-
 
       {/* ── Tab Bar ── */}
       <div className={styles.tabBar}>
@@ -209,10 +200,9 @@ export default function HRMissPunchingView() {
 
       {/* ════════════════════════════
           TAB: MY REQUESTS
-      ════════════════════════════ */}
+         ════════════════════════════ */}
       {activeTab === "mine" && (
         <div>
-          {/* Header row */}
           <div className={styles.sectionHeader}>
             <p className={styles.sectionDesc}>
               Missed face attendance? Submit to System Admin for approval.
@@ -294,10 +284,10 @@ export default function HRMissPunchingView() {
             </div>
           )}
 
-          {/* Summary */}
+          {/* Summary Metric Cards */}
           <div className={styles.summaryRow}>
             {[
-              { label: "Total",    count: myRequests.length,                                      icon: "📋", accent: "#6366F1" },
+              { label: "Total",    count: myRequests.length,                                       icon: "📋", accent: "#6366F1" },
               { label: "Pending",  count: myRequests.filter((r) => r.status === "Pending").length,  icon: "⏳", accent: "#F97316" },
               { label: "Approved", count: myRequests.filter((r) => r.status === "Approved").length, icon: "✅", accent: "#22C55E" },
               { label: "Rejected", count: myRequests.filter((r) => r.status === "Rejected").length, icon: "❌", accent: "#F43F5E" },
@@ -315,7 +305,9 @@ export default function HRMissPunchingView() {
           {/* Table */}
           <div className={styles.tableCard}>
             <h3 className={styles.sectionTitle}>My Miss Punch Requests</h3>
-            {myRequests.length === 0 ? (
+            {loading ? (
+              <div className={styles.empty}><p>Syncing live ledger accounts framework...</p></div>
+            ) : myRequests.length === 0 ? (
               <div className={styles.empty}><p>No requests yet. Click <strong>+ New Request</strong> to submit one.</p></div>
             ) : (
               <div className={styles.tableWrapper}>
@@ -383,7 +375,7 @@ export default function HRMissPunchingView() {
 
       {/* ════════════════════════════
           TAB: TEAM REQUESTS
-      ════════════════════════════ */}
+         ════════════════════════════ */}
       {activeTab === "team" && (
         <div>
           {actionMsg && (
@@ -394,7 +386,7 @@ export default function HRMissPunchingView() {
           <div className={styles.teamTopRow}>
             <div className={styles.summaryRow}>
               {[
-                { label: "Total",    count: teamRequests.length,                                      accent: "#6366F1" },
+                { label: "Total",    count: teamRequests.length,                                       accent: "#6366F1" },
                 { label: "Pending",  count: teamRequests.filter((r) => r.status === "Pending").length,  accent: "#F97316" },
                 { label: "Approved", count: teamRequests.filter((r) => r.status === "Approved").length, accent: "#22C55E" },
                 { label: "Rejected", count: teamRequests.filter((r) => r.status === "Rejected").length, accent: "#F43F5E" },
@@ -425,7 +417,9 @@ export default function HRMissPunchingView() {
           {/* Team Table */}
           <div className={styles.tableCard}>
             <h3 className={styles.sectionTitle}>Employee Miss Punch Requests</h3>
-            {filteredTeam.length === 0 ? (
+            {loading ? (
+              <div className={styles.empty}><p>Querying subordinate records...</p></div>
+            ) : filteredTeam.length === 0 ? (
               <div className={styles.empty}><p>No requests found for selected filter.</p></div>
             ) : (
               <div className={styles.tableWrapper}>
