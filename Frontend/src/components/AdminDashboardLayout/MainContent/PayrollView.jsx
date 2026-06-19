@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../AdminDashboardLayout.module.css';
 import { getAllEmployees, getMonthlyPayrollDashboard, getYearlyPayrollDashboard, downloadPayslipPDF } from '../../../lib/axios';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 const PayrollView = () => {
   const [employees, setEmployees] = useState([]);
